@@ -757,6 +757,90 @@
     </div>
   </div>
 
+  <div class="color-edit-popup" id="tilesetTesterPopup" style="display:none; width:520px; height:620px; min-width:380px; min-height:420px; max-width:95vw; max-height:95vh; resize:both; overflow:hidden; z-index:2200; padding:12px; box-shadow:0 16px 40px rgba(0,0,0,0.8); flex-direction:column;">
+    <div class="drag-handle" id="tilesetTesterDragHandle" style="flex:0 0 auto; cursor:move; padding:6px 10px; margin:-12px -12px 10px -12px; background:var(--panel-2); border-bottom:1px solid var(--line); font-weight:bold; font-size:12px; display:flex; justify-content:space-between; align-items:center; border-radius:8px 8px 0 0; user-select:none;">
+      <span>Tileset Tester & Studio</span>
+      <span id="tilesetTesterCloseCross" style="cursor:pointer; padding:2px 6px; font-weight:normal; opacity:0.7;">✕</span>
+    </div>
+    
+    <!-- Controls Toolbar -->
+    <div style="flex:0 0 auto; display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-bottom:8px; font-size:11px;">
+      <label style="display:flex; align-items:center; gap:4px; white-space:nowrap;">
+        Tile Size:
+        <select id="tilesetTileSizeSelect" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:4px; padding:2px; font-size:11px;">
+          <option value="8">8 x 8</option>
+          <option value="16">16 x 16</option>
+          <option value="32" selected>32 x 32</option>
+          <option value="48">48 x 48</option>
+          <option value="64">64 x 64</option>
+          <option value="128">128 x 128</option>
+        </select>
+      </label>
+
+      <label style="display:flex; align-items:center; gap:4px; white-space:nowrap;">
+        Tester Grid:
+        <select id="tilesetTesterGridSizeSelect" style="background:var(--panel-2); color:var(--text); border:1px solid var(--line); border-radius:4px; padding:2px; font-size:11px;">
+          <option value="8">8 x 8</option>
+          <option value="12" selected>12 x 12</option>
+          <option value="16">16 x 16</option>
+          <option value="24">24 x 24</option>
+          <option value="32">32 x 32</option>
+        </select>
+      </label>
+
+      <button class="btn small" id="tilesetClearTesterBtn" style="padding:2px 6px; font-size:10px; border-radius:4px;">Clear Grid</button>
+      
+      <div style="display:flex; gap:8px; align-items:center; border-left:1px solid var(--line); padding-left:8px; margin-left:4px;">
+        <label style="display:flex; align-items:center; gap:3px; cursor:pointer;" title="View standard color tiles">
+          <input type="radio" name="tilesetRenderMode" id="tilesetModeColor" checked style="accent-color:var(--accent);"> Color
+        </label>
+        <label style="display:flex; align-items:center; gap:3px; cursor:pointer;" title="Enable 2.5D normal/bump-mapped lighting">
+          <input type="radio" name="tilesetRenderMode" id="tilesetModeLit" style="accent-color:var(--accent);"> Lit
+        </label>
+        <label style="display:flex; align-items:center; gap:3px; cursor:pointer;" title="View height map overlay">
+          <input type="radio" name="tilesetRenderMode" id="tilesetModeHeight" style="accent-color:var(--accent);"> Height
+        </label>
+        <label style="display:flex; align-items:center; gap:3px; cursor:pointer;" title="View roughness map overlay">
+          <input type="radio" name="tilesetRenderMode" id="tilesetModeRoughness" style="accent-color:var(--accent);"> Roughness
+        </label>
+      </div>
+    </div>
+
+    <!-- Painting/Tester Display (Upper Half) -->
+    <div style="flex:1 1 50%; min-height:100px; display:flex; flex-direction:column; overflow:hidden; margin-bottom:4px;">
+      <div style="flex:0 0 auto; font-weight:600; font-size:11px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+        <span>Tester Area (Left-click: paint, Right-click: erase)</span>
+        <label style="font-size:10px; font-weight:normal; display:flex; align-items:center; gap:4px; cursor:pointer;">
+          <input type="checkbox" id="tilesetTesterShowGrid" checked style="accent-color:var(--accent);"> Show Grid
+        </label>
+      </div>
+      <div id="tilesetTesterCanvasWrap" style="flex:1 1 auto; width:100%; height:100%; min-height:80px; overflow:auto; background:#0b0c10; border:1px solid var(--line); border-radius:4px; display:flex; align-items:center; justify-content:center; padding:10px; position:relative;">
+        <canvas id="tilesetTesterCanvas" style="background:#0b0c10; cursor:crosshair; display:block; image-rendering:pixelated; box-shadow:0 4px 10px rgba(0,0,0,0.5);"></canvas>
+      </div>
+    </div>
+
+    <!-- Separator -->
+    <div style="flex:0 0 auto; border-top:1px solid var(--line); margin:6px 0;"></div>
+
+    <!-- Tileset Selector Display (Lower Half) -->
+    <div style="flex:1 1 50%; min-height:100px; display:flex; flex-direction:column; overflow:hidden;">
+      <div style="flex:0 0 auto; font-weight:600; font-size:11px; margin-bottom:4px; display:flex; justify-content:space-between; align-items:center;">
+        <span id="tilesetSelectedInfo">Selected: Tile #0 (0, 0)</span>
+        <label style="font-size:10px; font-weight:normal; display:flex; align-items:center; gap:4px; cursor:pointer;">
+          <input type="checkbox" id="tilesetSelectorShowIDs" checked style="accent-color:var(--accent);"> Show IDs
+        </label>
+      </div>
+      <div id="tilesetSelectorCanvasWrap" style="flex:1 1 auto; width:100%; height:100%; min-height:80px; overflow:auto; background:#0b0c10; border:1px solid var(--line); border-radius:4px; display:flex; align-items:center; justify-content:center; padding:10px; position:relative;">
+        <canvas id="tilesetSelectorCanvas" style="background:#0b0c10; cursor:pointer; display:block; image-rendering:pixelated; box-shadow:0 4px 10px rgba(0,0,0,0.5);"></canvas>
+      </div>
+    </div>
+
+    <!-- Actions Footer -->
+    <div class="color-edit-actions" style="flex:0 0 auto; margin-top:8px;">
+      <button class="btn small" id="tilesetCloseBtn">Close</button>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="appConfirmModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.65); backdrop-filter:blur(2px); z-index:3000; align-items:center; justify-content:center;">
     <div class="color-edit-popup" style="display:block; position:relative; z-index:3001; width:320px; box-shadow:0 16px 40px rgba(0,0,0,0.7);">
       <label class="field" id="confirmModalTitle" style="margin-top:0; font-weight:700; font-size:14px; color:var(--text);">Confirm Action</label>
@@ -1286,6 +1370,8 @@
         <button class="menu-item" id="exportBtn">Export PNG</button>
         <button class="menu-item" id="exportSpriteSheetBtn">Export Sprite Sheet</button>
         <button class="menu-item" id="exportGifBtn">Export Animated GIF</button>
+        <div class="menu-divider"></div>
+        <button class="menu-item" id="tilesetTesterBtn">Tileset Tester…</button>
         <div class="menu-divider"></div>
 
         <div class="menu-divider" id="pwaDivider" style="display:none;"></div>
@@ -3068,7 +3154,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.166'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.169'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -5223,13 +5309,16 @@ void main(void)\r
   }
 
   function fitCanvasToScreen(forceFit){
-    let cw = canvasWrap.clientWidth;
-    let ch = canvasWrap.clientHeight;
-    if (cw <= 0) cw = window.innerWidth > 300 ? window.innerWidth - 260 : window.innerWidth;
-    if (ch <= 0) ch = window.innerHeight;
+    let cw = canvasWrap ? canvasWrap.clientWidth : 0;
+    let ch = canvasWrap ? canvasWrap.clientHeight : 0;
     
-    const availW = cw - 120;
-    const availH = ch - 120;
+    // If layout hasn't fully rendered or expanded yet, fallback to viewport dimensions
+    if (cw <= 100) cw = window.innerWidth > 300 ? window.innerWidth - 280 : window.innerWidth;
+    if (ch <= 100) ch = Math.max(300, window.innerHeight - 120);
+    
+    // Use a comfortable padding around the canvas
+    const availW = Math.max(100, cw - 60);
+    const availH = Math.max(100, ch - 60);
     
     if(forceFit){
       zoom = Math.max(0.05, Math.min(32, availW / W, availH / H));
@@ -5341,6 +5430,9 @@ void main(void)\r
     updateSeamlessPreview();
     updateLightingPreview();
     updateColorHighlight();
+    if (document.getElementById('tilesetTesterPopup')?.style.display !== 'none') {
+      updateTilesetTester();
+    }
   }
   function updateSeamlessPreview(){
     if(!seamlessModeEnabled) return;
@@ -12909,6 +13001,399 @@ void main(void)\r
   document.getElementById('aboutBtn').addEventListener('click', openAboutPopup);
   document.getElementById('aboutCloseBtn').addEventListener('click', closeAboutPopup);
 
+  // ---------- Tileset Tester & Studio State ----------
+  let tilesetTesterTileSize = 32;
+  let tilesetTesterCols = 12;
+  let tilesetTesterRows = 12;
+  let tilesetTesterGrid = [];
+  let tilesetSelectedTile = { col: 0, row: 0 };
+  let tilesetTesterActiveMode = 'color';
+  let tilesetPaintDragging = false;
+  let tilesetEraseDragging = false;
+
+  function initTilesetTester() {
+    if (tilesetTesterGrid.length !== tilesetTesterRows || (tilesetTesterGrid[0] && tilesetTesterGrid[0].length !== tilesetTesterCols)) {
+      tilesetTesterGrid = Array(tilesetTesterRows).fill(null).map(() => Array(tilesetTesterCols).fill(null));
+    }
+    
+    // Auto-size canvas styles
+    const tCanvas = document.getElementById('tilesetTesterCanvas');
+    const sCanvas = document.getElementById('tilesetSelectorCanvas');
+    if (tCanvas) {
+      tCanvas.width = tilesetTesterCols * tilesetTesterTileSize;
+      tCanvas.height = tilesetTesterRows * tilesetTesterTileSize;
+    }
+    if (sCanvas) {
+      sCanvas.width = W;
+      sCanvas.height = H;
+    }
+  }
+
+  function drawTilesetSelector() {
+    const canvas = document.getElementById('tilesetSelectorCanvas');
+    if (!canvas) return;
+    if (canvas.width !== W || canvas.height !== H) {
+      canvas.width = W;
+      canvas.height = H;
+    }
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    ctx.drawImage(displayCanvas, 0, 0);
+
+    // Draw grid lines
+    ctx.save();
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
+    ctx.lineWidth = 1;
+    ctx.setLineDash([2, 2]);
+    for (let x = tilesetTesterTileSize; x < W; x += tilesetTesterTileSize) {
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+    }
+    for (let y = tilesetTesterTileSize; y < H; y += tilesetTesterTileSize) {
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+    }
+    ctx.setLineDash([]);
+    ctx.restore();
+
+    // Show Tile IDs
+    if (document.getElementById('tilesetSelectorShowIDs')?.checked) {
+      ctx.save();
+      ctx.font = '8px monospace';
+      const numColsOnSheet = Math.floor(W / tilesetTesterTileSize);
+      const numRowsOnSheet = Math.floor(H / tilesetTesterTileSize);
+      for (let r = 0; r < numRowsOnSheet; r++) {
+        for (let c = 0; c < numColsOnSheet; c++) {
+          const tileId = r * numColsOnSheet + c;
+          const tx = c * tilesetTesterTileSize;
+          const ty = r * tilesetTesterTileSize;
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+          ctx.fillRect(tx + 1, ty + 1, 14 + (tileId >= 10 ? 5 : 0) + (tileId >= 100 ? 5 : 0), 10);
+          ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
+          ctx.fillText(tileId, tx + 2, ty + 9);
+        }
+      }
+      ctx.restore();
+    }
+
+    // Draw selected outline
+    ctx.save();
+    const sx = tilesetSelectedTile.col * tilesetTesterTileSize;
+    const sy = tilesetSelectedTile.row * tilesetTesterTileSize;
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 2;
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.6)';
+    ctx.shadowBlur = 4;
+    ctx.strokeRect(sx + 1, sy + 1, tilesetTesterTileSize - 2, tilesetTesterTileSize - 2);
+    ctx.restore();
+
+    // Update label text
+    const numColsOnSheet = Math.floor(W / tilesetTesterTileSize);
+    const tileId = tilesetSelectedTile.row * numColsOnSheet + tilesetSelectedTile.col;
+    const label = document.getElementById('tilesetSelectedInfo');
+    if (label) {
+      label.textContent = 'Selected: Tile #' + tileId + ' (' + tilesetSelectedTile.col + ', ' + tilesetSelectedTile.row + ')';
+    }
+  }
+
+  function drawTilesetTesterArea() {
+    const canvas = document.getElementById('tilesetTesterCanvas');
+    if (!canvas) return;
+    
+    const W_t = tilesetTesterCols * tilesetTesterTileSize;
+    const H_t = tilesetTesterRows * tilesetTesterTileSize;
+    if (canvas.width !== W_t || canvas.height !== H_t) {
+      canvas.width = W_t;
+      canvas.height = H_t;
+    }
+
+    const tempColorCanvas = document.createElement('canvas');
+    tempColorCanvas.width = W_t; tempColorCanvas.height = H_t;
+    const tcCtx = tempColorCanvas.getContext('2d');
+
+    const tempHeightCanvas = document.createElement('canvas');
+    tempHeightCanvas.width = W_t; tempHeightCanvas.height = H_t;
+    const thCtx = tempHeightCanvas.getContext('2d');
+    thCtx.fillStyle = '#000000';
+    thCtx.fillRect(0, 0, W_t, H_t);
+
+    const tempRoughnessCanvas = document.createElement('canvas');
+    tempRoughnessCanvas.width = W_t; tempRoughnessCanvas.height = H_t;
+    const trCtx = tempRoughnessCanvas.getContext('2d');
+    trCtx.fillStyle = '#c8c8c8';
+    trCtx.fillRect(0, 0, W_t, H_t);
+
+    const layer = layers[activeLayer];
+    const srcColorCanvas = displayCanvas;
+    const srcHeightCanvas = layer ? layer.heightCanvas : null;
+    const srcRoughnessCanvas = layer ? layer.roughnessCanvas : null;
+
+    for (let r = 0; r < tilesetTesterRows; r++) {
+      for (let c = 0; c < tilesetTesterCols; c++) {
+        const tile = tilesetTesterGrid[r]?.[c];
+        if (tile) {
+          const sx = tile.col * tilesetTesterTileSize;
+          const sy = tile.row * tilesetTesterTileSize;
+          const dx = c * tilesetTesterTileSize;
+          const dy = r * tilesetTesterTileSize;
+
+          if (sx + tilesetTesterTileSize <= W && sy + tilesetTesterTileSize <= H) {
+            tcCtx.drawImage(srcColorCanvas, sx, sy, tilesetTesterTileSize, tilesetTesterTileSize, dx, dy, tilesetTesterTileSize, tilesetTesterTileSize);
+            if (srcHeightCanvas) {
+              thCtx.drawImage(srcHeightCanvas, sx, sy, tilesetTesterTileSize, tilesetTesterTileSize, dx, dy, tilesetTesterTileSize, tilesetTesterTileSize);
+            }
+            if (srcRoughnessCanvas) {
+              trCtx.drawImage(srcRoughnessCanvas, sx, sy, tilesetTesterTileSize, tilesetTesterTileSize, dx, dy, tilesetTesterTileSize, tilesetTesterTileSize);
+            }
+          }
+        }
+      }
+    }
+
+    const testerCtx = canvas.getContext('2d');
+    testerCtx.clearRect(0, 0, W_t, H_t);
+
+    if (tilesetTesterActiveMode === 'height') {
+      testerCtx.drawImage(tempHeightCanvas, 0, 0);
+    } else if (tilesetTesterActiveMode === 'roughness') {
+      testerCtx.drawImage(tempRoughnessCanvas, 0, 0);
+    } else if (tilesetTesterActiveMode === 'lit') {
+      const colorData = tcCtx.getImageData(0, 0, W_t, H_t).data;
+      const heightData = thCtx.getImageData(0, 0, W_t, H_t).data;
+      const roughnessData = trCtx.getImageData(0, 0, W_t, H_t).data;
+      const outImg = testerCtx.createImageData(W_t, H_t);
+      const out = outImg.data;
+
+      const lightHeightPct = +document.getElementById('lightHeightSlider')?.value || 50;
+      const ambient = (+document.getElementById('lightAmbientSlider')?.value || 20) / 100;
+      const reflectionMult = (+document.getElementById('lightboxIntensitySlider')?.value || 100) / 100;
+      const specularMult = (+document.getElementById('specularBoostSlider')?.value || 100) / 100;
+      const lightZ = (lightHeightPct / 100) * Math.max(W_t, H_t);
+      const lightPxX = lightPosX * W_t;
+      const lightPxY = lightPosY * H_t;
+      const bumpStrength = 3;
+
+      const envData = lightboxImageData ? lightboxImageData.data : null;
+      const envW = lightboxCanvas.width, envH = lightboxCanvas.height;
+
+      for (let y = 0; y < H_t; y++) {
+        for (let x = 0; x < W_t; x++) {
+          const i = (y * W_t + x) * 4;
+          const alpha = colorData[i + 3];
+          if (alpha === 0) {
+            out[i] = 0; out[i + 1] = 0; out[i + 2] = 0; out[i + 3] = 0;
+            continue;
+          }
+
+          const hL = heightData[(y * W_t + Math.max(0, x - 1)) * 4];
+          const hR = heightData[(y * W_t + Math.min(W_t - 1, x + 1)) * 4];
+          const hU = heightData[(Math.max(0, y - 1) * W_t + x) * 4];
+          const hD = heightData[(Math.min(H_t - 1, y + 1) * W_t + x) * 4];
+          const dx = (hR - hL) / 255 * bumpStrength;
+          const dy = (hD - hU) / 255 * bumpStrength;
+          let nx = -dx, ny = -dy, nz = 1;
+          const nlen = Math.sqrt(nx * nx + ny * ny + nz * nz) || 1;
+          nx /= nlen; ny /= nlen; nz /= nlen;
+
+          let lx = lightPxX - x, ly = lightPxY - y, lz = lightZ;
+          const llen = Math.sqrt(lx * lx + ly * ly + lz * lz) || 1;
+          lx /= llen; ly /= llen; lz /= llen;
+
+          const dot = Math.max(0, nx * lx + ny * ly + nz * lz);
+          const intensity = ambient + dot * (1 - ambient);
+
+          const rVal = roughnessData[i];
+          const normR = rVal / 255;
+          const smoothness = 1 - normR;
+
+          const hx = lx, hy = ly, hz = lz + 1;
+          const hlen = Math.sqrt(hx * hx + hy * hy + hz * hz) || 1;
+          const nh = Math.max(0, nx * (hx / hlen) + ny * (hy / hlen) + nz * (hz / hlen));
+          const specPower = Math.pow(2, smoothness * 7) + 1;
+          const specFactor = Math.pow(nh, specPower) * Math.pow(smoothness, 1.2) * specularMult;
+
+          let refR = 0, refG = 0, refB = 0;
+          if (smoothness > 0.05 && envData && reflectionMult > 0) {
+            const rx = 2 * nx * nz;
+            const ry = 2 * ny * nz;
+            const u = Math.max(0, Math.min(1, 0.5 + rx * 0.5));
+            const v = Math.max(0, Math.min(1, 0.5 - ry * 0.5));
+            const ex = Math.floor(u * (envW - 1));
+            const ey = Math.floor(v * (envH - 1));
+            const ei = (ey * envW + ex) * 4;
+
+            const refStrength = Math.pow(smoothness, 1.5) * reflectionMult;
+            refR = envData[ei] * refStrength;
+            refG = envData[ei + 1] * refStrength;
+            refB = envData[ei + 2] * refStrength;
+          }
+
+          out[i] = Math.min(255, Math.round(colorData[i] * intensity + specFactor * 255 + refR));
+          out[i + 1] = Math.min(255, Math.round(colorData[i + 1] * intensity + specFactor * 255 + refG));
+          out[i + 2] = Math.min(255, Math.round(colorData[i + 2] * intensity + specFactor * 255 + refB));
+          out[i + 3] = alpha;
+        }
+      }
+      testerCtx.putImageData(outImg, 0, 0);
+    } else {
+      testerCtx.drawImage(tempColorCanvas, 0, 0);
+    }
+
+    // Grid Overlay
+    if (document.getElementById('tilesetTesterShowGrid')?.checked) {
+      testerCtx.save();
+      testerCtx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      testerCtx.lineWidth = 1;
+      for (let x = tilesetTesterTileSize; x < W_t; x += tilesetTesterTileSize) {
+        testerCtx.beginPath(); testerCtx.moveTo(x, 0); testerCtx.lineTo(x, H_t); testerCtx.stroke();
+      }
+      for (let y = tilesetTesterTileSize; y < H_t; y += tilesetTesterTileSize) {
+        testerCtx.beginPath(); testerCtx.moveTo(0, y); testerCtx.lineTo(W_t, y); testerCtx.stroke();
+      }
+      testerCtx.restore();
+    }
+  }
+
+  function updateTilesetTester() {
+    drawTilesetSelector();
+    drawTilesetTesterArea();
+  }
+
+  function openTilesetTesterPopup() {
+    const popup = document.getElementById('tilesetTesterPopup');
+    popup.style.display = 'flex';
+    
+    // Center popup nicely
+    const popupRect = popup.getBoundingClientRect();
+    if (!popup.style.left) {
+      popup.style.left = Math.max(10, (window.innerWidth - popupRect.width) / 2) + 'px';
+      popup.style.top = Math.max(10, (window.innerHeight - popupRect.height) / 2) + 'px';
+    }
+    
+    initTilesetTester();
+    updateTilesetTester();
+  }
+
+  if (window.ResizeObserver && document.getElementById('tilesetTesterPopup')) {
+    const ro = new ResizeObserver(() => {
+      if (document.getElementById('tilesetTesterPopup').style.display !== 'none') {
+        updateTilesetTester();
+      }
+    });
+    ro.observe(document.getElementById('tilesetTesterPopup'));
+  }
+
+  function closeTilesetTesterPopup() {
+    document.getElementById('tilesetTesterPopup').style.display = 'none';
+  }
+
+  // Bind Events
+  document.getElementById('tilesetTesterBtn')?.addEventListener('click', openTilesetTesterPopup);
+  document.getElementById('tilesetCloseBtn')?.addEventListener('click', closeTilesetTesterPopup);
+  document.getElementById('tilesetTesterCloseCross')?.addEventListener('click', closeTilesetTesterPopup);
+
+  document.getElementById('tilesetTileSizeSelect')?.addEventListener('change', e => {
+    tilesetTesterTileSize = parseInt(e.target.value, 10);
+    const numCols = Math.floor(W / tilesetTesterTileSize);
+    const numRows = Math.floor(H / tilesetTesterTileSize);
+    if (tilesetSelectedTile.col >= numCols) tilesetSelectedTile.col = 0;
+    if (tilesetSelectedTile.row >= numRows) tilesetSelectedTile.row = 0;
+    updateTilesetTester();
+  });
+
+  document.getElementById('tilesetTesterGridSizeSelect')?.addEventListener('change', e => {
+    tilesetTesterCols = parseInt(e.target.value, 10);
+    tilesetTesterRows = parseInt(e.target.value, 10);
+    initTilesetTester();
+    updateTilesetTester();
+  });
+
+  document.getElementById('tilesetClearTesterBtn')?.addEventListener('click', () => {
+    tilesetTesterGrid = Array(tilesetTesterRows).fill(null).map(() => Array(tilesetTesterCols).fill(null));
+    updateTilesetTester();
+  });
+
+  document.querySelectorAll('input[name="tilesetRenderMode"]').forEach(radio => {
+    radio.addEventListener('change', e => {
+      if (e.target.checked) {
+        if (e.target.id === 'tilesetModeColor') tilesetTesterActiveMode = 'color';
+        else if (e.target.id === 'tilesetModeLit') tilesetTesterActiveMode = 'lit';
+        else if (e.target.id === 'tilesetModeHeight') tilesetTesterActiveMode = 'height';
+        else if (e.target.id === 'tilesetModeRoughness') tilesetTesterActiveMode = 'roughness';
+        drawTilesetTesterArea();
+      }
+    });
+  });
+
+  document.getElementById('tilesetTesterShowGrid')?.addEventListener('change', () => {
+    drawTilesetTesterArea();
+  });
+  document.getElementById('tilesetSelectorShowIDs')?.addEventListener('change', () => {
+    drawTilesetSelector();
+  });
+
+  // Selector Interaction
+  document.getElementById('tilesetSelectorCanvas')?.addEventListener('pointerdown', e => {
+    const rect = e.target.getBoundingClientRect();
+    const clickX = (e.clientX - rect.left) * (W / rect.width);
+    const clickY = (e.clientY - rect.top) * (H / rect.height);
+    const col = Math.floor(clickX / tilesetTesterTileSize);
+    const row = Math.floor(clickY / tilesetTesterTileSize);
+    const numCols = Math.floor(W / tilesetTesterTileSize);
+    const numRows = Math.floor(H / tilesetTesterTileSize);
+    if (col >= 0 && col < numCols && row >= 0 && row < numRows) {
+      tilesetSelectedTile = { col, row };
+      drawTilesetSelector();
+    }
+  });
+
+  // Tester Interactive Paint
+  function handleTesterInteraction(e) {
+    const rect = e.target.getBoundingClientRect();
+    const W_t = tilesetTesterCols * tilesetTesterTileSize;
+    const H_t = tilesetTesterRows * tilesetTesterTileSize;
+    const clickX = (e.clientX - rect.left) * (W_t / rect.width);
+    const clickY = (e.clientY - rect.top) * (H_t / rect.height);
+    const tx = Math.floor(clickX / tilesetTesterTileSize);
+    const ty = Math.floor(clickY / tilesetTesterTileSize);
+
+    if (tx >= 0 && tx < tilesetTesterCols && ty >= 0 && ty < tilesetTesterRows) {
+      if (tilesetPaintDragging) {
+        tilesetTesterGrid[ty][tx] = { col: tilesetSelectedTile.col, row: tilesetSelectedTile.row };
+        drawTilesetTesterArea();
+      } else if (tilesetEraseDragging) {
+        tilesetTesterGrid[ty][tx] = null;
+        drawTilesetTesterArea();
+      }
+    }
+  }
+
+  document.getElementById('tilesetTesterCanvas')?.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    if (e.button === 2) {
+      tilesetEraseDragging = true;
+      tilesetPaintDragging = false;
+    } else {
+      tilesetPaintDragging = true;
+      tilesetEraseDragging = false;
+    }
+    handleTesterInteraction(e);
+  });
+
+  window.addEventListener('pointermove', e => {
+    if ((tilesetPaintDragging || tilesetEraseDragging) && e.target === document.getElementById('tilesetTesterCanvas')) {
+      handleTesterInteraction(e);
+    }
+  });
+
+  window.addEventListener('pointerup', () => {
+    tilesetPaintDragging = false;
+    tilesetEraseDragging = false;
+  });
+
+  document.getElementById('tilesetTesterCanvas')?.addEventListener('contextmenu', e => e.preventDefault());
+
+  // Make popup draggable
+  makePopupDraggable(document.getElementById('tilesetTesterPopup'), document.getElementById('tilesetTesterDragHandle'));
+
   // ---------- Theme Settings & Customizer ----------
   const BUILTIN_THEMES = {
     dark: { name: 'Dark (Default)', bg: '#17181c', panel: '#17181c', panel2: '#25272d', line: '#33353c', text: '#e7e6e2', textDim: '#9a9ba3', accent: '#d4a017', accentDim: '#8a6b1c', danger: '#c85c5c' },
@@ -16121,6 +16606,20 @@ void main(void)\r
   currentFrameIndex = 0;
   refreshFramesPanel();
   fitCanvasToScreen(true);
+  centerCanvas();
+  let startupFitDone = false;
+  if (window.ResizeObserver && canvasWrap) {
+    const mainWrapRO = new ResizeObserver(entries => {
+      for (let entry of entries) {
+        if (entry.contentRect.height > 150 && !startupFitDone) {
+          startupFitDone = true;
+          fitCanvasToScreen(true);
+          centerCanvas();
+        }
+      }
+    });
+    mainWrapRO.observe(canvasWrap);
+  }
   setTimeout(() => {
     fitCanvasToScreen(true);
     centerCanvas();
