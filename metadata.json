@@ -1,0 +1,6 @@
+{
+  "name": "Palette Spray Studio",
+  "description": "Layered pixel-art painter with a palette and gradient-driven spray brush.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

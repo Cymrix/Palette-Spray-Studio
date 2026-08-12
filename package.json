@@ -1,0 +1,42 @@
+{
+  "name": "palette-spray-studio",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "main": "electron.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "electron:start": "electron .",
+    "electron:dist": "electron-builder"
+  },
+  "devDependencies": {
+    "electron": "^29.0.0",
+    "electron-builder": "^24.13.3",
+    "vite": "^5.0.0"
+  },
+  "build": {
+    "appId": "com.palettespray.studio",
+    "productName": "Palette Spray Studio",
+    "directories": {
+      "output": "dist-electron"
+    },
+    "files": [
+      "index.html",
+      "electron.js",
+      "manifest.json",
+      "sw.js",
+      "dist/**/*"
+    ],
+    "win": {
+      "target": ["nsis", "portable"]
+    },
+    "mac": {
+      "target": ["dmg", "zip"]
+    },
+    "linux": {
+      "target": ["AppImage", "deb"]
+    }
+  }
+}
