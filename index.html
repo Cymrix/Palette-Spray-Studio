@@ -11,6 +11,53 @@
 <meta property="og:type" content="website">
 <link rel="manifest" href="/Palette-Spray-Studio/assets/manifest-D2oiIJF4.json">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
+
+  const firebaseConfig = {
+    projectId: "peerless-robot-496902-g9",
+    appId: "1:43198960631:web:65504cd6cb55d79e5cd4f2",
+    apiKey: "AIzaSyCv6OcxA_rs1N-DQIJB4Ye45K3NJQw0Xs8",
+    authDomain: "peerless-robot-496902-g9.firebaseapp.com",
+    storageBucket: "peerless-robot-496902-g9.firebasestorage.app",
+    messagingSenderId: "43198960631"
+  };
+
+  const firebaseApp = initializeApp(firebaseConfig);
+  const firebaseAuth = getAuth(firebaseApp);
+  const googleProvider = new GoogleAuthProvider();
+  googleProvider.addScope('https://www.googleapis.com/auth/drive');
+
+  window.firebaseAuthLoginGoogleDrive = async function() {
+    try {
+      const result = await signInWithPopup(firebaseAuth, googleProvider);
+      const credential = GoogleAuthProvider.credentialFromResult(result);
+      if (credential && credential.accessToken) {
+        window.gdriveToken = credential.accessToken;
+        localStorage.setItem('gdrive_token', credential.accessToken);
+        if (typeof window.checkCloudAuthStatus === 'function') {
+          window.checkCloudAuthStatus();
+        }
+        if (typeof window.showToast === 'function') {
+          window.showToast('Signed in to Google Drive');
+        }
+        return credential.accessToken;
+      } else {
+        throw new Error('No access token returned from Google Auth');
+      }
+    } catch (err) {
+      console.error('Firebase Google Drive sign in error:', err);
+      throw err;
+    }
+  };
+
+  window.firebaseAuthSignOut = async function() {
+    try {
+      await signOut(firebaseAuth);
+    } catch(e) {}
+  };
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2220%22%20fill%3D%22%2317181c%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2222%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2278%22%20cy%3D%2230%22%20r%3D%226%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2274%22%20r%3D%225%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2282%22%20cy%3D%2270%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2226%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2220%22%20fill%3D%22%2317181c%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2222%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2278%22%20cy%3D%2230%22%20r%3D%226%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2274%22%20r%3D%225%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2282%22%20cy%3D%2270%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2226%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3C/svg%3E">
 <meta name="theme-color" content="#17181c">
@@ -920,6 +967,31 @@
       <div id="cloudAuthBar" style="background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
         <div id="cloudAuthStatus" style="font-size:12px; color:var(--text-dim);">Checking connection...</div>
         <button class="btn small primary" id="cloudAuthBtn">Sign In</button>
+      </div>
+
+      <!-- OneDrive Configuration Card (visible only when OneDrive tab selected) -->
+      <div id="oneDriveSetupCard" style="display:none; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; margin-bottom:14px; font-size:11px;">
+        <div style="font-weight:600; color:var(--text); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
+          <span>Microsoft Azure App Credentials</span>
+          <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:none; font-size:10px;">Open Azure Portal ↗</a>
+        </div>
+        <div style="margin-bottom:8px; color:var(--text-dim); line-height:1.4;">
+          OneDrive requires an Azure SPA App Registration with <strong>Files.ReadWrite.All</strong> scope.
+        </div>
+        <div style="margin-bottom:8px;">
+          <label style="display:block; font-size:10px; color:var(--text-dim); margin-bottom:3px;">Your App's Redirect URI (copy to Azure):</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="oneDriveRedirectUriInput" readonly style="flex:1; background:var(--panel); color:var(--text-dim); border:1px solid var(--line); border-radius:4px; padding:4px 8px; font-size:11px; font-family:monospace;">
+            <button class="btn small" id="copyOneDriveRedirectBtn" style="font-size:10px; padding:2px 8px;">📋 Copy</button>
+          </div>
+        </div>
+        <div>
+          <label style="display:block; font-size:10px; color:var(--text-dim); margin-bottom:3px;">Azure Application (Client) ID:</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="oneDriveClientIdInput" placeholder="e.g. 00000000-0000-0000-0000-000000000000" style="flex:1; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:4px; padding:4px 8px; font-size:11px; font-family:monospace;">
+            <button class="btn small primary" id="saveOneDriveClientIdBtn" style="font-size:10px; padding:2px 8px;">Save</button>
+          </div>
+        </div>
       </div>
 
       <!-- Cloud Target Folder Configuration & Auto Backups -->
@@ -3167,7 +3239,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.183'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.185'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -15679,7 +15751,45 @@ void main(void)\r
     currentCloudProvider = provider;
     if (cloudTabGDrive) cloudTabGDrive.classList.toggle('primary', provider === 'gdrive');
     if (cloudTabOneDrive) cloudTabOneDrive.classList.toggle('primary', provider === 'onedrive');
+    const setupCard = document.getElementById('oneDriveSetupCard');
+    if (setupCard) {
+      setupCard.style.display = (provider === 'onedrive') ? 'block' : 'none';
+      if (provider === 'onedrive') {
+        const redirInput = document.getElementById('oneDriveRedirectUriInput');
+        if (redirInput) redirInput.value = window.location.origin + window.location.pathname;
+        const clientIdInput = document.getElementById('oneDriveClientIdInput');
+        if (clientIdInput) clientIdInput.value = localStorage.getItem('ms_client_id') || '';
+      }
+    }
     checkCloudAuthStatus();
+  }
+
+  const copyOneDriveRedirectBtn = document.getElementById('copyOneDriveRedirectBtn');
+  if (copyOneDriveRedirectBtn) {
+    copyOneDriveRedirectBtn.addEventListener('click', () => {
+      const redirInput = document.getElementById('oneDriveRedirectUriInput');
+      if (redirInput && redirInput.value) {
+        navigator.clipboard.writeText(redirInput.value);
+        showToast('Redirect URI copied to clipboard!');
+      }
+    });
+  }
+
+  const saveOneDriveClientIdBtn = document.getElementById('saveOneDriveClientIdBtn');
+  if (saveOneDriveClientIdBtn) {
+    saveOneDriveClientIdBtn.addEventListener('click', () => {
+      const clientIdInput = document.getElementById('oneDriveClientIdInput');
+      if (clientIdInput) {
+        const val = clientIdInput.value.trim();
+        if (val) {
+          localStorage.setItem('ms_client_id', val);
+          showToast('Azure Client ID saved!');
+        } else {
+          localStorage.removeItem('ms_client_id');
+          showToast('Azure Client ID cleared');
+        }
+      }
+    });
   }
 
   if (cloudTabGDrive) cloudTabGDrive.addEventListener('click', () => switchCloudTab('gdrive'));
@@ -15931,7 +16041,9 @@ void main(void)\r
         if (gdriveToken) {
           gdriveToken = null;
           localStorage.removeItem('gdrive_token');
+          if (typeof window.firebaseAuthSignOut === 'function') window.firebaseAuthSignOut();
           checkCloudAuthStatus();
+          showToast('Signed out of Google Drive');
         } else {
           loginGoogleDrive();
         }
@@ -15940,6 +16052,7 @@ void main(void)\r
           onedriveToken = null;
           localStorage.removeItem('onedrive_token');
           checkCloudAuthStatus();
+          showToast('Signed out of OneDrive');
         } else {
           loginOneDrive();
         }
@@ -15947,13 +16060,26 @@ void main(void)\r
     });
   }
 
-  function loginGoogleDrive() {
+  async function loginGoogleDrive() {
+    if (typeof window.firebaseAuthLoginGoogleDrive === 'function') {
+      try {
+        await window.firebaseAuthLoginGoogleDrive();
+        return;
+      } catch (err) {
+        console.warn('Firebase Auth Google Drive sign in error:', err);
+      }
+    }
+
     if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
       alert('Google Identity Services library loading... Please check your internet connection.');
       return;
     }
+
+    const customClientId = localStorage.getItem('gdrive_custom_client_id');
+    const clientId = customClientId || '43198960631-6pp3tp7tos4j1oddtqq8vfau514mrnpq.apps.googleusercontent.com';
+
     const client = google.accounts.oauth2.initTokenClient({
-      client_id: '43198960631-6pp3tp7tos4j1oddtqq8vfau514mrnpq.apps.googleusercontent.com',
+      client_id: clientId,
       scope: 'https://www.googleapis.com/auth/drive',
       callback: (tokenResponse) => {
         if (tokenResponse && tokenResponse.access_token) {
@@ -15961,6 +16087,8 @@ void main(void)\r
           localStorage.setItem('gdrive_token', gdriveToken);
           checkCloudAuthStatus();
           showToast('Signed in to Google Drive');
+        } else if (tokenResponse && tokenResponse.error) {
+          alert('Google OAuth error: ' + tokenResponse.error);
         }
       }
     });
@@ -15968,10 +16096,20 @@ void main(void)\r
   }
 
   function loginOneDrive() {
-    const customMsClientId = localStorage.getItem('ms_client_id') || prompt('Enter your Microsoft App Client ID (or press OK for demo authentication):', '');
-    const clientId = customMsClientId ? customMsClientId.trim() : '00000000-0000-0000-0000-000000000000';
-    if (customMsClientId) localStorage.setItem('ms_client_id', customMsClientId.trim());
+    let customMsClientId = localStorage.getItem('ms_client_id');
+    if (!customMsClientId) {
+      customMsClientId = prompt('To connect Microsoft OneDrive, enter your Azure App Client ID (or click Cancel for setup instructions):', '');
+    }
+    if (customMsClientId) {
+      customMsClientId = customMsClientId.trim();
+      localStorage.setItem('ms_client_id', customMsClientId);
+    }
+    if (!customMsClientId) {
+      alert('OneDrive setup instructions:\n1. Register a Multi-Tenant SPA app in Azure Portal (https://portal.azure.com)\n2. Add Redirect URI: ' + window.location.origin + window.location.pathname + '\n3. Enter your Application (client) ID when signing in.');
+      return;
+    }
 
+    const clientId = customMsClientId;
     const redirectUri = window.location.origin + window.location.pathname;
     const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${encodeURIComponent(clientId)}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=Files.ReadWrite.All%20User.Read`;
 
@@ -16128,17 +16266,67 @@ void main(void)\r
       infoEl.style.cssText = 'font-size:10px; color:var(--text-dim); margin-right:8px; flex-shrink:0;';
       infoEl.textContent = formattedDate;
 
+      const actionsDiv = document.createElement('div');
+      actionsDiv.style.cssText = 'display:flex; gap:4px; flex-shrink:0;';
+
       const loadBtn = document.createElement('button');
       loadBtn.className = 'btn small primary';
       loadBtn.style.padding = '2px 8px';
       loadBtn.textContent = 'Load';
       loadBtn.addEventListener('click', () => loadCloudFile(file.id || file.name, file.name, provider));
 
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn small danger';
+      delBtn.style.padding = '2px 6px';
+      delBtn.textContent = '✕';
+      delBtn.title = 'Delete file';
+      delBtn.addEventListener('click', async () => {
+        if (!confirm(`Are you sure you want to delete "${file.name}" from ${provider === 'gdrive' ? 'Google Drive' : 'OneDrive'}?`)) {
+          return;
+        }
+        await deleteCloudFile(file.id || file.name, file.name, provider);
+      });
+
+      actionsDiv.appendChild(loadBtn);
+      actionsDiv.appendChild(delBtn);
+
       row.appendChild(nameEl);
       row.appendChild(infoEl);
-      row.appendChild(loadBtn);
+      row.appendChild(actionsDiv);
       cloudFileList.appendChild(row);
     });
+  }
+
+  async function deleteCloudFile(fileId, fileName, provider) {
+    showToast('Deleting file from cloud...');
+    try {
+      if (provider === 'gdrive') {
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files/${fileId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${gdriveToken}` }
+        });
+        if (res.ok || res.status === 204) {
+          showToast(`Deleted "${fileName}" from Google Drive`);
+          loadCloudFileList();
+        } else {
+          throw new Error('Failed to delete file');
+        }
+      } else {
+        const res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${fileId}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${onedriveToken}` }
+        });
+        if (res.ok || res.status === 204) {
+          showToast(`Deleted "${fileName}" from OneDrive`);
+          loadCloudFileList();
+        } else {
+          throw new Error('Failed to delete file');
+        }
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Error deleting file from cloud storage.');
+    }
   }
 
   async function loadCloudFile(fileId, fileName, provider) {
