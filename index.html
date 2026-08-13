@@ -808,7 +808,7 @@
     <div class="hint" id="aboutVersionInfo" style="margin-top:4px;"></div>
     <div class="hint" style="margin-top:4px;">This app is free and open source</div>
     <div class="hint" style="margin-top:10px;">
-      <a href="https://cymrix.itch.io/palette-spray-studio" target="_blank" rel="noopener" style="color:var(--accent);">cymrix.itch.io/palette-spray-studio</a>
+      <a href="https://cymrix.github.io/Palette-Spray-Studio/" target="_blank" rel="noopener" style="color:var(--accent);">cymrix.github.io/Palette-Spray-Studio</a>
     </div>
     <div class="color-edit-actions">
       <button class="btn small primary" id="aboutCloseBtn">Close</button>
@@ -949,14 +949,18 @@
     </div>
   </div>
 
-  <div class="modal-backdrop" id="cloudStorageModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.65); backdrop-filter:blur(3px); z-index:2500; align-items:center; justify-content:center;">
-    <div class="color-edit-popup" style="display:block; position:relative; z-index:2501; width:480px; max-width:92vw; box-shadow:0 16px 40px rgba(0,0,0,0.8); border-radius:10px; padding:18px;">
+  <div class="modal-backdrop" id="cloudStorageModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.65); backdrop-filter:blur(3px); z-index:2500; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap; padding:20px; overflow-y:auto; box-sizing:border-box;">
+    <!-- Main Cloud Storage Dialog -->
+    <div class="color-edit-popup" id="cloudMainPopup" style="display:block; position:relative; z-index:2501; width:480px; max-width:92vw; max-height:90vh; overflow-y:auto; box-shadow:0 16px 40px rgba(0,0,0,0.8); border-radius:10px; padding:18px;">
       <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:12px; margin-bottom:14px;">
         <div style="display:flex; align-items:center; gap:8px;">
           <span id="cloudModalIcon">☁️</span>
           <span id="cloudModalTitle" style="font-weight:700; font-size:15px; color:var(--text);">Cloud Storage Manager</span>
         </div>
-        <button class="btn icon small" id="cloudModalCloseBtn" style="padding:2px 6px;">✕</button>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <button class="btn small" id="cloudInstructionsToggleBtn" title="Toggle Cloud Setup &amp; Instructions side panel" style="font-size:11px; padding:2px 8px; display:flex; align-items:center; gap:4px;">📖 Instructions</button>
+          <button class="btn icon small" id="cloudModalCloseBtn" style="padding:2px 6px;">✕</button>
+        </div>
       </div>
 
       <div style="display:flex; gap:8px; margin-bottom:14px; background:var(--panel-2); padding:4px; border-radius:8px; border:1px solid var(--line);">
@@ -973,6 +977,31 @@
       <div id="cloudAuthBar" style="background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
         <div id="cloudAuthStatus" style="font-size:12px; color:var(--text-dim);">Checking connection...</div>
         <button class="btn small primary" id="cloudAuthBtn">Sign In</button>
+      </div>
+
+      <!-- Google Drive Configuration Card (visible when Google Drive tab selected) -->
+      <div id="gDriveSetupCard" style="display:block; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; margin-bottom:14px; font-size:11px;">
+        <div style="font-weight:600; color:var(--text); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
+          <span>Google Cloud OAuth Credentials</span>
+          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:none; font-size:10px;">Google Cloud Console ↗</a>
+        </div>
+        <div style="margin-bottom:8px; color:var(--text-dim); line-height:1.4;">
+          If you see <em>Error 400: origin_mismatch</em>, add your current Authorized JavaScript Origin in the Google Cloud Console:
+        </div>
+        <div style="margin-bottom:8px;">
+          <label style="display:block; font-size:10px; color:var(--text-dim); margin-bottom:3px;">Your App's Origin (add to Authorized JavaScript origins):</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="gDriveOriginInput" readonly style="flex:1; background:var(--panel); color:var(--text-dim); border:1px solid var(--line); border-radius:4px; padding:4px 8px; font-size:11px; font-family:monospace;">
+            <button class="btn small" id="copyGDriveOriginBtn" style="font-size:10px; padding:2px 8px;">📋 Copy</button>
+          </div>
+        </div>
+        <div>
+          <label style="display:block; font-size:10px; color:var(--text-dim); margin-bottom:3px;">Custom Google OAuth Client ID (optional):</label>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="gDriveClientIdInput" placeholder="43198960631-6pp3tp7tos4j1oddtqq8vfau514mrnpq.apps.googleusercontent.com" style="flex:1; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:4px; padding:4px 8px; font-size:11px; font-family:monospace;">
+            <button class="btn small primary" id="saveGDriveClientIdBtn" style="font-size:10px; padding:2px 8px;">Save</button>
+          </div>
+        </div>
       </div>
 
       <!-- OneDrive Configuration Card (visible only when OneDrive tab selected) -->
@@ -1014,7 +1043,7 @@
         </div>
         <div style="display:flex; align-items:center; gap:8px; border-top:1px solid var(--line); padding-top:6px; margin-top:2px;">
           <input type="checkbox" id="cloudBackupsCheckbox" style="cursor:pointer; width:14px; height:14px;">
-          <label for="cloudBackupsCheckbox" style="font-size:11px; color:var(--text); cursor:pointer; user-select:none;">Enable Automatic Cloud Backups (every save & timer)</label>
+          <label for="cloudBackupsCheckbox" style="font-size:11px; color:var(--text); cursor:pointer; user-select:none;">Enable Automatic Cloud Backups (every save &amp; timer)</label>
         </div>
       </div>
 
@@ -1059,6 +1088,74 @@
         <div id="cloudFileList" style="max-height:180px; overflow-y:auto; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:6px; display:flex; flex-direction:column; gap:4px;">
           <div style="text-align:center; padding:16px; font-size:12px; color:var(--text-dim);">Sign in to view your cloud files</div>
         </div>
+      </div>
+    </div>
+
+    <!-- Instructions Side Panel (displays to the right of the main modal) -->
+    <div class="color-edit-popup" id="cloudInstructionsPanel" style="display:none; position:relative; z-index:2501; width:380px; max-width:92vw; max-height:90vh; overflow-y:auto; box-shadow:0 16px 40px rgba(0,0,0,0.8); border-radius:10px; padding:18px;">
+      <div style="display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid var(--line); padding-bottom:12px; margin-bottom:12px;">
+        <div style="display:flex; align-items:center; gap:6px;">
+          <span style="font-size:14px;">📖</span>
+          <span style="font-weight:700; font-size:14px; color:var(--text);">Cloud Setup &amp; Instructions</span>
+        </div>
+        <button class="btn icon small" id="cloudInstructionsCloseBtn" style="padding:2px 6px;">✕</button>
+      </div>
+
+      <div style="display:flex; gap:6px; margin-bottom:12px; background:var(--panel-2); padding:3px; border-radius:6px; border:1px solid var(--line);">
+        <button id="cloudInstrTabGDrive" class="btn small primary" style="flex:1; font-size:11px; padding:3px 6px;">Google Drive</button>
+        <button id="cloudInstrTabOneDrive" class="btn small" style="flex:1; font-size:11px; padding:3px 6px;">OneDrive / Azure</button>
+        <button id="cloudInstrTabBackups" class="btn small" style="flex:1; font-size:11px; padding:3px 6px;">Backups &amp; Sync</button>
+      </div>
+
+      <!-- Google Drive Guide Content -->
+      <div id="cloudInstrContentGDrive" style="font-size:12px; line-height:1.5; color:var(--text);">
+        <div style="font-weight:600; color:var(--accent); margin-bottom:6px;">Google Drive Integration</div>
+        <ol style="margin:0 0 10px 0; padding-left:18px; display:flex; flex-direction:column; gap:6px;">
+          <li><strong>Sign In</strong>: Click <em>Sign In</em> to connect your Google account via secure OAuth popup.</li>
+          <li><strong>Target Folder</strong>: Projects save into the <code>Palette Spray Studio</code> folder on your Google Drive by default. You can enter any folder name and click <em>Apply</em>.</li>
+          <li><strong>Browse &amp; Create Folders</strong>: Click <em>Browse Folders</em> to navigate existing Google Drive directories or create new ones.</li>
+          <li><strong>Save &amp; Load</strong>: Enter a file name and click <em>Save to Cloud</em> to store your complete project. Click <em>Load</em> on any file in the list to open it immediately.</li>
+        </ol>
+
+        <div style="font-weight:600; color:var(--accent); margin:12px 0 6px 0; border-top:1px solid var(--line); padding-top:10px;">Fixing "Error 400: origin_mismatch"</div>
+        <div style="margin-bottom:8px; font-size:11px; color:var(--text-dim);">
+          Google OAuth requires registering your app's web domain under <em>Authorized JavaScript origins</em>:
+        </div>
+        <ol style="margin:0 0 10px 0; padding-left:18px; display:flex; flex-direction:column; gap:6px; font-size:11px;">
+          <li>Open the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline;">Google Cloud Credentials Console</a>.</li>
+          <li>Under <strong>OAuth 2.0 Client IDs</strong>, click on your OAuth 2.0 Web Client name.</li>
+          <li>Scroll to <strong>Authorized JavaScript origins</strong> and click <strong>+ ADD URI</strong>.</li>
+          <li>Copy and paste your app's origin URL (use the 📋 Copy button in the Google Drive settings above).</li>
+          <li>Click <strong>Save</strong>. (Changes take 1-5 minutes to propagate across Google servers).</li>
+          <li><em>Optional</em>: You can also create a dedicated OAuth Web Client ID and paste it into the <em>Custom Google OAuth Client ID</em> field.</li>
+        </ol>
+      </div>
+
+      <!-- OneDrive / Azure Guide Content -->
+      <div id="cloudInstrContentOneDrive" style="display:none; font-size:12px; line-height:1.5; color:var(--text);">
+        <div style="font-weight:600; color:var(--accent); margin-bottom:6px;">Microsoft OneDrive &amp; Azure Setup</div>
+        <div style="margin-bottom:8px; font-size:11px; color:var(--text-dim);">
+          To connect OneDrive storage, Microsoft requires registering a free Single-Page Application (SPA) in Azure:
+        </div>
+        <ol style="margin:0 0 10px 0; padding-left:18px; display:flex; flex-direction:column; gap:6px;">
+          <li>Open the <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline;">Azure App Registrations Portal</a>.</li>
+          <li>Click <strong>New registration</strong>. Name it <em>Palette Spray Studio</em>.</li>
+          <li>Under <em>Supported account types</em>, select <strong>Accounts in any organizational directory and personal Microsoft accounts</strong>.</li>
+          <li>Under <em>Redirect URI</em>, select <strong>Single-page application (SPA)</strong> and paste the Redirect URI from this modal (use the 📋 Copy button).</li>
+          <li>Go to <strong>API permissions</strong> &rarr; <em>Add a permission</em> &rarr; <em>Microsoft Graph</em> &rarr; <em>Delegated permissions</em> &rarr; check <code>Files.ReadWrite.All</code> and <code>User.Read</code>.</li>
+          <li>Copy your <strong>Application (client) ID</strong> from the Overview page, paste it into the <em>Azure Application ID</em> field, and click <strong>Save</strong>.</li>
+          <li>Click <strong>Sign In</strong> to authenticate and manage your OneDrive files.</li>
+        </ol>
+      </div>
+
+      <!-- Backups & Sync Guide Content -->
+      <div id="cloudInstrContentBackups" style="display:none; font-size:12px; line-height:1.5; color:var(--text);">
+        <div style="font-weight:600; color:var(--accent); margin-bottom:6px;">Automatic Cloud Backups &amp; Sync</div>
+        <ul style="margin:0 0 10px 0; padding-left:18px; display:flex; flex-direction:column; gap:6px;">
+          <li><strong>Cloud Auto-Backups</strong>: Check <em>Enable Automatic Cloud Backups</em> to periodically upload project snapshots to your cloud folder.</li>
+          <li><strong>Active Cloud Association</strong>: Once a project is saved to or loaded from the cloud, pressing <kbd>Ctrl+S</kbd> or clicking Save updates the cloud file directly.</li>
+          <li><strong>Data Security</strong>: Authentication tokens reside only in your local browser session; data transfers travel directly to official Google Drive and Microsoft Graph APIs.</li>
+        </ul>
       </div>
     </div>
   </div>
@@ -1506,7 +1603,7 @@
           <button class="btn small" id="sidebarSeamlessToggleBtn" title="Tiles the main canvas 3×3 in real time. Paint anywhere across tile edges to create seamless repeating patterns." style="width:100%; font-weight:600; margin-bottom:6px; display:flex; align-items:center; justify-content:center; text-align:center;">
             3x3 Mode
           </button>
-          <button class="btn small primary" id="makeSeamlessBtn" title="Wraps the active layer to help identify and blend seams" style="width:100%; display:flex; align-items:center; justify-content:center; text-align:center;">Make Seamless</button>
+          <button class="btn small" id="makeSeamlessBtn" title="Wraps the active layer to help identify and blend seams" style="width:100%; display:flex; align-items:center; justify-content:center; text-align:center;">Make Seamless</button>
         </div>
       </div>
 
@@ -3260,7 +3357,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.191'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.236'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -3353,11 +3450,11 @@ void main(void)\r
   function generateDefaultPaletteColors() {
     const list = [];
     let cid = 1;
-    // 9 grayscale swatches at the top (3 columns x 3 rows)
+    // 9 grayscale swatches at the top (3 columns x 3 rows: white on left, black on right)
     const grays = [
-      "#000000", "#202020", "#404040",
-      "#606060", "#808080", "#a0a0a0",
-      "#c0c0c0", "#e0e0e0", "#ffffff"
+      "#ffffff", "#e0e0e0", "#c0c0c0",
+      "#a0a0a0", "#808080", "#606060",
+      "#404040", "#202020", "#000000"
     ];
     grays.forEach(hex => list.push({ id: cid++, hex }));
 
@@ -4289,16 +4386,8 @@ void main(void)\r
         updateSpraySourceHint();
       }
       W = state.W; H = state.H;
-      const effW = getEffectiveCanvasW();
-      const effH = getEffectiveCanvasH();
-      displayCanvas.width = W; displayCanvas.height = H;
-      gridCanvas.width = W; gridCanvas.height = H;
-      selectionCanvas.width = W; selectionCanvas.height = H;
-      cursorPreviewCanvas.width = effW + MARGIN_PX*2; cursorPreviewCanvas.height = effH + MARGIN_PX*2;
-      colorHighlightCanvas.width = W; colorHighlightCanvas.height = H;
-      modalPreviewCanvas.width = W; modalPreviewCanvas.height = H;
-      marginFadeCanvas.width = W + MARGIN_PX*2; marginFadeCanvas.height = H + MARGIN_PX*2;
-    resizePixiCanvas();
+      resizeAllCanvasesToWH();
+      syncDocCompositeCanvasSize();
       clearSelection();
       layers = newLayers;
       activeLayer = Math.min(state.activeLayer, layers.length-1);
@@ -5051,13 +5140,25 @@ void main(void)\r
   let playbackFps = 12;
 
   function renderFrameForPlayback(frame){
-    dctx.clearRect(0,0,W,H);
+    syncDocCompositeCanvasSize();
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    const targetCtx = seamlessModeEnabled ? docCompositeCtx : dctx;
+    dctx.clearRect(0,0,effW,effH);
+    if(seamlessModeEnabled) docCompositeCtx.clearRect(0,0,W,H);
     frame.layers.forEach(l=>{
       if(!l.visible) return;
-      dctx.globalAlpha = l.opacity/100;
-      dctx.drawImage(l.canvas, 0, 0);
+      targetCtx.globalAlpha = l.opacity/100;
+      targetCtx.drawImage(l.canvas, 0, 0);
     });
-    dctx.globalAlpha = 1;
+    targetCtx.globalAlpha = 1;
+    if(seamlessModeEnabled){
+      for(let ty=0; ty<3; ty++){
+        for(let tx=0; tx<3; tx++){
+          dctx.drawImage(docCompositeCanvas, tx*W, ty*H);
+        }
+      }
+    }
   }
   function playbackTick(now){
     if(!isPlaying) return;
@@ -15087,16 +15188,8 @@ void main(void)\r
     pushHistory();
     projectFileHandle = null;
     W = w; H = h;
-    const effW = getEffectiveCanvasW();
-    const effH = getEffectiveCanvasH();
-    displayCanvas.width = W; displayCanvas.height = H;
-    gridCanvas.width = W; gridCanvas.height = H;
-    selectionCanvas.width = W; selectionCanvas.height = H;
-    cursorPreviewCanvas.width = effW + MARGIN_PX*2; cursorPreviewCanvas.height = effH + MARGIN_PX*2;
-    colorHighlightCanvas.width = W; colorHighlightCanvas.height = H;
-    modalPreviewCanvas.width = W; modalPreviewCanvas.height = H;
-    marginFadeCanvas.width = W + MARGIN_PX*2; marginFadeCanvas.height = H + MARGIN_PX*2;
-    resizePixiCanvas();
+    resizeAllCanvasesToWH();
+    syncDocCompositeCanvasSize();
     clearSelection();
     layers = [];
     undoStack = []; redoStack = [];
@@ -15970,16 +16063,8 @@ void main(void)\r
 
     Promise.all([layerPromise, stampPromise, framesPromise]).then(([newLayers, newStamps, newFramesData])=>{
       W = proj.width; H = proj.height;
-      const effW = getEffectiveCanvasW();
-      const effH = getEffectiveCanvasH();
-      displayCanvas.width = W; displayCanvas.height = H;
-      gridCanvas.width = W; gridCanvas.height = H;
-      selectionCanvas.width = W; selectionCanvas.height = H;
-      cursorPreviewCanvas.width = effW + MARGIN_PX*2; cursorPreviewCanvas.height = effH + MARGIN_PX*2;
-      colorHighlightCanvas.width = W; colorHighlightCanvas.height = H;
-    modalPreviewCanvas.width = W; modalPreviewCanvas.height = H;
-    marginFadeCanvas.width = W + MARGIN_PX*2; marginFadeCanvas.height = H + MARGIN_PX*2;
-    resizePixiCanvas();
+      resizeAllCanvasesToWH();
+      syncDocCompositeCanvasSize();
       clearSelection();
 
       document.getElementById('projectNameInput').value = proj.name || 'Untitled';
@@ -16290,6 +16375,48 @@ void main(void)\r
 
   const cloudOverlay = document.getElementById('cloudStorageModalOverlay');
   const cloudModalCloseBtn = document.getElementById('cloudModalCloseBtn');
+  const cloudInstructionsToggleBtn = document.getElementById('cloudInstructionsToggleBtn');
+  const cloudInstructionsPanel = document.getElementById('cloudInstructionsPanel');
+  const cloudInstructionsCloseBtn = document.getElementById('cloudInstructionsCloseBtn');
+  const cloudInstrTabGDrive = document.getElementById('cloudInstrTabGDrive');
+  const cloudInstrTabOneDrive = document.getElementById('cloudInstrTabOneDrive');
+  const cloudInstrTabBackups = document.getElementById('cloudInstrTabBackups');
+  const cloudInstrContentGDrive = document.getElementById('cloudInstrContentGDrive');
+  const cloudInstrContentOneDrive = document.getElementById('cloudInstrContentOneDrive');
+  const cloudInstrContentBackups = document.getElementById('cloudInstrContentBackups');
+
+  function setCloudInstructionsTab(tabKey) {
+    if (cloudInstrTabGDrive) cloudInstrTabGDrive.classList.toggle('primary', tabKey === 'gdrive');
+    if (cloudInstrTabOneDrive) cloudInstrTabOneDrive.classList.toggle('primary', tabKey === 'onedrive');
+    if (cloudInstrTabBackups) cloudInstrTabBackups.classList.toggle('primary', tabKey === 'backups');
+    if (cloudInstrContentGDrive) cloudInstrContentGDrive.style.display = (tabKey === 'gdrive') ? 'block' : 'none';
+    if (cloudInstrContentOneDrive) cloudInstrContentOneDrive.style.display = (tabKey === 'onedrive') ? 'block' : 'none';
+    if (cloudInstrContentBackups) cloudInstrContentBackups.style.display = (tabKey === 'backups') ? 'block' : 'none';
+  }
+
+  function toggleCloudInstructionsPanel(forceState) {
+    if (!cloudInstructionsPanel) return;
+    const isCurrentlyOpen = cloudInstructionsPanel.style.display !== 'none';
+    const shouldOpen = (typeof forceState === 'boolean') ? forceState : !isCurrentlyOpen;
+    cloudInstructionsPanel.style.display = shouldOpen ? 'block' : 'none';
+    if (cloudInstructionsToggleBtn) {
+      cloudInstructionsToggleBtn.classList.toggle('primary', shouldOpen);
+    }
+    if (shouldOpen) {
+      setCloudInstructionsTab(currentCloudProvider === 'onedrive' ? 'onedrive' : 'gdrive');
+    }
+  }
+
+  if (cloudInstructionsToggleBtn) {
+    cloudInstructionsToggleBtn.addEventListener('click', () => toggleCloudInstructionsPanel());
+  }
+  if (cloudInstructionsCloseBtn) {
+    cloudInstructionsCloseBtn.addEventListener('click', () => toggleCloudInstructionsPanel(false));
+  }
+  if (cloudInstrTabGDrive) cloudInstrTabGDrive.addEventListener('click', () => setCloudInstructionsTab('gdrive'));
+  if (cloudInstrTabOneDrive) cloudInstrTabOneDrive.addEventListener('click', () => setCloudInstructionsTab('onedrive'));
+  if (cloudInstrTabBackups) cloudInstrTabBackups.addEventListener('click', () => setCloudInstructionsTab('backups'));
+
   const cloudTabGDrive = document.getElementById('cloudTabGDrive');
   const cloudTabOneDrive = document.getElementById('cloudTabOneDrive');
   const cloudAuthStatus = document.getElementById('cloudAuthStatus');
@@ -16338,6 +16465,19 @@ void main(void)\r
     currentCloudProvider = provider;
     if (cloudTabGDrive) cloudTabGDrive.classList.toggle('primary', provider === 'gdrive');
     if (cloudTabOneDrive) cloudTabOneDrive.classList.toggle('primary', provider === 'onedrive');
+    if (cloudInstructionsPanel && cloudInstructionsPanel.style.display !== 'none') {
+      setCloudInstructionsTab(provider);
+    }
+    const gDriveCard = document.getElementById('gDriveSetupCard');
+    if (gDriveCard) {
+      gDriveCard.style.display = (provider === 'gdrive') ? 'block' : 'none';
+      if (provider === 'gdrive') {
+        const originInput = document.getElementById('gDriveOriginInput');
+        if (originInput) originInput.value = window.location.origin;
+        const clientIdInput = document.getElementById('gDriveClientIdInput');
+        if (clientIdInput) clientIdInput.value = localStorage.getItem('gdrive_custom_client_id') || '';
+      }
+    }
     const setupCard = document.getElementById('oneDriveSetupCard');
     if (setupCard) {
       setupCard.style.display = (provider === 'onedrive') ? 'block' : 'none';
@@ -16349,6 +16489,34 @@ void main(void)\r
       }
     }
     checkCloudAuthStatus();
+  }
+
+  const copyGDriveOriginBtn = document.getElementById('copyGDriveOriginBtn');
+  if (copyGDriveOriginBtn) {
+    copyGDriveOriginBtn.addEventListener('click', () => {
+      const originInput = document.getElementById('gDriveOriginInput');
+      if (originInput && originInput.value) {
+        navigator.clipboard.writeText(originInput.value);
+        showToast('Origin URL copied to clipboard!');
+      }
+    });
+  }
+
+  const saveGDriveClientIdBtn = document.getElementById('saveGDriveClientIdBtn');
+  if (saveGDriveClientIdBtn) {
+    saveGDriveClientIdBtn.addEventListener('click', () => {
+      const clientIdInput = document.getElementById('gDriveClientIdInput');
+      if (clientIdInput) {
+        const val = clientIdInput.value.trim();
+        if (val) {
+          localStorage.setItem('gdrive_custom_client_id', val);
+          showToast('Google OAuth Client ID saved!');
+        } else {
+          localStorage.removeItem('gdrive_custom_client_id');
+          showToast('Custom Client ID cleared (using default)');
+        }
+      }
+    });
   }
 
   const copyOneDriveRedirectBtn = document.getElementById('copyOneDriveRedirectBtn');
@@ -16675,7 +16843,14 @@ void main(void)\r
           checkCloudAuthStatus();
           showToast('Signed in to Google Drive');
         } else if (tokenResponse && tokenResponse.error) {
-          alert('Google OAuth error: ' + tokenResponse.error);
+          console.error('Google OAuth error:', tokenResponse);
+          if (tokenResponse.error === 'origin_mismatch' || (tokenResponse.error_description && tokenResponse.error_description.includes('origin'))) {
+            toggleCloudInstructionsPanel(true);
+            setCloudInstructionsTab('gdrive');
+            alert(`Google OAuth Origin Mismatch:\n\nPlease add your current app origin:\n${window.location.origin}\n\nto "Authorized JavaScript origins" on your OAuth Web Client in Google Cloud Console.\n\nInstructions are now open on the side panel.`);
+          } else {
+            alert('Google OAuth error: ' + (tokenResponse.error_description || tokenResponse.error));
+          }
         }
       }
     });
@@ -17421,15 +17596,8 @@ void main(void)\r
   }
 
   // ---------- Init ----------
-  displayCanvas.width = W; displayCanvas.height = H;
-  gridCanvas.width = W; gridCanvas.height = H;
-  selectionCanvas.width = W; selectionCanvas.height = H;
-  const effW = getEffectiveCanvasW();
-  const effH = getEffectiveCanvasH();
-  cursorPreviewCanvas.width = effW + MARGIN_PX*2; cursorPreviewCanvas.height = effH + MARGIN_PX*2;
-  colorHighlightCanvas.width = W; colorHighlightCanvas.height = H;
-  modalPreviewCanvas.width = W; modalPreviewCanvas.height = H;
-  marginFadeCanvas.width = W + MARGIN_PX*2; marginFadeCanvas.height = H + MARGIN_PX*2;
+  resizeAllCanvasesToWH();
+  syncDocCompositeCanvasSize();
   initPixiForStamps();
   setTool(tool); // sync the options panel to whichever tool is actually active by default
   updateBrushPixelPerfectAvailability();
