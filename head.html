@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Palette Spray Studio</title>
+<link rel="canonical" href="https://cymrix.github.io/Palette-Spray-Studio/">
+<meta property="og:title" content="Palette Spray Studio">
+<meta property="og:description" content="Layered pixel-art painter with a palette and gradient-driven spray brush.">
+<meta property="og:url" content="https://cymrix.github.io/Palette-Spray-Studio/">
+<meta property="og:type" content="website">
+<link rel="manifest" href="manifest.json">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2220%22%20fill%3D%22%2317181c%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2222%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2278%22%20cy%3D%2230%22%20r%3D%226%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2274%22%20r%3D%225%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2282%22%20cy%3D%2270%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2226%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3C/svg%3E">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2220%22%20fill%3D%22%2317181c%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2222%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2278%22%20cy%3D%2230%22%20r%3D%226%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2274%22%20r%3D%225%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2282%22%20cy%3D%2270%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2226%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3C/svg%3E">
+<meta name="theme-color" content="#17181c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Palette Spray">
+<meta name="mobile-web-app-capable" content="yes">
+<style>
+  :root{
+    --bg:#17181c;
+    --panel:#17181c;
+    --panel-2:#25272d;
+    --line:#33353c;
+    --text:#e7e6e2;
+    --text-dim:#9a9ba3;
+    --accent:#d4a017;
+    --accent-dim:#8a6b1c;
+    --danger:#c85c5c;
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  }
+  [data-theme="light"]{
+    --bg:#f2f1ed;
+    --panel:#f2f1ed;
+    --panel-2:#e9e8e3;
+    --line:#d4d2ca;
+    --text:#22221f;
+    --text-dim:#6b6a63;
+    --accent:#a8760f;
+    --accent-dim:#c9963a;
+    --danger:#b23b3b;
+  }
+  [data-theme="midnight"]{
+    --bg:#05060a;
+    --panel:#05060a;
+    --panel-2:#11141d;
+    --line:#232838;
+    --text:#dbe4f5;
+    --text-dim:#7a86a0;
+    --accent:#4fc3f7;
+    --accent-dim:#2b7fa3;
+    --danger:#e05c5c;
+  }
+  [data-theme="dracula"]{
+    --bg:#282a36;
+    --panel:#282a36;
+    --panel-2:#343746;
+    --line:#6272a4;
+    --text:#f8f8f2;
+    --text-dim:#a0a0b0;
+    --accent:#ff79c6;
+    --accent-dim:#bd93f9;
+    --danger:#ff5555;
+  }
+  [data-theme="monokai"]{
+    --bg:#272822;
+    --panel:#272822;
+    --panel-2:#38372e;
+    --line:#49483e;
+    --text:#f8f8f2;
+    --text-dim:#a5a59e;
+    --accent:#a6e22e;
+    --accent-dim:#e6db74;
+    --danger:#f92672;
+  }
+  [data-theme="nord"]{
+    --bg:#2e3440;
+    --panel:#2e3440;
+    --panel-2:#3b4252;
+    --line:#434c5e;
+    --text:#eceff4;
+    --text-dim:#d8dee9;
+    --accent:#88c0d0;
+    --accent-dim:#81a1c1;
+    --danger:#bf616a;
+  }
+  [data-theme="solarized-dark"]{
+    --bg:#002b36;
+    --panel:#002b36;
+    --panel-2:#0f4350;
+    --line:#2aa198;
+    --text:#93a1a1;
+    --text-dim:#586e75;
+    --accent:#268bd2;
+    --accent-dim:#2aa198;
+    --danger:#dc322f;
+  }
+  [data-theme="solarized-light"]{
+    --bg:#fdf6e3;
+    --panel:#fdf6e3;
+    --panel-2:#eee8d5;
+    --line:#93a1a1;
+    --text:#073642;
+    --text-dim:#657b83;
+    --accent:#268bd2;
+    --accent-dim:#2aa198;
+    --danger:#dc322f;
+  }
+  [data-theme="synthwave"]{
+    --bg:#1a102f;
+    --panel:#1a102f;
+    --panel-2:#281845;
+    --line:#4a2980;
+    --text:#00f0ff;
+    --text-dim:#a880eb;
+    --accent:#ff007f;
+    --accent-dim:#d6006e;
+    --danger:#ff3860;
+  }
+  [data-theme="gruvbox"]{
+    --bg:#282828;
+    --panel:#282828;
+    --panel-2:#32302f;
+    --line:#504945;
+    --text:#ebdbb2;
+    --text-dim:#a89984;
+    --accent:#fe8019;
+    --accent-dim:#fabd2f;
+    --danger:#fb4934;
+  }
+  [data-theme="emerald"]{
+    --bg:#0d1f18;
+    --panel:#0d1f18;
+    --panel-2:#142d23;
+    --line:#234a3b;
+    --text:#e0f2eb;
+    --text-dim:#7ca393;
+    --accent:#2ecc71;
+    --accent-dim:#27ae60;
+    --danger:#e74c3c;
