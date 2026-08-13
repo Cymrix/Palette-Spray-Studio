@@ -46,3 +46,6 @@ Whether you are designing a robust RPG tileset, painting seamless ground texture
 ---
 
 **Works completely offline** once loaded. Installable as a Progressive Web App (PWA) to your desktop or device directly from your browser!
+
+<img width="2736" height="1724" alt="image" src="https://github.com/user-attachments/assets/8f77ce70-3efa-4b84-bc0b-e35e31a7f2bb" />
+
