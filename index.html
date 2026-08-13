@@ -1479,7 +1479,7 @@
         <label class="field" style="margin-top:12px;">Mode</label>
         <div class="shape-row" id="sprayModeGroup">
           <button data-spray-mode="paint" class="shape-btn active" data-tooltip="Paint mode: Standard spray/brush painting with chosen dab shape and colors">Paint</button>
-          <button data-spray-mode="path" class="shape-btn" data-tooltip="Path Mode Instructions:<br>• Left-Click to place start point.<br>• Left-Click again to place segment end point.<br>• Move mouse to adjust curve, then Left-Click to commit segment.<br>• Middle-Click / Enter to commit as straight line.<br>• Click Done (Apply) on floating toolbar to apply full path.<br>• Press Escape to cancel path.">Path</button>
+          <button data-spray-mode="path" class="shape-btn" data-tooltip="Path Mode Instructions:<br>• Left-Click to place start point.<br>• Left-Click again to place segment end point.<br>• Move mouse to adjust curve, then Left-Click to commit segment.<br>• Enter to commit as straight line.<br>• Middle-Click or Click Done to apply full path.<br>• Press Escape to cancel path.">Path</button>
           <button data-spray-mode="colorize" class="shape-btn" data-tooltip="Colorize mode: Recolors existing non-transparent pixels while preserving original shading">Colorize</button>
           <button data-spray-mode="eraser" class="shape-btn" data-tooltip="Eraser mode: Erases pixels based on brush size, density, and falloff">Eraser</button>
           <button data-spray-mode="blur" class="shape-btn" data-tooltip="Soften mode: Smooths and fades opacity or edges across brush area">Soften</button>
@@ -1498,6 +1498,14 @@
           </label>
           <input type="range" id="softenHardnessSlider" min="0" max="100" value="100" style="width:100%;" data-tooltip="Hardness: Controls how steeply opacity fades out across the softening region">
           <div id="softenTypeHint" style="display:none;"></div>
+        </div>
+
+        <div id="colorizeOptionsGroup" style="display:none; margin-top:8px; padding:8px; background:var(--panel); border:1px solid var(--line); border-radius:6px;">
+          <label class="field" style="margin-top:0; font-weight:600; font-size:11px;" data-tooltip="Pick a specific color from your palette to act as a mask. The brush will only colorize pixels that match this exact target color.">Target Color Mask</label>
+          <div style="display:flex; align-items:center; gap:8px; margin-top:4px;">
+            <div id="colorizeTargetSwatch" style="width:24px; height:24px; border-radius:4px; border:1px solid var(--line); background:transparent; cursor:pointer;" data-tooltip="Current mask color"></div>
+            <button class="btn small" id="colorizeTargetBtn" style="flex:1;" data-tooltip="Select a specific color from your palette to act as a mask.">Pick Target Color...</button>
+          </div>
         </div>
 
         <div id="vineOnlyOptions" style="display:none; margin-top:8px; padding:8px; background:var(--panel); border:1px solid var(--line); border-radius:6px;">
@@ -1740,14 +1748,14 @@
 
     <!-- CANVAS -->
     <div class="canvas-outer">
-      <div class="color-edit-popup" id="pathOverlayToolbar" style="display:none; position:fixed; z-index:2200; width:200px; padding:12px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; cursor:move; padding-bottom:6px; border-bottom:1px solid var(--line);" id="pathModalDragHandle">
-          <div style="font-weight:600; font-size:12px; color:var(--accent); display:flex; align-items:center; gap:6px;">Path</div>
-          <button class="btn small" id="pathModalCloseBtn" style="padding:1px 6px; font-size:11px;" title="Cancel path">✕</button>
+      <div class="color-edit-popup" id="pathOverlayToolbar" style="display:none; position:fixed; z-index:2200; width:140px; padding:8px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; cursor:move; padding-bottom:4px; border-bottom:1px solid var(--line);" id="pathModalDragHandle">
+          <div style="font-weight:600; font-size:11px; color:var(--accent); display:flex; align-items:center; gap:6px;">Path</div>
+          <button class="btn small" id="pathModalCloseBtn" style="padding:1px 4px; font-size:10px;" title="Cancel path">✕</button>
         </div>
-        <div class="color-edit-actions" style="margin-top:8px;">
-          <button id="pathCommitAllBtn" class="btn small primary" style="font-weight:600;">Done</button>
-          <button id="pathCancelAllBtn" class="btn small" style="font-weight:600;">Cancel</button>
+        <div style="display:flex; gap:6px;">
+          <button id="pathCommitAllBtn" class="btn small primary" style="font-weight:600; flex:1; font-size:11px; padding:4px;">Done</button>
+          <button id="pathCancelAllBtn" class="btn small" style="font-weight:600; flex:1; font-size:11px; padding:4px;">Cancel</button>
         </div>
       </div>
       <div class="canvas-area" id="canvasWrap">
@@ -3159,7 +3167,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.172'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.178'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -7119,6 +7127,10 @@ void main(void)\r
         y = Math.round((y - offY) / g.spacing) * g.spacing + offY;
       }
     }
+    if (isPathTool() && (vineRightAnglesOnly || brushPixelPerfect)) {
+      x = Math.round(x);
+      y = Math.round(y);
+    }
     return { x, y };
   }
 
@@ -7471,7 +7483,10 @@ void main(void)\r
     const realImg = realCtx.getImageData(rx0, ry0, rw, rh);
     const realData = realImg.data;
 
-    const sourceRgbs = (selectedColors.size > 0) ? [...selectedColors].map(hex=>hexToRgb(hex)) : null;
+    let maskRgb = null;
+    if(colorizeTargetHex){
+      maskRgb = hexToRgb(colorizeTargetHex);
+    }
     const targetRgb = hexToRgb(colorHex);
 
     for(let yy=0; yy<rh; yy++){
@@ -7483,14 +7498,10 @@ void main(void)\r
         const rIdx = (yy*rw+xx)*4;
         if(realData[rIdx+3] === 0) continue;
 
-        if(sourceRgbs && sourceRgbs.length > 0){
-          let matches = false;
-          for(const src of sourceRgbs){
-            if(realData[rIdx]===src.r && realData[rIdx+1]===src.g && realData[rIdx+2]===src.b){
-              matches = true; break;
-            }
+        if(maskRgb){
+          if(realData[rIdx] !== maskRgb.r || realData[rIdx+1] !== maskRgb.g || realData[rIdx+2] !== maskRgb.b){
+            continue;
           }
-          if(!matches) continue;
         }
 
         realData[rIdx]   = targetRgb.r;
@@ -8296,7 +8307,13 @@ void main(void)\r
       vineDirX = Math.cos(newAngle); vineDirY = Math.sin(newAngle);
 
       const newX = vineTipX + vineDirX*step, newY = vineTipY + vineDirY*step;
-      drawVineNode((vineTipX+newX)/2, (vineTipY+newY)/2, stemWidth);
+      let drawX = (vineTipX+newX)/2;
+      let drawY = (vineTipY+newY)/2;
+      if (vineRightAnglesOnly && stemWidth <= 1.5) {
+        drawX = newX;
+        drawY = newY;
+      }
+      drawVineNode(drawX, drawY, stemWidth);
       vineTipX = newX; vineTipY = newY;
 
       // Spawn offshoot organically
@@ -8526,7 +8543,13 @@ void main(void)\r
       }
 
       const newX = vineTipX + vineDirX*step, newY = vineTipY + vineDirY*step;
-      drawVineNode((vineTipX+newX)/2, (vineTipY+newY)/2, stemWidth);
+      let drawX = (vineTipX+newX)/2;
+      let drawY = (vineTipY+newY)/2;
+      if (vineRightAnglesOnly && stemWidth <= 1.5) {
+        drawX = newX;
+        drawY = newY;
+      }
+      drawVineNode(drawX, drawY, stemWidth);
       vineTipX = newX; vineTipY = newY;
 
       // Spawn offshoot organically
@@ -8699,12 +8722,16 @@ void main(void)\r
         toolbar.style.display = 'block';
         if (!toolbar.style.left || !toolbar.style.top) {
           const popupRect = toolbar.getBoundingClientRect();
-          toolbar.style.left = Math.max(10, (window.innerWidth - (popupRect.width || 200)) / 2) + 'px';
-          toolbar.style.top = Math.max(60, (window.innerHeight - (popupRect.height || 90)) / 3) + 'px';
+          const canvasWrap = document.getElementById('canvasWrap');
+          const canvasRect = canvasWrap ? canvasWrap.getBoundingClientRect() : { right: window.innerWidth, top: 0 };
+          toolbar.style.left = Math.max(10, canvasRect.right - (popupRect.width || 140) - 20) + 'px';
+          toolbar.style.top = (canvasRect.top + 20) + 'px';
         }
       }
     } else {
       toolbar.style.display = 'none';
+      toolbar.style.left = '';
+      toolbar.style.top = '';
     }
   }
 
@@ -9258,9 +9285,9 @@ void main(void)\r
     syncHeightEditSwap();
 
     if (isPathTool()) {
-      if (pathState === 'end_placed' && (e.button === 1)) {
+      if (pathState !== 'idle' && e.button === 1) {
         e.preventDefault();
-        commitVineSegment([pathPoints[0], pathPoints[1]]);
+        finishCurrentPath();
         return;
       }
       if (e.button === 0) {
@@ -9612,6 +9639,8 @@ void main(void)\r
   function updateSprayModeUI(){
     document.querySelectorAll('.shape-btn[data-spray-mode]').forEach(b=>b.classList.toggle('active', b.dataset.sprayMode===sprayMode));
     updateSoftenUI();
+    const colorizeGroup = document.getElementById('colorizeOptionsGroup');
+    if (colorizeGroup) colorizeGroup.style.display = (sprayMode === 'colorize' || (tool === 'brush' && brushMode === 'colorize')) ? 'block' : 'none';
     const isPathMode = isPathTool();
     const vineOptionsEl = document.getElementById('vineOnlyOptions');
     if (vineOptionsEl) vineOptionsEl.style.display = isPathMode ? 'block' : 'none';
@@ -9858,10 +9887,8 @@ void main(void)\r
   });
   document.querySelectorAll('.shape-btn[data-spray-mode]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
-      document.querySelectorAll('.shape-btn[data-spray-mode]').forEach(b=>b.classList.remove('active'));
-      btn.classList.add('active');
       sprayMode = btn.dataset.sprayMode;
-      updateSoftenUI();
+      updateSprayModeUI();
       syncActivePresetSettings();
     });
   });
@@ -12988,6 +13015,8 @@ void main(void)\r
   }
   const ctb = document.getElementById('colorizeTargetBtn');
   if(ctb) ctb.addEventListener('click', openColorizeTargetPopup);
+  const ctsw = document.getElementById('colorizeTargetSwatch');
+  if(ctsw) ctsw.addEventListener('click', openColorizeTargetPopup);
   const ctdb = document.getElementById('colorizeTargetDoneBtn');
   if(ctdb) ctdb.addEventListener('click', closeColorizeTargetPopup);
 
@@ -16306,8 +16335,8 @@ void main(void)\r
     }
 
     if(e.key === 'b' || e.key === 'B' || e.key === 's' || e.key === 'S' || e.key === 'p' || e.key === 'P') setTool('spray');
-    if(e.key === 'e' || e.key === 'E'){ setTool('spray'); sprayMode = 'eraser'; document.querySelectorAll('.shape-btn[data-spray-mode]').forEach(b=>b.classList.toggle('active', b.dataset.sprayMode===sprayMode)); syncActivePresetSettings(); }
-    if(e.key === 'c' || e.key === 'C'){ setTool('spray'); sprayMode = 'colorize'; document.querySelectorAll('.shape-btn[data-spray-mode]').forEach(b=>b.classList.toggle('active', b.dataset.sprayMode===sprayMode)); syncActivePresetSettings(); }
+    if(e.key === 'e' || e.key === 'E'){ setTool('spray'); sprayMode = 'eraser'; updateSprayModeUI(); syncActivePresetSettings(); }
+    if(e.key === 'c' || e.key === 'C'){ setTool('spray'); sprayMode = 'colorize'; updateSprayModeUI(); syncActivePresetSettings(); }
     if(e.key === 'g' || e.key === 'G') setTool('vine');
     if(e.key === 'k' || e.key === 'K') setTool('colorpick');
     if(e.key === 'h' || e.key === 'H') setTool('pan');
