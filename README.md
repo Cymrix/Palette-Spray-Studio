@@ -6,6 +6,8 @@ Mostly this project started because I couldn't find a spray tool that did what I
 
 # Palette Spray Studio
 
+Web hosted here:  https://cymrix.github.io/Palette-Spray-Studio/
+
 Palette Spray Studio is a browser-based pixel art editor. It includes tools for standard 2D sprite editing, 2.5D normal and bump mapping, seamless texture generation, and color management.
 
 ## Features
