@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Palette Spray Studio</title>
+<link rel="canonical" href="https://cymrix.github.io/Palette-Spray-Studio/">
+<meta property="og:title" content="Palette Spray Studio">
+<meta property="og:description" content="Layered pixel-art painter with a palette and gradient-driven spray brush.">
+<meta property="og:url" content="https://cymrix.github.io/Palette-Spray-Studio/">
+<meta property="og:type" content="website">
 <link rel="manifest" href="manifest.json">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2220%22%20fill%3D%22%2317181c%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2222%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2278%22%20cy%3D%2230%22%20r%3D%226%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2274%22%20r%3D%225%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2282%22%20cy%3D%2270%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2226%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3C/svg%3E">
@@ -3154,7 +3159,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.169'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.170'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {

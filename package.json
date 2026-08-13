@@ -1,6 +1,7 @@
 {
   "name": "palette-spray-studio",
   "private": true,
+  "homepage": "https://cymrix.github.io/Palette-Spray-Studio/",
   "version": "1.0.0",
   "type": "module",
   "main": "electron.js",
