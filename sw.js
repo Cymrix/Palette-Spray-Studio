@@ -1,8 +1,8 @@
-const CACHE_NAME = "palette-spray-studio-v1";
+const CACHE_NAME = "palette-spray-studio-v2";
 const ASSETS_TO_CACHE = [
-  "./",
-  "./index.html",
-  "./manifest.json"
+  "/Palette-Spray-Studio/",
+  "/Palette-Spray-Studio/index.html",
+  "/Palette-Spray-Studio/manifest.json"
 ];
 
 // Install Event - cache the core assets
