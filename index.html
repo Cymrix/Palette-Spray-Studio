@@ -517,8 +517,14 @@
   .canvas-area.hide-cursor{cursor:none;}
   .canvas-area.panning{cursor:grabbing;}
   #displayCanvas.panning{cursor:grabbing;}
-  #gridCanvas, #selectionCanvas, #cursorPreviewCanvas, #colorHighlightCanvas{
+  #gridCanvas, #selectionCanvas, #colorHighlightCanvas{
     position:absolute;top:0;left:0;
+    pointer-events:none;
+    image-rendering:pixelated;
+    z-index:4;
+  }
+  #cursorPreviewCanvas{
+    position:absolute;
     pointer-events:none;
     image-rendering:pixelated;
     z-index:4;
@@ -1070,15 +1076,23 @@
     </div>
   </div>
 
-  <div class="color-edit-popup" id="makeSeamlessPopup" style="display:none;width:300px;">
-    <label class="field" style="margin-top:0;">Make Seamless</label>
-    <canvas id="makeSeamlessPreviewCanvas" style="width:100%;aspect-ratio:1/1;border:1px solid var(--line);image-rendering:pixelated;background:repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%) 50% / 12px 12px;"></canvas>
-    <div class="hint">Wraps the active layer 50% horizontally and vertically, moving its edges to the center where they're easy to see and paint over. This softens that seam — it won't fully fix it on its own, but gives you a much easier starting point.</div>
+  <div class="color-edit-popup" id="makeSeamlessPopup" style="display:none; width:320px; resize:both; overflow:auto; min-width:280px; min-height:320px; max-width:90vw; max-height:90vh; z-index:2200;">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; cursor:move; padding-bottom:6px; border-bottom:1px solid var(--line);" id="makeSeamlessDragHandle">
+      <div style="font-weight:600; font-size:12px; color:var(--text); display:flex; align-items:center; gap:6px;">🧩 Make Seamless (Offset & Blend)</div>
+      <button class="btn small" id="seamlessPopupCloseBtn" style="padding:2px 6px; font-size:11px;">✕</button>
+    </div>
+    <div style="width:100%; aspect-ratio:1/1; min-height:160px; max-height:45vh; display:flex; align-items:center; justify-content:center; background:repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%) 50% / 12px 12px; border:1px solid var(--line); border-radius:6px; margin-bottom:8px; overflow:hidden;">
+      <canvas id="makeSeamlessPreviewCanvas" style="width:100%; height:100%; object-fit:contain; image-rendering:pixelated;"></canvas>
+    </div>
+    <div class="hint" style="margin-bottom:8px;">Wraps active layer 50% horizontally & vertically, moving edges to center to inspect and blend seams seamlessly.</div>
     <label class="field">Fade strength <span class="field-value" id="seamlessFadeVal">50%</span></label>
     <input type="range" id="seamlessFadeSlider" min="0" max="100" value="50">
     <label class="field">Zoom (widens the fade) <span class="field-value" id="seamlessZoomVal">100%</span></label>
     <input type="range" id="seamlessZoomSlider" min="100" max="300" value="100">
-    <div class="color-edit-actions">
+    <label class="field" style="display:flex; align-items:center; gap:6px; margin-top:8px; cursor:pointer;">
+      <input type="checkbox" id="seamlessPalettizeCheckbox" checked style="accent-color:var(--accent);"> Snap to Palette
+    </label>
+    <div class="color-edit-actions" style="margin-top:12px;">
       <button class="btn small primary" id="seamlessApplyBtn">Apply to Layer</button>
       <button class="btn small" id="seamlessCancelBtn">Cancel</button>
     </div>
@@ -1487,11 +1501,12 @@
     <!-- TOOLS -->
     <div class="panel tools-panel">
       <div class="section" data-section-id="seamless">
-        <h3>Seamless <label style="float:right;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--text-dim);"><input type="checkbox" id="seamlessModeEnabled" style="accent-color:var(--accent);vertical-align:middle;"> On</label></h3>
-        <div id="seamlessPreviewWrap" style="display:none;">
-          <canvas id="seamlessPreviewCanvas" style="width:100%;aspect-ratio:1/1;border:1px solid var(--line);image-rendering:pixelated;background:repeating-conic-gradient(#2a2a2a 0% 25%, #1a1a1a 0% 50%) 50% / 12px 12px;"></canvas>
-          <div class="hint">Shows everything currently visible, tiled 3×3 with the real thing in the center, so you can check if the edges line up seamlessly as you paint.</div>
-          <button class="btn small primary" id="makeSeamlessBtn" style="margin-top:6px;width:100%;">Make Seamless…</button>
+        <h3>Seamless</h3>
+        <div id="seamlessPreviewWrap" style="margin-top:6px;">
+          <button class="btn small" id="sidebarSeamlessToggleBtn" title="Tiles the main canvas 3×3 in real time. Paint anywhere across tile edges to create seamless repeating patterns." style="width:100%; font-weight:600; margin-bottom:6px; display:flex; align-items:center; justify-content:center; text-align:center;">
+            3x3 Mode
+          </button>
+          <button class="btn small primary" id="makeSeamlessBtn" title="Wraps the active layer to help identify and blend seams" style="width:100%; display:flex; align-items:center; justify-content:center; text-align:center;">Make Seamless</button>
         </div>
       </div>
 
@@ -3224,6 +3239,12 @@ void main(void)\r
   const cursorPreviewCanvas = document.getElementById('cursorPreviewCanvas');
   const colorHighlightCanvas = document.getElementById('colorHighlightCanvas');
   const pctx = cursorPreviewCanvas.getContext('2d');
+  function clearPreviewCanvas(){
+    if(!pctx) return;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    pctx.clearRect(0, 0, effW + MARGIN_PX*2, effH + MARGIN_PX*2);
+  }
   const modalPreviewCanvas = document.getElementById('modalPreviewCanvas');
   const mpctx = modalPreviewCanvas.getContext('2d'); // dedicated overlay for popup live-previews
   // (Reduce Colors, Sharpen, etc.) — kept separate from pctx so a tool's cursor preview (which
@@ -3239,7 +3260,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.185'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.191'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -3753,14 +3774,19 @@ void main(void)\r
       pixiAvailable = false;
     }
   }
+  function getEffectiveCanvasW(){ return seamlessModeEnabled ? W * 3 : W; }
+  function getEffectiveCanvasH(){ return seamlessModeEnabled ? H * 3 : H; }
+
   function resizeAllCanvasesToWH(){
-    displayCanvas.width = W; displayCanvas.height = H;
-    gridCanvas.width = W; gridCanvas.height = H;
-    selectionCanvas.width = W; selectionCanvas.height = H;
-    cursorPreviewCanvas.width = W; cursorPreviewCanvas.height = H;
-    colorHighlightCanvas.width = W; colorHighlightCanvas.height = H;
-    modalPreviewCanvas.width = W; modalPreviewCanvas.height = H;
-    marginFadeCanvas.width = W + MARGIN_PX*2; marginFadeCanvas.height = H + MARGIN_PX*2;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    displayCanvas.width = effW; displayCanvas.height = effH;
+    gridCanvas.width = effW; gridCanvas.height = effH;
+    selectionCanvas.width = effW; selectionCanvas.height = effH;
+    cursorPreviewCanvas.width = effW + MARGIN_PX*2; cursorPreviewCanvas.height = effH + MARGIN_PX*2;
+    colorHighlightCanvas.width = effW; colorHighlightCanvas.height = effH;
+    modalPreviewCanvas.width = effW; modalPreviewCanvas.height = effH;
+    marginFadeCanvas.width = effW + MARGIN_PX*2; marginFadeCanvas.height = effH + MARGIN_PX*2;
     resizePixiCanvas();
   }
   function resizePixiCanvas(){
@@ -4263,13 +4289,15 @@ void main(void)\r
         updateSpraySourceHint();
       }
       W = state.W; H = state.H;
+      const effW = getEffectiveCanvasW();
+      const effH = getEffectiveCanvasH();
       displayCanvas.width = W; displayCanvas.height = H;
       gridCanvas.width = W; gridCanvas.height = H;
       selectionCanvas.width = W; selectionCanvas.height = H;
-    cursorPreviewCanvas.width = W; cursorPreviewCanvas.height = H;
-    colorHighlightCanvas.width = W; colorHighlightCanvas.height = H;
-    modalPreviewCanvas.width = W; modalPreviewCanvas.height = H;
-    marginFadeCanvas.width = W + MARGIN_PX*2; marginFadeCanvas.height = H + MARGIN_PX*2;
+      cursorPreviewCanvas.width = effW + MARGIN_PX*2; cursorPreviewCanvas.height = effH + MARGIN_PX*2;
+      colorHighlightCanvas.width = W; colorHighlightCanvas.height = H;
+      modalPreviewCanvas.width = W; modalPreviewCanvas.height = H;
+      marginFadeCanvas.width = W + MARGIN_PX*2; marginFadeCanvas.height = H + MARGIN_PX*2;
     resizePixiCanvas();
       clearSelection();
       layers = newLayers;
@@ -5421,6 +5449,17 @@ void main(void)\r
     hud.style.left = 'auto';
     hud.style.top = Math.max(10, (wrapHeight - hud.offsetHeight - 16)) + 'px';
   }
+  let docCompositeCanvas = document.createElement('canvas');
+  docCompositeCanvas.width = W; docCompositeCanvas.height = H;
+  let docCompositeCtx = docCompositeCanvas.getContext('2d');
+
+  function syncDocCompositeCanvasSize(){
+    if (docCompositeCanvas.width !== W || docCompositeCanvas.height !== H) {
+      docCompositeCanvas.width = W;
+      docCompositeCanvas.height = H;
+    }
+  }
+
   function updateCanvasPadding(){
     // Explicit width/height (canvas size + margin ring + a full viewport of margin on
     // each side) so the canvas edge can be panned all the way to screen center — computed
@@ -5429,8 +5468,10 @@ void main(void)\r
     const vw = canvasWrap.clientWidth;
     const vh = canvasWrap.clientHeight;
     const ringPx = MARGIN_PX * zoom;
-    const canvasW = W * zoom + ringPx*2;
-    const canvasH = H * zoom + ringPx*2;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    const canvasW = effW * zoom + ringPx*2;
+    const canvasH = effH * zoom + ringPx*2;
     inner.style.width = Math.round(canvasW + vw) + 'px';
     inner.style.height = Math.round(canvasH + vh) + 'px';
   }
@@ -5440,11 +5481,12 @@ void main(void)\r
     canvasWrap.scrollTop = Math.max(0, (inner.offsetHeight - canvasWrap.clientHeight) / 2);
   }
   function applyZoom(){
-    const wPx = (W * zoom) + 'px', hPx = (H * zoom) + 'px';
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    const wPx = (effW * zoom) + 'px', hPx = (effH * zoom) + 'px';
     displayCanvas.style.width = wPx; displayCanvas.style.height = hPx;
     gridCanvas.style.width = wPx; gridCanvas.style.height = hPx;
     selectionCanvas.style.width = wPx; selectionCanvas.style.height = hPx;
-    cursorPreviewCanvas.style.width = wPx; cursorPreviewCanvas.style.height = hPx;
     colorHighlightCanvas.style.width = wPx; colorHighlightCanvas.style.height = hPx;
     modalPreviewCanvas.style.width = wPx; modalPreviewCanvas.style.height = hPx;
     document.getElementById('zoomLabel').textContent = Math.round(zoom*100) + '%';
@@ -5453,8 +5495,13 @@ void main(void)\r
     document.getElementById('previewZone').style.padding = ringPx + 'px';
     marginFadeCanvas.style.left = (-ringPx) + 'px';
     marginFadeCanvas.style.top = (-ringPx) + 'px';
-    marginFadeCanvas.style.width = ((W + MARGIN_PX*2) * zoom) + 'px';
-    marginFadeCanvas.style.height = ((H + MARGIN_PX*2) * zoom) + 'px';
+    marginFadeCanvas.style.width = ((effW + MARGIN_PX*2) * zoom) + 'px';
+    marginFadeCanvas.style.height = ((effH + MARGIN_PX*2) * zoom) + 'px';
+
+    cursorPreviewCanvas.style.left = (-ringPx) + 'px';
+    cursorPreviewCanvas.style.top = (-ringPx) + 'px';
+    cursorPreviewCanvas.style.width = ((effW + MARGIN_PX*2) * zoom) + 'px';
+    cursorPreviewCanvas.style.height = ((effH + MARGIN_PX*2) * zoom) + 'px';
   }
   function setZoom(z){
     zoom = Math.max(0.05, Math.min(16, z));
@@ -5463,8 +5510,10 @@ void main(void)\r
   }
   function zoomAtPoint(newZoomVal, clientX, clientY){
     const oldRect = displayCanvas.getBoundingClientRect();
-    const scaleX = W / oldRect.width;
-    const scaleY = H / oldRect.height;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    const scaleX = effW / oldRect.width;
+    const scaleY = effH / oldRect.height;
     const imgX = (clientX - oldRect.left) * scaleX;
     const imgY = (clientY - oldRect.top) * scaleY;
 
@@ -5473,8 +5522,8 @@ void main(void)\r
     updateCanvasPadding();
 
     const newRect = displayCanvas.getBoundingClientRect();
-    const newScreenX = newRect.left + (imgX / W) * newRect.width;
-    const newScreenY = newRect.top + (imgY / H) * newRect.height;
+    const newScreenX = newRect.left + (imgX / effW) * newRect.width;
+    const newScreenY = newRect.top + (imgY / effH) * newRect.height;
 
     canvasWrap.scrollLeft += (newScreenX - clientX);
     canvasWrap.scrollTop += (newScreenY - clientY);
@@ -5482,62 +5531,94 @@ void main(void)\r
 
   function render(){
     syncHeightEditSwap();
-    dctx.clearRect(0,0,W,H);
+    syncDocCompositeCanvasSize();
+
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+
+    const targetCtx = seamlessModeEnabled ? docCompositeCtx : dctx;
+    dctx.clearRect(0, 0, effW, effH);
+    if (seamlessModeEnabled) {
+      docCompositeCtx.clearRect(0, 0, W, H);
+    }
+
     if(onionSkinEnabled){
-      onionSkinCache.prev.forEach(g=>{ dctx.globalAlpha = g.alpha; dctx.drawImage(g.canvas, 0, 0); });
-      onionSkinCache.next.forEach(g=>{ dctx.globalAlpha = g.alpha; dctx.drawImage(g.canvas, 0, 0); });
-      dctx.globalAlpha = 1;
+      onionSkinCache.prev.forEach(g=>{ targetCtx.globalAlpha = g.alpha; targetCtx.drawImage(g.canvas, 0, 0); });
+      onionSkinCache.next.forEach(g=>{ targetCtx.globalAlpha = g.alpha; targetCtx.drawImage(g.canvas, 0, 0); });
+      targetCtx.globalAlpha = 1;
     }
     layers.forEach((l,idx)=>{
       if(!l.visible) return;
-      dctx.globalAlpha = l.opacity/100;
-      dctx.drawImage(l.canvas,0,0);
+      targetCtx.globalAlpha = l.opacity/100;
+      targetCtx.drawImage(l.canvas,0,0);
       if(idx === activeLayer && sprayBuffer){
         // in-progress spray stroke: composited once at the set Opacity, no matter how much
         // internal dab overlap has built up inside the buffer itself
-        dctx.globalAlpha = (l.opacity/100) * (opacity/100);
-        dctx.drawImage(sprayBuffer,0,0);
+        targetCtx.globalAlpha = (l.opacity/100) * (opacity/100);
+        targetCtx.drawImage(sprayBuffer,0,0);
       }
       if(idx === activeLayer && floatingSelection){
-        dctx.globalAlpha = l.opacity/100;
-        dctx.drawImage(floatingSelection.canvas, floatingSelection.x, floatingSelection.y);
+        targetCtx.globalAlpha = l.opacity/100;
+        targetCtx.drawImage(floatingSelection.canvas, floatingSelection.x, floatingSelection.y);
       }
       if(idx === activeLayer && pixiStrokeActive){
         // in-progress WebGL-backed stamp stroke — same opacity-capping approach as sprayBuffer,
         // cropped to just the on-canvas region (the pixi canvas also covers the margin ring)
         pixiApp.render();
-        dctx.globalAlpha = (l.opacity/100) * (opacity/100);
-        dctx.imageSmoothingEnabled = !pixelPerfect;
-        dctx.drawImage(pixiApp.view, MARGIN_PX, MARGIN_PX, W, H, 0, 0, W, H);
+        targetCtx.globalAlpha = (l.opacity/100) * (opacity/100);
+        targetCtx.imageSmoothingEnabled = !pixelPerfect;
+        targetCtx.drawImage(pixiApp.view, MARGIN_PX, MARGIN_PX, W, H, 0, 0, W, H);
       }
     });
-    dctx.globalAlpha = 1;
-    updateSeamlessPreview();
+    targetCtx.globalAlpha = 1;
+
+    if (seamlessModeEnabled) {
+      for (let ty = 0; ty < 3; ty++) {
+        for (let tx = 0; tx < 3; tx++) {
+          dctx.drawImage(docCompositeCanvas, tx * W, ty * H);
+        }
+      }
+    }
+
     updateLightingPreview();
     updateColorHighlight();
     if (document.getElementById('tilesetTesterPopup')?.style.display !== 'none') {
       updateTilesetTester();
     }
   }
-  function updateSeamlessPreview(){
-    if(!seamlessModeEnabled) return;
-    const canvas = document.getElementById('seamlessPreviewCanvas');
-    if(canvas.width !== W*3 || canvas.height !== H*3){
-      canvas.width = W*3; canvas.height = H*3;
+
+  function toggleSeamlessMode(enabled){
+    seamlessModeEnabled = (enabled !== undefined) ? !!enabled : !seamlessModeEnabled;
+    const cb = document.getElementById('seamlessModeEnabled');
+    if (cb) cb.checked = seamlessModeEnabled;
+
+    const sidebarBtn = document.getElementById('sidebarSeamlessToggleBtn');
+    if (sidebarBtn) {
+      sidebarBtn.classList.toggle('primary', seamlessModeEnabled);
+      sidebarBtn.style.background = seamlessModeEnabled ? 'var(--accent)' : '';
+      sidebarBtn.style.color = seamlessModeEnabled ? '#000' : '';
     }
-    const sctx = canvas.getContext('2d');
-    sctx.clearRect(0, 0, canvas.width, canvas.height);
-    for(let ty=0; ty<3; ty++){
-      for(let tx=0; tx<3; tx++){
-        sctx.drawImage(displayCanvas, tx*W, ty*H);
-      }
-    }
+
+    resizeAllCanvasesToWH();
+    applyZoom();
+    updateCanvasPadding();
+    drawGridOverlay();
+    render();
+    centerCanvas();
   }
-  document.getElementById('seamlessModeEnabled').addEventListener('change', e=>{
-    seamlessModeEnabled = e.target.checked;
-    document.getElementById('seamlessPreviewWrap').style.display = seamlessModeEnabled ? 'block' : 'none';
-    updateSeamlessPreview();
-  });
+
+  const cbSeamless = document.getElementById('seamlessModeEnabled');
+  if (cbSeamless) {
+    cbSeamless.addEventListener('change', e=>{
+      toggleSeamlessMode(e.target.checked);
+    });
+  }
+  const sidebarSeamlessToggleBtnEl = document.getElementById('sidebarSeamlessToggleBtn');
+  if (sidebarSeamlessToggleBtnEl) {
+    sidebarSeamlessToggleBtnEl.addEventListener('click', ()=>{
+      toggleSeamlessMode(!seamlessModeEnabled);
+    });
+  }
 
   let lightboxCanvas = document.createElement('canvas');
   lightboxCanvas.width = 256;
@@ -5891,29 +5972,73 @@ void main(void)\r
     const offsetCanvas = offsetWrap(layers[activeLayer].canvas, w, h);
     const octx = offsetCanvas.getContext('2d');
     const imgData = octx.getImageData(0, 0, w, h);
-    const originalData = new Uint8ClampedArray(imgData.data);
+    const src = new Uint8ClampedArray(imgData.data);
+    const dst = imgData.data;
 
-    let blurredData = originalData;
-    for(let i=0; i<6; i++) blurredData = boxBlurArray(blurredData, w, h);
+    const strength = fadePct / 100;
+    const bandW = Math.max(1, Math.round((w / 2) * 0.25 * (zoomPct / 100)));
+    const bandH = Math.max(1, Math.round((h / 2) * 0.25 * (zoomPct / 100)));
 
-    const bandWidth = (zoomPct/100) * 0.5; // zoom widens how far from the seam the fade reaches
-    const strength = fadePct/100;
-    const outData = imgData.data;
-    for(let y=0; y<h; y++){
-      for(let x=0; x<w; x++){
-        const dx = Math.abs(x - w/2) / (w/2);
-        const dy = Math.abs(y - h/2) / (h/2);
-        const proxX = Math.max(0, 1 - dx/bandWidth);
-        const proxY = Math.max(0, 1 - dy/bandWidth);
-        const proximity = Math.min(1, Math.max(proxX, proxY));
-        const weight = proximity * strength;
-        const i = (y*w+x)*4;
-        outData[i]   = Math.round(originalData[i]  *(1-weight) + blurredData[i]  *weight);
-        outData[i+1] = Math.round(originalData[i+1]*(1-weight) + blurredData[i+1]*weight);
-        outData[i+2] = Math.round(originalData[i+2]*(1-weight) + blurredData[i+2]*weight);
-        outData[i+3] = Math.round(originalData[i+3]*(1-weight) + blurredData[i+3]*weight);
+    const halfW = Math.floor(w / 2);
+    const halfH = Math.floor(h / 2);
+
+    for (let y = 0; y < h; y++) {
+      const dy = Math.abs(y - halfH);
+      let wy = 0;
+      if (dy < bandH) {
+        wy = (1 - dy / bandH) * strength * 0.5;
+      }
+      const mirrorY = (y < halfH) ? (y + halfH) : (y - halfH);
+
+      for (let x = 0; x < w; x++) {
+        const dx = Math.abs(x - halfW);
+        let wx = 0;
+        if (dx < bandW) {
+          wx = (1 - dx / bandW) * strength * 0.5;
+        }
+        const mirrorX = (x < halfW) ? (x + halfW) : (x - halfW);
+
+        const i00 = (y * w + x) * 4;
+        const i10 = (y * w + mirrorX) * 4;
+        const i01 = (mirrorY * w + x) * 4;
+        const i11 = (mirrorY * w + mirrorX) * 4;
+
+        const w00 = (1 - wx) * (1 - wy);
+        const w10 = wx * (1 - wy);
+        const w01 = (1 - wx) * wy;
+        const w11 = wx * wy;
+
+        dst[i00]     = Math.round(src[i00]*w00 + src[i10]*w10 + src[i01]*w01 + src[i11]*w11);
+        dst[i00 + 1] = Math.round(src[i00+1]*w00 + src[i10+1]*w10 + src[i01+1]*w01 + src[i11+1]*w11);
+        dst[i00 + 2] = Math.round(src[i00+2]*w00 + src[i10+2]*w10 + src[i01+2]*w01 + src[i11+2]*w11);
+        dst[i00 + 3] = Math.round(src[i00+3]*w00 + src[i10+3]*w10 + src[i01+3]*w01 + src[i11+3]*w11);
       }
     }
+
+    if (document.getElementById('seamlessPalettizeCheckbox') && document.getElementById('seamlessPalettizeCheckbox').checked) {
+      const colors = allColors();
+      if (colors.length > 0) {
+        const colorsRGB = colors.map(hexToRgb);
+        for (let i = 0; i < dst.length; i += 4) {
+          if (dst[i+3] > 0) {
+            let bestDist = Infinity;
+            let bestColor = null;
+            for(let c of colorsRGB) {
+              const dr = dst[i] - c.r, dg = dst[i+1] - c.g, db = dst[i+2] - c.b;
+              const dist = dr*dr + dg*dg + db*db;
+              if(dist < bestDist) { bestDist = dist; bestColor = c; }
+            }
+            if (bestColor) {
+              dst[i] = bestColor.r;
+              dst[i+1] = bestColor.g;
+              dst[i+2] = bestColor.b;
+              // dst[i+3] is preserved as calculated
+            }
+          }
+        }
+      }
+    }
+
     octx.putImageData(imgData, 0, 0);
     return offsetCanvas;
   }
@@ -5939,6 +6064,11 @@ void main(void)\r
   }
   document.getElementById('makeSeamlessBtn').addEventListener('click', openMakeSeamlessPopup);
   document.getElementById('seamlessCancelBtn').addEventListener('click', closeMakeSeamlessPopup);
+  const seamlessCloseBtnEl = document.getElementById('seamlessPopupCloseBtn');
+  if (seamlessCloseBtnEl) seamlessCloseBtnEl.addEventListener('click', closeMakeSeamlessPopup);
+
+  makePopupDraggable(document.getElementById('makeSeamlessPopup'), document.getElementById('makeSeamlessDragHandle'));
+
   document.getElementById('seamlessFadeSlider').addEventListener('input', e=>{
     document.getElementById('seamlessFadeVal').textContent = e.target.value + '%';
     updateMakeSeamlessPreview();
@@ -5947,6 +6077,10 @@ void main(void)\r
     document.getElementById('seamlessZoomVal').textContent = e.target.value + '%';
     updateMakeSeamlessPreview();
   });
+  const seamlessPalettizeCb = document.getElementById('seamlessPalettizeCheckbox');
+  if (seamlessPalettizeCb) {
+    seamlessPalettizeCb.addEventListener('change', updateMakeSeamlessPreview);
+  }
   document.getElementById('seamlessApplyBtn').addEventListener('click', ()=>{
     const fadePct = +document.getElementById('seamlessFadeSlider').value;
     const zoomPct = +document.getElementById('seamlessZoomSlider').value;
@@ -5963,7 +6097,32 @@ void main(void)\r
 
   // ---------- Grid overlay ----------
   function drawGridOverlay(){
-    gctx.clearRect(0,0,W,H);
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    gctx.clearRect(0,0,effW,effH);
+
+    if (seamlessModeEnabled) {
+      gctx.save();
+      gctx.strokeStyle = '#d4a017';
+      gctx.globalAlpha = 0.55;
+      gctx.lineWidth = Math.max(1, 2 / zoom);
+      gctx.setLineDash([6 / zoom, 4 / zoom]);
+      gctx.beginPath();
+      gctx.moveTo(W, 0); gctx.lineTo(W, 3 * H);
+      gctx.moveTo(2 * W, 0); gctx.lineTo(2 * W, 3 * H);
+      gctx.moveTo(0, H); gctx.lineTo(3 * W, H);
+      gctx.moveTo(0, 2 * H); gctx.lineTo(3 * W, 2 * H);
+      gctx.stroke();
+
+      // Highlight the main original center canvas tile
+      gctx.strokeStyle = '#38bdf8';
+      gctx.globalAlpha = 0.85;
+      gctx.lineWidth = Math.max(1, 2.5 / zoom);
+      gctx.setLineDash([]);
+      gctx.strokeRect(W, H, W, H);
+      gctx.restore();
+    }
+
     if(!gridMasterOn) return;
     grids.forEach(g=>{
       if(!g.visible || g.spacing < 1) return;
@@ -5974,13 +6133,13 @@ void main(void)\r
       gctx.beginPath();
       const startX = ((g.offsetX % g.spacing) + g.spacing) % g.spacing;
       const startY = ((g.offsetY % g.spacing) + g.spacing) % g.spacing;
-      for(let x = startX; x <= W; x += g.spacing){
+      for(let x = startX; x <= effW; x += g.spacing){
         gctx.moveTo(Math.floor(x)+0.5, 0);
-        gctx.lineTo(Math.floor(x)+0.5, H);
+        gctx.lineTo(Math.floor(x)+0.5, effH);
       }
-      for(let y = startY; y <= H; y += g.spacing){
+      for(let y = startY; y <= effH; y += g.spacing){
         gctx.moveTo(0, Math.floor(y)+0.5);
-        gctx.lineTo(W, Math.floor(y)+0.5);
+        gctx.lineTo(effW, Math.floor(y)+0.5);
       }
       gctx.stroke();
       gctx.restore();
@@ -7184,12 +7343,25 @@ void main(void)\r
   }
   function canvasCoords(e){
     const rect = displayCanvas.getBoundingClientRect();
-    const scaleX = W / rect.width;
-    const scaleY = H / rect.height;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    const scaleX = effW / rect.width;
+    const scaleY = effH / rect.height;
     const cx = (e.clientX !== undefined ? e.clientX : e.touches[0].clientX);
     const cy = (e.clientY !== undefined ? e.clientY : e.touches[0].clientY);
-    let x = (cx - rect.left) * scaleX;
-    let y = (cy - rect.top) * scaleY;
+    let rawX = (cx - rect.left) * scaleX;
+    let rawY = (cy - rect.top) * scaleY;
+    
+    let x, y;
+    if (seamlessModeEnabled) {
+      // In 3x3 mode, coordinates are continuous relative to the center tile [W..2W, H..2H]
+      x = rawX - W;
+      y = rawY - H;
+    } else {
+      x = rawX;
+      y = rawY;
+    }
+
     if(snapToGridEnabled && (tool === 'spray' || tool === 'select') && grids.length > 0){
       const g = grids.find(g => g.visible) || grids[0];
       if(g && g.spacing >= 1){
@@ -7203,7 +7375,7 @@ void main(void)\r
       x = Math.round(x);
       y = Math.round(y);
     }
-    return { x, y };
+    return { x, y, rawX, rawY };
   }
 
   function colorDistance(r1,g1,b1,a1, r2,g2,b2,a2){
@@ -7269,17 +7441,54 @@ void main(void)\r
     const mask = getActiveStampMask(stamp);
     const built = mask ? buildTintedStamp(mask, brushSize, fgColor) : null;
     if(!built) return;
-    const bounds = getRotatedRectBounds(px, py, built.w, built.h, 0, pX, pY);
-    paintNoBlend(ctx, W, H, bounds.x, bounds.y, bounds.w, bounds.h, (sctx)=>{
-      sctx.globalAlpha = opacity/100;
-      drawBuiltStamp(sctx, built.canvas, built.w, built.h, px, py, 0, pX, pY);
-    });
-    const nearEdge = px < brushSize || px > W-brushSize || py < brushSize || py > H-brushSize;
-    if(nearEdge){
+
+    const rawX = seamlessModeEnabled ? (px + W) : px;
+    const rawY = seamlessModeEnabled ? (py + H) : py;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    const isCoreTiles = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
+
+    if (isCoreTiles) {
+      const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+      const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+      const offsets = seamlessModeEnabled ?
+        [
+          [0,0], [-W,0], [W,0],
+          [0,-H], [-W,-H], [W,-H],
+          [0,H], [-W,H], [W,H]
+        ] : [[0,0]];
+
+      for (let offset of offsets) {
+        const tx = normPx + offset[0];
+        const ty = normPy + offset[1];
+        const bounds = getRotatedRectBounds(tx, ty, built.w, built.h, 0, pX, pY);
+        if (bounds.x >= W || bounds.y >= H || bounds.x + bounds.w <= 0 || bounds.y + bounds.h <= 0) continue;
+
+        paintNoBlend(ctx, W, H, bounds.x, bounds.y, bounds.w, bounds.h, (sctx)=>{
+          sctx.globalAlpha = opacity/100;
+          drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, 0, pX, pY);
+        });
+      }
+
+      const bounds = getRotatedRectBounds(rawX, rawY, built.w, built.h, 0, pX, pY);
+      const nearEdge = rawX < brushSize || rawX > effW - brushSize || rawY < brushSize || rawY > effH - brushSize;
+      if(nearEdge){
+        marginHasContent = true;
+        const mfW = effW + MARGIN_PX*2;
+        const mfH = effH + MARGIN_PX*2;
+        paintNoBlend(mfCtx, mfW, mfH, bounds.x+MARGIN_PX, bounds.y+MARGIN_PX, bounds.w, bounds.h, (sctx)=>{
+          sctx.globalAlpha = opacity/100;
+          drawBuiltStamp(sctx, built.canvas, built.w, built.h, rawX+MARGIN_PX, rawY+MARGIN_PX, 0, pX, pY);
+        });
+      }
+    } else {
       marginHasContent = true;
-      paintNoBlend(mfCtx, W+MARGIN_PX*2, H+MARGIN_PX*2, bounds.x+MARGIN_PX, bounds.y+MARGIN_PX, bounds.w, bounds.h, (sctx)=>{
+      const mfW = effW + MARGIN_PX*2;
+      const mfH = effH + MARGIN_PX*2;
+      const bounds = getRotatedRectBounds(rawX, rawY, built.w, built.h, 0, pX, pY);
+      paintNoBlend(mfCtx, mfW, mfH, bounds.x+MARGIN_PX, bounds.y+MARGIN_PX, bounds.w, bounds.h, (sctx)=>{
         sctx.globalAlpha = opacity/100;
-        drawBuiltStamp(sctx, built.canvas, built.w, built.h, px+MARGIN_PX, py+MARGIN_PX, 0, pX, pY);
+        drawBuiltStamp(sctx, built.canvas, built.w, built.h, rawX+MARGIN_PX, rawY+MARGIN_PX, 0, pX, pY);
       });
     }
   }
@@ -7304,21 +7513,59 @@ void main(void)\r
     if(!layers[activeLayer]) return;
     const ctx = layers[activeLayer].ctx;
     const r = brushSize/2;
-    paintNoBlend(ctx, W, H, px-r, py-r, r*2, r*2, (sctx)=>{
-      sctx.globalAlpha = opacity/100;
-      sctx.fillStyle = fgColor;
-      sctx.beginPath();
-      sctx.arc(px, py, r, 0, Math.PI*2);
-      sctx.fill();
-    });
-    const nearEdge = px < brushSize || px > W-brushSize || py < brushSize || py > H-brushSize;
-    if(nearEdge){
+
+    const rawX = seamlessModeEnabled ? (px + W) : px;
+    const rawY = seamlessModeEnabled ? (py + H) : py;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    const isCoreTiles = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
+
+    if (isCoreTiles) {
+      const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+      const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+      const offsets = seamlessModeEnabled ?
+        [
+          [0,0], [-W,0], [W,0],
+          [0,-H], [-W,-H], [W,-H],
+          [0,H], [-W,H], [W,H]
+        ] : [[0,0]];
+
+      for (let offset of offsets) {
+        const tx = normPx + offset[0];
+        const ty = normPy + offset[1];
+        if (tx < -r || ty < -r || tx > W + r || ty > H + r) continue;
+
+        paintNoBlend(ctx, W, H, tx-r, ty-r, r*2, r*2, (sctx)=>{
+          sctx.globalAlpha = opacity/100;
+          sctx.fillStyle = fgColor;
+          sctx.beginPath();
+          sctx.arc(tx, ty, r, 0, Math.PI*2);
+          sctx.fill();
+        });
+      }
+
+      const nearEdge = rawX < brushSize || rawX > effW - brushSize || rawY < brushSize || rawY > effH - brushSize;
+      if(nearEdge){
+        marginHasContent = true;
+        const mfW = effW + MARGIN_PX*2;
+        const mfH = effH + MARGIN_PX*2;
+        paintNoBlend(mfCtx, mfW, mfH, rawX+MARGIN_PX-r, rawY+MARGIN_PX-r, r*2, r*2, (sctx)=>{
+          sctx.globalAlpha = opacity/100;
+          sctx.fillStyle = fgColor;
+          sctx.beginPath();
+          sctx.arc(rawX+MARGIN_PX, rawY+MARGIN_PX, r, 0, Math.PI*2);
+          sctx.fill();
+        });
+      }
+    } else {
       marginHasContent = true;
-      paintNoBlend(mfCtx, W+MARGIN_PX*2, H+MARGIN_PX*2, px+MARGIN_PX-r, py+MARGIN_PX-r, r*2, r*2, (sctx)=>{
+      const mfW = effW + MARGIN_PX*2;
+      const mfH = effH + MARGIN_PX*2;
+      paintNoBlend(mfCtx, mfW, mfH, rawX+MARGIN_PX-r, rawY+MARGIN_PX-r, r*2, r*2, (sctx)=>{
         sctx.globalAlpha = opacity/100;
         sctx.fillStyle = fgColor;
         sctx.beginPath();
-        sctx.arc(px+MARGIN_PX, py+MARGIN_PX, r, 0, Math.PI*2);
+        sctx.arc(rawX+MARGIN_PX, rawY+MARGIN_PX, r, 0, Math.PI*2);
         sctx.fill();
       });
     }
@@ -7631,18 +7878,25 @@ void main(void)\r
 
   function eraserDabAt(px, py){
     const r = Math.max(0.5, brushSize/2);
-    function paintOnto(targetCtx, ox, oy){
+    const rawX = seamlessModeEnabled ? (px + W) : px;
+    const rawY = seamlessModeEnabled ? (py + H) : py;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    const isCoreTiles = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
+
+    function paintOnto(targetCtx, ox, oy, cxIn = undefined, cyIn = undefined){
       targetCtx.save();
       targetCtx.globalCompositeOperation = 'destination-out';
-      const cx = px+ox, cy = py+oy;
+      const cx = (cxIn !== undefined) ? cxIn : (px + ox);
+      const cy = (cyIn !== undefined) ? cyIn : (py + oy);
       if(eraserHardness >= 100){
         targetCtx.globalAlpha = opacity/100;
         targetCtx.fillStyle = '#000';
         if(eraserShape === 'circle'){
           targetCtx.beginPath(); targetCtx.arc(cx, cy, r, 0, Math.PI*2); targetCtx.fill();
         } else {
-          const box = brushBox(Math.round(px), Math.round(py));
-          targetCtx.fillRect(box.x+ox, box.y+oy, box.n, box.n);
+          const box = brushBox(Math.round(cx), Math.round(cy));
+          targetCtx.fillRect(box.x, box.y, box.n, box.n);
         }
       } else {
         const innerR = Math.max(0, r * (eraserHardness/100));
@@ -7658,12 +7912,31 @@ void main(void)\r
       }
       targetCtx.restore();
     }
-    if(layers[activeLayer]){
-      paintOnto(layers[activeLayer].ctx, 0, 0);
+
+    if (isCoreTiles) {
+      if(layers[activeLayer]){
+        const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+        const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+        const offsets = seamlessModeEnabled ?
+          [
+            [0,0], [-W,0], [W,0],
+            [0,-H], [-W,-H], [W,-H],
+            [0,H], [-W,H], [W,H]
+          ] : [[0,0]];
+
+        for (let offset of offsets) {
+          const tx = normPx + offset[0];
+          const ty = normPy + offset[1];
+          paintOnto(layers[activeLayer].ctx, 0, 0, tx, ty);
+        }
+      }
+      const nearEdge = rawX < r || rawX > effW - r || rawY < r || rawY > effH - r;
+      if(nearEdge) {
+        paintOnto(mfCtx, 0, 0, rawX + MARGIN_PX, rawY + MARGIN_PX);
+      }
+    } else {
+      paintOnto(mfCtx, 0, 0, rawX + MARGIN_PX, rawY + MARGIN_PX);
     }
-    const nearEdge = px < r || px > W-r || py < r || py > H-r;
-    if(nearEdge) paintOnto(mfCtx, MARGIN_PX, MARGIN_PX); // erasing removes content, never adds
-    // new fading content to the margin, so marginHasContent is deliberately not set here
   }
   function eraserLineTo(x0, y0, x1, y1){
     const dx = x1-x0, dy = y1-y0;
@@ -7746,32 +8019,82 @@ void main(void)\r
   function stampBrushCell(cell){
     if(!layers[activeLayer]) return;
     const ctx = layers[activeLayer].ctx;
-    const box = brushBox(cell.gx, cell.gy);
-    if(sprayMode === 'eraser'){
-      paintEraserDab(ctx, W, H, box.x, box.y, box.n, box.n, (sctx)=>{
-        sctx.fillStyle = '#ffffff';
-        sctx.fillRect(box.x, box.y, box.n, box.n);
-      });
-      const nearEdge = box.x < 0 || box.y < 0 || box.x+box.n > W || box.y+box.n > H;
-      if(nearEdge){
-        paintEraserDab(mfCtx, W+MARGIN_PX*2, H+MARGIN_PX*2, box.x+MARGIN_PX, box.y+MARGIN_PX, box.n, box.n, (sctx)=>{
-          sctx.fillStyle = '#ffffff';
-          sctx.fillRect(box.x+MARGIN_PX, box.y+MARGIN_PX, box.n, box.n);
-        });
+
+    const rawGx = seamlessModeEnabled ? (cell.gx + W) : cell.gx;
+    const rawGy = seamlessModeEnabled ? (cell.gy + H) : cell.gy;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    const isCoreTiles = (rawGx >= 0 && rawGx < effW && rawGy >= 0 && rawGy < effH);
+
+    if (isCoreTiles) {
+      const normGx = seamlessModeEnabled ? (((cell.gx % W) + W) % W) : cell.gx;
+      const normGy = seamlessModeEnabled ? (((cell.gy % H) + H) % H) : cell.gy;
+
+      const offsets = seamlessModeEnabled ?
+        [
+          [0,0], [-W,0], [W,0],
+          [0,-H], [-W,-H], [W,-H],
+          [0,H], [-W,H], [W,H]
+        ] : [[0,0]];
+
+      for (let offset of offsets) {
+        const gx = normGx + offset[0];
+        const gy = normGy + offset[1];
+        const box = brushBox(gx, gy);
+        if (box.x >= W || box.y >= H || box.x + box.n <= 0 || box.y + box.n <= 0) continue;
+
+        if(sprayMode === 'eraser'){
+          paintEraserDab(ctx, W, H, box.x, box.y, box.n, box.n, (sctx)=>{
+            sctx.fillStyle = '#ffffff';
+            sctx.fillRect(box.x, box.y, box.n, box.n);
+          });
+        } else {
+          paintNoBlend(ctx, W, H, box.x, box.y, box.n, box.n, (sctx)=>{
+            sctx.globalAlpha = opacity/100;
+            sctx.fillStyle = fgColor;
+            sctx.fillRect(box.x, box.y, box.n, box.n);
+          });
+        }
       }
-    } else {
-      paintNoBlend(ctx, W, H, box.x, box.y, box.n, box.n, (sctx)=>{
-        sctx.globalAlpha = opacity/100;
-        sctx.fillStyle = fgColor;
-        sctx.fillRect(box.x, box.y, box.n, box.n);
-      });
-      const nearEdge = box.x < 0 || box.y < 0 || box.x+box.n > W || box.y+box.n > H;
+
+      const box = brushBox(rawGx, rawGy);
+      const nearEdge = box.x < 0 || box.y < 0 || box.x + box.n > effW || box.y + box.n > effH;
       if(nearEdge){
         marginHasContent = true;
-        paintNoBlend(mfCtx, W+MARGIN_PX*2, H+MARGIN_PX*2, box.x+MARGIN_PX, box.y+MARGIN_PX, box.n, box.n, (sctx)=>{
+        const mfBoxX = box.x + MARGIN_PX;
+        const mfBoxY = box.y + MARGIN_PX;
+        const mfW = effW + MARGIN_PX*2;
+        const mfH = effH + MARGIN_PX*2;
+        if(sprayMode === 'eraser'){
+          paintEraserDab(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, (sctx)=>{
+            sctx.fillStyle = '#ffffff';
+            sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
+          });
+        } else {
+          paintNoBlend(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, (sctx)=>{
+            sctx.globalAlpha = opacity/100;
+            sctx.fillStyle = fgColor;
+            sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
+          });
+        }
+      }
+    } else {
+      marginHasContent = true;
+      const box = brushBox(rawGx, rawGy);
+      const mfBoxX = box.x + MARGIN_PX;
+      const mfBoxY = box.y + MARGIN_PX;
+      const mfW = effW + MARGIN_PX*2;
+      const mfH = effH + MARGIN_PX*2;
+      if(sprayMode === 'eraser'){
+        paintEraserDab(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, (sctx)=>{
+          sctx.fillStyle = '#ffffff';
+          sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
+        });
+      } else {
+        paintNoBlend(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, (sctx)=>{
           sctx.globalAlpha = opacity/100;
           sctx.fillStyle = fgColor;
-          sctx.fillRect(box.x+MARGIN_PX, box.y+MARGIN_PX, box.n, box.n);
+          sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
         });
       }
     }
@@ -7903,7 +8226,7 @@ void main(void)\r
     pctx.restore();
   }
   function drawBrushPreview(gx, gy, shiftKey, ctrlKey){
-    pctx.clearRect(0,0,W,H);
+    clearPreviewCanvas();
     if(tool !== 'brush') return;
 
     let targetX = gx, targetY = gy;
@@ -7912,13 +8235,17 @@ void main(void)\r
         const snapped = snap45(brushLineAnchorX, brushLineAnchorY, gx, gy);
         targetX = snapped.x; targetY = snapped.y;
       }
+      pctx.save();
+      pctx.translate(MARGIN_PX, MARGIN_PX);
       drawBrushLinePixelPreview(brushLineAnchorX, brushLineAnchorY, targetX, targetY);
+      pctx.restore();
     }
 
     if(brushMode === 'blur'){
       const r = brushSize/2;
       const lw = 1/zoom; // 1 physical screen pixel, independent of current zoom
       pctx.save();
+      pctx.translate(MARGIN_PX, MARGIN_PX);
       pctx.lineWidth = lw;
       pctx.strokeStyle = '#ffffff';
       pctx.strokeRect(targetX-r, targetY-r, brushSize, brushSize);
@@ -7930,6 +8257,7 @@ void main(void)\r
     }
     const box = brushBox(targetX, targetY);
     pctx.save();
+    pctx.translate(MARGIN_PX, MARGIN_PX);
     pctx.globalAlpha = opacity/100;
     pctx.fillStyle = fgColor;
     if(brushShape === 'circle'){
@@ -7941,12 +8269,17 @@ void main(void)\r
     }
     pctx.restore();
   }
-  function drawSprayPreview(x, y, shiftPressed = false){
-    pctx.clearRect(0,0,W,H);
+  function drawSprayPreview(x, y, shiftPressed = false, rawX = undefined, rawY = undefined){
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    clearPreviewCanvas();
     if(tool !== 'spray') return;
+    const pxX = (seamlessModeEnabled && rawX !== undefined) ? rawX : x;
+    const pxY = (seamlessModeEnabled && rawY !== undefined) ? rawY : y;
     const r = brushSize/2;
     const lw = 1/zoom; // 1 physical screen pixel, independent of current zoom
     pctx.save();
+    pctx.translate(MARGIN_PX, MARGIN_PX);
 
     // Shift-click line preview
     if(shiftPressed && sprayLineAnchorX !== null && sprayLineAnchorY !== null){
@@ -7955,7 +8288,7 @@ void main(void)\r
       pctx.setLineDash([4/zoom, 4/zoom]);
       pctx.beginPath();
       pctx.moveTo(sprayLineAnchorX, sprayLineAnchorY);
-      pctx.lineTo(x, y);
+      pctx.lineTo(pxX, pxY);
       pctx.stroke();
       pctx.setLineDash([]);
     }
@@ -7977,7 +8310,7 @@ void main(void)\r
         pctx.strokeStyle = 'rgba(244, 63, 94, 0.6)';
         pctx.setLineDash([2/zoom, 3/zoom]);
         pctx.beginPath();
-        pctx.moveTo(x, y);
+        pctx.moveTo(pxX, pxY);
         pctx.lineTo(ax, ay);
         pctx.stroke();
       }
@@ -7985,51 +8318,87 @@ void main(void)\r
 
     // Main spray radius circle or single pixel box
     const isSinglePx = (Math.round(brushSize) <= 1) && (dabWidth <= 1 && dabHeight <= 1 && Math.round(dabSize) <= 1);
-    if(isSinglePx){
-      const px = Math.floor(x), py = Math.floor(y);
-      pctx.fillStyle = fgColor;
-      pctx.globalAlpha = 0.35 * (opacity/100);
-      pctx.fillRect(px, py, 1, 1);
-      pctx.globalAlpha = 1.0;
+    const isCoreTilesPreview = (pxX >= 0 && pxX <= effW && pxY >= 0 && pxY <= effH);
+    const previewOffsets = (seamlessModeEnabled && isCoreTilesPreview) ?
+      [
+        [0,0], [-W,0], [W,0],
+        [0,-H], [-W,-H], [W,-H],
+        [0,H], [-W,H], [W,H]
+      ] : [[0,0]];
+
+    for (let offset of previewOffsets) {
+      const cx = pxX + offset[0];
+      const cy = pxY + offset[1];
+      if (cx < -r || cy < -r || cx > effW + r || cy > effH + r) continue;
+
+      if(isSinglePx){
+        const spx = Math.floor(cx), spy = Math.floor(cy);
+        pctx.fillStyle = fgColor;
+        pctx.globalAlpha = 0.35 * (opacity/100);
+        pctx.fillRect(spx, spy, 1, 1);
+        pctx.globalAlpha = 1.0;
+
+        pctx.lineWidth = lw;
+        pctx.setLineDash([]);
+        pctx.strokeStyle = '#ffffff';
+        pctx.strokeRect(spx, spy, 1, 1);
+        pctx.strokeStyle = '#000000';
+        pctx.setLineDash([3/zoom, 3/zoom]);
+        pctx.strokeRect(spx, spy, 1, 1);
+      } else {
+        pctx.lineWidth = lw;
+        pctx.setLineDash([]);
+        pctx.strokeStyle = '#ffffff';
+        pctx.beginPath(); pctx.arc(cx, cy, r, 0, Math.PI*2); pctx.stroke();
+        pctx.strokeStyle = '#000000';
+        pctx.setLineDash([3/zoom,3/zoom]);
+        pctx.beginPath(); pctx.arc(cx, cy, r, 0, Math.PI*2); pctx.stroke();
+      }
+    }
+    pctx.restore();
+  }
+  function drawVinePreview(x, y, rawX = undefined, rawY = undefined){
+    clearPreviewCanvas();
+    if(tool !== 'vine' && !isPathTool()) return;
+    const pxX = (seamlessModeEnabled && rawX !== undefined) ? rawX : (seamlessModeEnabled ? x + W : x);
+    const pxY = (seamlessModeEnabled && rawY !== undefined) ? rawY : (seamlessModeEnabled ? y + H : y);
+    const r = brushSize/2; // Brush Size directly sets stem thickness now, so this shows it accurately
+    const lw = 1/zoom;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    pctx.save();
+    pctx.translate(MARGIN_PX, MARGIN_PX);
+
+    const isCoreTilesPreview = (pxX >= 0 && pxX <= effW && pxY >= 0 && pxY <= effH);
+    const previewOffsets = (seamlessModeEnabled && isCoreTilesPreview) ?
+      [
+        [0,0], [-W,0], [W,0],
+        [0,-H], [-W,-H], [W,-H],
+        [0,H], [-W,H], [W,H]
+      ] : [[0,0]];
+
+    for (let offset of previewOffsets) {
+      const cx = pxX + offset[0];
+      const cy = pxY + offset[1];
+      if (cx < -r || cy < -r || cx > effW + r || cy > effH + r) continue;
 
       pctx.lineWidth = lw;
       pctx.setLineDash([]);
       pctx.strokeStyle = '#ffffff';
-      pctx.strokeRect(px, py, 1, 1);
-      pctx.strokeStyle = '#000000';
-      pctx.setLineDash([3/zoom, 3/zoom]);
-      pctx.strokeRect(px, py, 1, 1);
-    } else {
-      pctx.lineWidth = lw;
-      pctx.setLineDash([]);
-      pctx.strokeStyle = '#ffffff';
-      pctx.beginPath(); pctx.arc(x, y, r, 0, Math.PI*2); pctx.stroke();
+      pctx.beginPath(); pctx.arc(cx, cy, r, 0, Math.PI*2); pctx.stroke();
       pctx.strokeStyle = '#000000';
       pctx.setLineDash([3/zoom,3/zoom]);
-      pctx.beginPath(); pctx.arc(x, y, r, 0, Math.PI*2); pctx.stroke();
+      pctx.beginPath(); pctx.arc(cx, cy, r, 0, Math.PI*2); pctx.stroke();
     }
     pctx.restore();
   }
-  function drawVinePreview(x, y){
-    pctx.clearRect(0,0,W,H);
-    if(tool !== 'vine') return;
-    const r = brushSize/2; // Brush Size directly sets stem thickness now, so this shows it accurately
-    const lw = 1/zoom;
-    pctx.save();
-    pctx.lineWidth = lw;
-    pctx.strokeStyle = '#ffffff';
-    pctx.beginPath(); pctx.arc(x, y, r, 0, Math.PI*2); pctx.stroke();
-    pctx.strokeStyle = '#000000';
-    pctx.setLineDash([3/zoom,3/zoom]);
-    pctx.beginPath(); pctx.arc(x, y, r, 0, Math.PI*2); pctx.stroke();
-    pctx.restore();
-  }
   function drawEraserPreview(x, y){
-    pctx.clearRect(0,0,W,H);
+    clearPreviewCanvas();
     if(tool !== 'eraser') return;
     const r = Math.max(0.5, brushSize/2);
     const lw = 1/zoom;
     pctx.save();
+    pctx.translate(MARGIN_PX, MARGIN_PX);
     pctx.lineWidth = lw;
     pctx.strokeStyle = '#ffffff';
     pctx.beginPath();
@@ -8183,18 +8552,23 @@ void main(void)\r
     document.getElementById('canvasOverlayLabel').style.display = 'none';
   }
   function drawMeasurePreview(x1, y1, x2, y2){
-    pctx.clearRect(0,0,W,H);
-    const dx = x2-x1, dy = y2-y1;
-    const dist = Math.sqrt(dx*dx+dy*dy);
+    clearPreviewCanvas();
+    const toDispX = (x) => seamlessModeEnabled ? (x + W) : x;
+    const toDispY = (y) => seamlessModeEnabled ? (y + H) : y;
+    const dx1 = toDispX(x1), dy1 = toDispY(y1);
+    const dx2 = toDispX(x2), dy2 = toDispY(y2);
+    const dx = dx2 - dx1, dy = dy2 - dy1;
+    const dist = Math.sqrt(dx*dx + dy*dy);
     pctx.save();
+    pctx.translate(MARGIN_PX, MARGIN_PX);
     pctx.lineWidth = 1/zoom;
     pctx.strokeStyle = '#ffffff';
-    pctx.beginPath(); pctx.moveTo(x1,y1); pctx.lineTo(x2,y2); pctx.stroke();
+    pctx.beginPath(); pctx.moveTo(dx1, dy1); pctx.lineTo(dx2, dy2); pctx.stroke();
     pctx.strokeStyle = '#000000';
-    pctx.setLineDash([3/zoom,3/zoom]);
-    pctx.beginPath(); pctx.moveTo(x1,y1); pctx.lineTo(x2,y2); pctx.stroke();
+    pctx.setLineDash([3/zoom, 3/zoom]);
+    pctx.beginPath(); pctx.moveTo(dx1, dy1); pctx.lineTo(dx2, dy2); pctx.stroke();
     pctx.restore();
-    showOverlayLabel((x1+x2)/2, (y1+y2)/2 - 12/zoom, dist.toFixed(1) + 'px');
+    showOverlayLabel((dx1+dx2)/2, (dy1+dy2)/2 - 12/zoom, dist.toFixed(1) + 'px');
   }
 
   let sprayAnchorX = null, sprayAnchorY = null;
@@ -8252,57 +8626,131 @@ void main(void)\r
     if(sprayMode === 'path' || isPathTool()){
       sprayDabs(cx, cy, diameter);
     } else {
-      const ctx = layers[activeLayer].ctx;
-      ctx.save();
-      ctx.globalAlpha = opacity/100;
-      ctx.fillStyle = fgColor;
-      ctx.beginPath();
-      ctx.arc(cx, cy, Math.max(0.5, diameter/2), 0, Math.PI*2);
-      ctx.fill();
-      ctx.restore();
+      const rawX = seamlessModeEnabled ? (cx + W) : cx;
+      const rawY = seamlessModeEnabled ? (cy + H) : cy;
+      const effW = getEffectiveCanvasW();
+      const effH = getEffectiveCanvasH();
+      const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
+
+      if(isCore){
+        const normX = seamlessModeEnabled ? (((cx % W) + W) % W) : cx;
+        const normY = seamlessModeEnabled ? (((cy % H) + H) % H) : cy;
+        const offsets = seamlessModeEnabled ?
+          [
+            [0,0], [-W,0], [W,0],
+            [0,-H], [-W,-H], [W,-H],
+            [0,H], [-W,H], [W,H]
+          ] : [[0,0]];
+
+        for (let offset of offsets) {
+          const tx = normX + offset[0];
+          const ty = normY + offset[1];
+          const ctx = layers[activeLayer].ctx;
+          ctx.save();
+          ctx.globalAlpha = opacity/100;
+          ctx.fillStyle = fgColor;
+          ctx.beginPath();
+          ctx.arc(tx, ty, Math.max(0.5, diameter/2), 0, Math.PI*2);
+          ctx.fill();
+          ctx.restore();
+        }
+
+        const nearEdge = rawX < diameter || rawX > effW - diameter || rawY < diameter || rawY > effH - diameter;
+        if(nearEdge){
+          marginHasContent = true;
+          mfCtx.save();
+          mfCtx.globalAlpha = opacity/100;
+          mfCtx.fillStyle = fgColor;
+          mfCtx.beginPath();
+          mfCtx.arc(rawX + MARGIN_PX, rawY + MARGIN_PX, Math.max(0.5, diameter/2), 0, Math.PI*2);
+          mfCtx.fill();
+          mfCtx.restore();
+        }
+      } else {
+        marginHasContent = true;
+        mfCtx.save();
+        mfCtx.globalAlpha = opacity/100;
+        mfCtx.fillStyle = fgColor;
+        mfCtx.beginPath();
+        mfCtx.arc(rawX + MARGIN_PX, rawY + MARGIN_PX, Math.max(0.5, diameter/2), 0, Math.PI*2);
+        mfCtx.fill();
+        mfCtx.restore();
+      }
     }
   }
   function drawVineLeaf(cx, cy, size, angle){
     if(!layers[activeLayer]) return;
-    const ctx = layers[activeLayer].ctx;
-    ctx.save();
-    ctx.globalAlpha = opacity/100;
-    ctx.fillStyle = fgColor;
-    if(pixelPerfect){
-      ctx.imageSmoothingEnabled = false;
-      const finalCx = Math.round(cx);
-      const finalCy = Math.round(cy);
-      const sz = Math.max(2, Math.round(size));
-      const l = sz * 0.65, w = sz * 0.5;
-      const boxW = Math.min(STAMP_SCRATCH_MAX, Math.max(4, Math.ceil((l + w) * 2)));
-      const boxH = boxW;
-      shapeScratchCtx.clearRect(0, 0, boxW, boxH);
-      shapeScratchCtx.fillStyle = fgColor;
-      shapeScratchCtx.save();
-      shapeScratchCtx.translate(boxW/2, boxH/2);
-      shapeScratchCtx.beginPath();
-      shapeScratchCtx.moveTo(l, 0);
-      shapeScratchCtx.quadraticCurveTo(l*0.3, w, -l*0.6, 0);
-      shapeScratchCtx.quadraticCurveTo(l*0.3, -w, l, 0);
-      shapeScratchCtx.closePath();
-      shapeScratchCtx.fill();
-      shapeScratchCtx.restore();
 
-      ctx.translate(finalCx, finalCy);
-      ctx.rotate(angle);
-      ctx.drawImage(shapeScratch, 0, 0, boxW, boxH, -boxW/2, -boxH/2, boxW, boxH);
+    const rawX = seamlessModeEnabled ? (cx + W) : cx;
+    const rawY = seamlessModeEnabled ? (cy + H) : cy;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
+    const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
+
+    const drawLeafToCtx = (targetCtx, lx, ly) => {
+      targetCtx.save();
+      targetCtx.globalAlpha = opacity/100;
+      targetCtx.fillStyle = fgColor;
+      if(pixelPerfect){
+        targetCtx.imageSmoothingEnabled = false;
+        const finalCx = Math.round(lx);
+        const finalCy = Math.round(ly);
+        const sz = Math.max(2, Math.round(size));
+        const l = sz * 0.65, w = sz * 0.5;
+        const boxW = Math.min(STAMP_SCRATCH_MAX, Math.max(4, Math.ceil((l + w) * 2)));
+        const boxH = boxW;
+        shapeScratchCtx.clearRect(0, 0, boxW, boxH);
+        shapeScratchCtx.fillStyle = fgColor;
+        shapeScratchCtx.save();
+        shapeScratchCtx.translate(boxW/2, boxH/2);
+        shapeScratchCtx.beginPath();
+        shapeScratchCtx.moveTo(l, 0);
+        shapeScratchCtx.quadraticCurveTo(l*0.3, w, -l*0.6, 0);
+        shapeScratchCtx.quadraticCurveTo(l*0.3, -w, l, 0);
+        shapeScratchCtx.closePath();
+        shapeScratchCtx.fill();
+        shapeScratchCtx.restore();
+
+        targetCtx.translate(finalCx, finalCy);
+        targetCtx.rotate(angle);
+        targetCtx.drawImage(shapeScratch, 0, 0, boxW, boxH, -boxW/2, -boxH/2, boxW, boxH);
+      } else {
+        targetCtx.translate(lx, ly);
+        targetCtx.rotate(angle);
+        const l = size*0.65, w = size*0.5;
+        targetCtx.beginPath();
+        targetCtx.moveTo(l, 0);
+        targetCtx.quadraticCurveTo(l*0.3, w, -l*0.6, 0);
+        targetCtx.quadraticCurveTo(l*0.3, -w, l, 0);
+        targetCtx.closePath();
+        targetCtx.fill();
+      }
+      targetCtx.restore();
+    };
+
+    if(isCore){
+      const normX = seamlessModeEnabled ? (((cx % W) + W) % W) : cx;
+      const normY = seamlessModeEnabled ? (((cy % H) + H) % H) : cy;
+      const offsets = seamlessModeEnabled ?
+        [
+          [0,0], [-W,0], [W,0],
+          [0,-H], [-W,-H], [W,-H],
+          [0,H], [-W,H], [W,H]
+        ] : [[0,0]];
+
+      for (let offset of offsets) {
+        drawLeafToCtx(layers[activeLayer].ctx, normX + offset[0], normY + offset[1]);
+      }
+
+      const nearEdge = rawX < size || rawX > effW - size || rawY < size || rawY > effH - size;
+      if(nearEdge){
+        marginHasContent = true;
+        drawLeafToCtx(mfCtx, rawX + MARGIN_PX, rawY + MARGIN_PX);
+      }
     } else {
-      ctx.translate(cx, cy);
-      ctx.rotate(angle);
-      const l = size*0.65, w = size*0.5;
-      ctx.beginPath();
-      ctx.moveTo(l, 0);
-      ctx.quadraticCurveTo(l*0.3, w, -l*0.6, 0);
-      ctx.quadraticCurveTo(l*0.3, -w, l, 0);
-      ctx.closePath();
-      ctx.fill();
+      marginHasContent = true;
+      drawLeafToCtx(mfCtx, rawX + MARGIN_PX, rawY + MARGIN_PX);
     }
-    ctx.restore();
   }
   function vineNextDecorationDistance(){
     const density = vineDensity/100; // 0-1
@@ -8340,12 +8788,35 @@ void main(void)\r
 
     if(!layers[activeLayer]) return;
     if(usingStamp){
-      const mask = getActiveStampMask(stamps[selectedStampIndex]);
+      const st = stamps[selectedStampIndex];
+      const mask = getActiveStampMask(st);
       const built = mask ? buildTintedStamp(mask, decorSize, fgColor) : null;
       if(built){
-        const ctx = layers[activeLayer].ctx;
-        ctx.globalAlpha = opacity/100;
-        drawBuiltStamp(ctx, built.canvas, built.w, built.h, px, py, angle);
+        const pX = (st && st.pivotX !== undefined) ? st.pivotX : 0.5;
+        const pY = (st && st.pivotY !== undefined) ? st.pivotY : 0.5;
+        const rawX = seamlessModeEnabled ? (px + W) : px;
+        const rawY = seamlessModeEnabled ? (py + H) : py;
+        const effW = getEffectiveCanvasW();
+        const effH = getEffectiveCanvasH();
+        const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
+        if(isCore){
+          const normX = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+          const normY = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+          const offsets = seamlessModeEnabled ? [
+            [0,0], [-W,0], [W,0],
+            [0,-H], [-W,-H], [W,-H],
+            [0,H], [-W,H], [W,H]
+          ] : [[0,0]];
+          for (let offset of offsets) {
+            const tx = normX + offset[0];
+            const ty = normY + offset[1];
+            const ctx = layers[activeLayer].ctx;
+            ctx.save();
+            ctx.globalAlpha = opacity/100;
+            drawBuiltStamp(ctx, built.canvas, built.w, built.h, tx, ty, angle, pX, pY);
+            ctx.restore();
+          }
+        }
       }
     } else {
       drawVineLeaf(px, py, decorSize, angle);
@@ -8733,12 +9204,35 @@ void main(void)\r
 
     if(!layers[activeLayer]) return;
     if(usingStamp){
-      const mask = getActiveStampMask(stamps[selectedStampIndex]);
+      const st = stamps[selectedStampIndex];
+      const mask = getActiveStampMask(st);
       const built = mask ? buildTintedStamp(mask, decorSize, fgColor) : null;
       if(built){
-        const ctx = layers[activeLayer].ctx;
-        ctx.globalAlpha = opacity/100;
-        drawBuiltStamp(ctx, built.canvas, built.w, built.h, px, py, angle);
+        const pX = (st && st.pivotX !== undefined) ? st.pivotX : 0.5;
+        const pY = (st && st.pivotY !== undefined) ? st.pivotY : 0.5;
+        const rawX = seamlessModeEnabled ? (px + W) : px;
+        const rawY = seamlessModeEnabled ? (py + H) : py;
+        const effW = getEffectiveCanvasW();
+        const effH = getEffectiveCanvasH();
+        const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
+        if(isCore){
+          const normX = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+          const normY = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+          const offsets = seamlessModeEnabled ? [
+            [0,0], [-W,0], [W,0],
+            [0,-H], [-W,-H], [W,-H],
+            [0,H], [-W,H], [W,H]
+          ] : [[0,0]];
+          for (let offset of offsets) {
+            const tx = normX + offset[0];
+            const ty = normY + offset[1];
+            const ctx = layers[activeLayer].ctx;
+            ctx.save();
+            ctx.globalAlpha = opacity/100;
+            drawBuiltStamp(ctx, built.canvas, built.w, built.h, tx, ty, angle, pX, pY);
+            ctx.restore();
+          }
+        }
       }
     } else {
       drawVineLeaf(px, py, decorSize, angle);
@@ -8756,7 +9250,7 @@ void main(void)\r
     // Now endPt becomes the new start point for continuous path
     pathPoints = [endPt];
     pathState = 'start_placed';
-    if (pctx) pctx.clearRect(0,0,W,H);
+    clearPreviewCanvas();
     render();
     refreshLayerThumbOnly();
     updatePathOverlayToolbar();
@@ -8784,7 +9278,7 @@ void main(void)\r
     vineSessionBackupCanvas = null;
     pathState = 'idle';
     pathUndoSnapshot = null;
-    if (pctx) pctx.clearRect(0,0,W,H);
+    clearPreviewCanvas();
     hideOverlayLabel();
     updatePathOverlayToolbar();
     render();
@@ -8804,7 +9298,7 @@ void main(void)\r
     pathSegments = [];
     vineSessionBackupCanvas = null;
     pathState = 'idle';
-    if(pctx) pctx.clearRect(0,0,W,H);
+    clearPreviewCanvas();
     hideOverlayLabel();
     updatePathOverlayToolbar();
     render();
@@ -8831,51 +9325,62 @@ void main(void)\r
     }
   }
 
-  function drawPathPreview(mx, my) {
+  function drawPathPreview(mx, my, rawX = undefined, rawY = undefined) {
     if (!pctx) return;
     hideOverlayLabel();
-    pctx.clearRect(0,0,W,H);
+    clearPreviewCanvas();
 
     const lw = 2 / zoom;
     const dotR = 5 / zoom;
 
     pctx.save();
+    pctx.translate(MARGIN_PX, MARGIN_PX);
     
     pctx.fillStyle = 'var(--accent, #4f46e5)';
     pctx.strokeStyle = '#ffffff';
     pctx.lineWidth = 1.5 / zoom;
 
+    const toDispX = (xVal) => seamlessModeEnabled ? (xVal + W) : xVal;
+    const toDispY = (yVal) => seamlessModeEnabled ? (yVal + H) : yVal;
+
+    const curDispX = (seamlessModeEnabled && rawX !== undefined) ? rawX : toDispX(mx);
+    const curDispY = (seamlessModeEnabled && rawY !== undefined) ? rawY : toDispY(my);
+
     pathPoints.forEach((pt) => {
+      const px = toDispX(pt.x);
+      const py = toDispY(pt.y);
       pctx.beginPath();
-      pctx.arc(pt.x, pt.y, dotR, 0, Math.PI * 2);
+      pctx.arc(px, py, dotR, 0, Math.PI * 2);
       pctx.fill();
       pctx.stroke();
     });
 
     if (pathState === 'start_placed') {
       const ptA = pathPoints[0];
-      let snappedX = mx, snappedY = my;
+      const dispPtA_X = toDispX(ptA.x);
+      const dispPtA_Y = toDispY(ptA.y);
+      let snappedX = curDispX, snappedY = curDispY;
       if (vineRightAnglesOnly) {
-        const dx = Math.abs(mx - ptA.x);
-        const dy = Math.abs(my - ptA.y);
+        const dx = Math.abs(curDispX - dispPtA_X);
+        const dy = Math.abs(curDispY - dispPtA_Y);
         if (dx > dy) {
-          snappedY = ptA.y;
+          snappedY = dispPtA_Y;
         } else {
-          snappedX = ptA.x;
+          snappedX = dispPtA_X;
         }
       }
       
       pctx.strokeStyle = 'var(--accent, #4f46e5)';
       pctx.lineWidth = lw;
       pctx.beginPath();
-      pctx.moveTo(ptA.x, ptA.y);
+      pctx.moveTo(dispPtA_X, dispPtA_Y);
       pctx.lineTo(snappedX, snappedY);
       pctx.stroke();
 
       pctx.strokeStyle = '#ffffff';
       pctx.setLineDash([4/zoom, 4/zoom]);
       pctx.beginPath();
-      pctx.moveTo(ptA.x, ptA.y);
+      pctx.moveTo(dispPtA_X, dispPtA_Y);
       pctx.lineTo(snappedX, snappedY);
       pctx.stroke();
 
@@ -8890,35 +9395,39 @@ void main(void)\r
     } else if (pathState === 'end_placed') {
       const ptA = pathPoints[0];
       const ptB = pathPoints[1];
+      const dispPtA_X = toDispX(ptA.x);
+      const dispPtA_Y = toDispY(ptA.y);
+      const dispPtB_X = toDispX(ptB.x);
+      const dispPtB_Y = toDispY(ptB.y);
 
       pctx.strokeStyle = 'var(--accent, #4f46e5)';
       pctx.lineWidth = lw;
       pctx.beginPath();
-      pctx.moveTo(ptA.x, ptA.y);
-      pctx.quadraticCurveTo(mx, my, ptB.x, ptB.y);
+      pctx.moveTo(dispPtA_X, dispPtA_Y);
+      pctx.quadraticCurveTo(curDispX, curDispY, dispPtB_X, dispPtB_Y);
       pctx.stroke();
 
       pctx.strokeStyle = '#ffffff';
       pctx.setLineDash([4/zoom, 4/zoom]);
       pctx.beginPath();
-      pctx.moveTo(ptA.x, ptA.y);
-      pctx.quadraticCurveTo(mx, my, ptB.x, ptB.y);
+      pctx.moveTo(dispPtA_X, dispPtA_Y);
+      pctx.quadraticCurveTo(curDispX, curDispY, dispPtB_X, dispPtB_Y);
       pctx.stroke();
 
       pctx.lineWidth = 1 / zoom;
       pctx.strokeStyle = 'rgba(79, 70, 229, 0.4)';
       pctx.setLineDash([2/zoom, 2/zoom]);
       pctx.beginPath();
-      pctx.moveTo(ptA.x, ptA.y);
-      pctx.lineTo(mx, my);
-      pctx.lineTo(ptB.x, ptB.y);
+      pctx.moveTo(dispPtA_X, dispPtA_Y);
+      pctx.lineTo(curDispX, curDispY);
+      pctx.lineTo(dispPtB_X, dispPtB_Y);
       pctx.stroke();
 
       pctx.fillStyle = '#10b981';
       pctx.strokeStyle = '#ffffff';
       pctx.setLineDash([]);
       pctx.beginPath();
-      pctx.arc(mx, my, dotR * 0.8, 0, Math.PI * 2);
+      pctx.arc(curDispX, curDispY, dotR * 0.8, 0, Math.PI * 2);
       pctx.fill();
       pctx.stroke();
     }
@@ -9105,7 +9614,7 @@ void main(void)\r
     const maxDabScale = (Math.max(sizeJitterMin, sizeJitterMax) / 100) * (Math.max(dabWidthJitterMin, dabWidthJitterMax, dabHeightJitterMin, dabHeightJitterMax) / 100);
     const maxDabDim = currentDabMax * maxDabScale;
 
-    const applyDabToCanvas = (targetCtx, cw, ch, px, py, dabColor, rotAngle, dW, dH, opMul) => {
+    const applyDabToCanvas = (targetCtx, cw, ch, px, py, dabColor, rotAngle, dW, dH, opMul, isMarginCall = false) => {
       const dabAlpha = Math.max(0, Math.min(1, opMul));
       
       let targetW = dW;
@@ -9133,39 +9642,98 @@ void main(void)\r
         }
       }
 
-      const bounds = getRotatedRectBounds(px, py, targetW, targetH, rotAngle, pX, pY);
-
-      const drawDabFn = (sctx) => {
-        sctx.globalAlpha = (opacity/100) * dabAlpha;
-        if(Math.max(dW, dH) > 1 && dabShape === 'stamp' && selectedStampIndex !== null && stamps[selectedStampIndex]){
-          const st = stamps[selectedStampIndex];
-          const mask = getActiveStampMask(st);
-          const built = mask ? buildTintedStamp(mask, targetW, targetH, dabColor) : null;
-          if (built) {
-            drawBuiltStamp(sctx, built.canvas, built.w, built.h, px, py, rotAngle, pX, pY);
+      if (isMarginCall) {
+        const bounds = getRotatedRectBounds(px, py, targetW, targetH, rotAngle, pX, pY);
+        const drawDabFn = (sctx) => {
+          sctx.globalAlpha = (opacity/100) * dabAlpha;
+          if(Math.max(dW, dH) > 1 && dabShape === 'stamp' && selectedStampIndex !== null && stamps[selectedStampIndex]){
+            const st = stamps[selectedStampIndex];
+            const mask = getActiveStampMask(st);
+            const built = mask ? buildTintedStamp(mask, targetW, targetH, dabColor) : null;
+            if (built) {
+              drawBuiltStamp(sctx, built.canvas, built.w, built.h, px, py, rotAngle, pX, pY);
+            } else {
+              drawDabShape(sctx, px, py, dW, dH, dabColor, rotAngle, 1);
+            }
           } else {
             drawDabShape(sctx, px, py, dW, dH, dabColor, rotAngle, 1);
           }
-        } else {
-          drawDabShape(sctx, px, py, dW, dH, dabColor, rotAngle, 1);
-        }
-      };
-
-      if(sprayMode === 'eraser'){
-        paintEraserDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn);
-      } else if(sprayMode === 'colorize'){
-        paintColorizeDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, drawDabFn);
-      } else {
-        if(sprayCombineSameColor){
-          paintCombineSameColor(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, dabAlpha * 255 * (opacity/100), drawDabFn);
+        };
+        if(sprayMode === 'eraser'){
+          paintEraserDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn);
         } else {
           paintNoBlend(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn, dabColor);
         }
+        return;
+      }
+
+      const dabRawX = seamlessModeEnabled ? (px + W) : px;
+      const dabRawY = seamlessModeEnabled ? (py + H) : py;
+      const effW = getEffectiveCanvasW();
+      const effH = getEffectiveCanvasH();
+
+      const isCoreTiles = (dabRawX >= 0 && dabRawX <= effW && dabRawY >= 0 && dabRawY <= effH);
+
+      if (isCoreTiles) {
+        const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+        const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+
+        const offsets = seamlessModeEnabled ?
+          [
+            [0,0], [-W,0], [W,0],
+            [0,-H], [-W,-H], [W,-H],
+            [0,H], [-W,H], [W,H]
+          ] : [[0,0]];
+
+        for (let offset of offsets) {
+          const tx = normPx + offset[0];
+          const ty = normPy + offset[1];
+
+          const bounds = getRotatedRectBounds(tx, ty, targetW, targetH, rotAngle, pX, pY);
+          if (bounds.x >= W || bounds.y >= H || bounds.x + bounds.w <= 0 || bounds.y + bounds.h <= 0) continue;
+
+          const drawDabFn = (sctx) => {
+            sctx.globalAlpha = (opacity/100) * dabAlpha;
+            if(Math.max(dW, dH) > 1 && dabShape === 'stamp' && selectedStampIndex !== null && stamps[selectedStampIndex]){
+              const st = stamps[selectedStampIndex];
+              const mask = getActiveStampMask(st);
+              const built = mask ? buildTintedStamp(mask, targetW, targetH, dabColor) : null;
+              if (built) {
+                drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, rotAngle, pX, pY);
+              } else {
+                drawDabShape(sctx, tx, ty, dW, dH, dabColor, rotAngle, 1);
+              }
+            } else {
+              drawDabShape(sctx, tx, ty, dW, dH, dabColor, rotAngle, 1);
+            }
+          };
+
+          if(sprayMode === 'eraser'){
+            paintEraserDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn);
+          } else if(sprayMode === 'colorize'){
+            paintColorizeDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, drawDabFn);
+          } else {
+            if(sprayCombineSameColor){
+              paintCombineSameColor(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, dabAlpha * 255 * (opacity/100), drawDabFn);
+            } else {
+              paintNoBlend(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn, dabColor);
+            }
+          }
+        }
+
+        const nearEdge = dabRawX < maxDabDim || dabRawX > effW - maxDabDim || dabRawY < maxDabDim || dabRawY > effH - maxDabDim;
+        if(nearEdge){
+          marginHasContent = true;
+          applyDabToCanvas(mfCtx, effW + MARGIN_PX*2, effH + MARGIN_PX*2, dabRawX + MARGIN_PX, dabRawY + MARGIN_PX, dabColor, rotAngle, dW, dH, opMul, true);
+        }
+      } else {
+        marginHasContent = true;
+        applyDabToCanvas(mfCtx, effW + MARGIN_PX*2, effH + MARGIN_PX*2, dabRawX + MARGIN_PX, dabRawY + MARGIN_PX, dabColor, rotAngle, dW, dH, opMul, true);
       }
     };
 
     const TWO_PI = Math.PI * 2;
-    withHeightMask(x - radius - maxDabDim, y - radius - maxDabDim, (radius + maxDabDim)*2, (radius + maxDabDim)*2, ()=>{
+    const executeDabs = () => {
       for(let i=0; i<n; i++){
         const t = getRandom();
         const ang = getRandom()*TWO_PI;
@@ -9225,14 +9793,14 @@ void main(void)\r
         }
 
         applyDabToCanvas(ctx, W, H, px, py, color, rotAngle, dW, dH, opMul);
-
-        const nearEdge = px < maxDabDim || px > W - maxDabDim || py < maxDabDim || py > H - maxDabDim;
-        if(nearEdge){
-          marginHasContent = true;
-          applyDabToCanvas(mfCtx, W + MARGIN_PX*2, H + MARGIN_PX*2, px + MARGIN_PX, py + MARGIN_PX, color, rotAngle, dW, dH, opMul);
-        }
       }
-    });
+    };
+
+    if (seamlessModeEnabled) {
+      withHeightMask(0, 0, W, H, executeDabs);
+    } else {
+      withHeightMask(x - radius - maxDabDim, y - radius - maxDabDim, (radius + maxDabDim)*2, (radius + maxDabDim)*2, executeDabs);
+    }
   }
 
   // ---------- Palettize ----------
@@ -9392,7 +9960,13 @@ void main(void)\r
         if (layers[activeLayer] && !layers[activeLayer].visible) {
           return; // don't paint onto a hidden layer
         }
-        const {x, y} = canvasCoords(e);
+        const {x, y, rawX, rawY} = canvasCoords(e);
+        const effW = getEffectiveCanvasW();
+        const effH = getEffectiveCanvasH();
+        const margin = MARGIN_PX;
+        const isInsideMargin = (rawX >= -margin && rawX <= effW + margin && rawY >= -margin && rawY <= effH + margin);
+        if (!isInsideMargin) return;
+
         if (pathState === 'idle') {
           pathUndoSnapshot = snapshot();
           pushHistory();
@@ -9413,7 +9987,7 @@ void main(void)\r
 
           pathPoints = [{x, y}];
           pathState = 'start_placed';
-          drawPathPreview(x, y);
+          drawPathPreview(x, y, rawX, rawY);
           updatePathOverlayToolbar();
         } else if (pathState === 'start_placed') {
           if (vineRightAnglesOnly) {
@@ -9431,7 +10005,7 @@ void main(void)\r
           } else {
             pathPoints.push({x, y});
             pathState = 'end_placed';
-            drawPathPreview(x, y);
+            drawPathPreview(x, y, rawX, rawY);
             updatePathOverlayToolbar();
           }
         } else if (pathState === 'end_placed') {
@@ -9525,8 +10099,14 @@ void main(void)\r
     const {x,y} = canvasCoords(e);
 
     if(tool === 'fill'){
+      const {x, y, rawX, rawY} = canvasCoords(e);
+      const effW = getEffectiveCanvasW();
+      const effH = getEffectiveCanvasH();
+      if(rawX < 0 || rawX >= effW || rawY < 0 || rawY >= effH) return;
       pushHistory();
-      floodFill(x, y, fillMode === 'connected', fillTolerance);
+      const normX = seamlessModeEnabled ? (((x % W) + W) % W) : x;
+      const normY = seamlessModeEnabled ? (((y % H) + H) % H) : y;
+      floodFill(normX, normY, fillMode === 'connected', fillTolerance);
       render();
       refreshLayerThumbOnly();
       return;
@@ -9588,16 +10168,19 @@ void main(void)\r
         hideLoupe();
       }
     } else if(tool === 'spray' || tool === 'vine'){
-      const {x,y} = canvasCoords(e);
+      const {x, y, rawX, rawY} = canvasCoords(e);
+      const effW = getEffectiveCanvasW();
+      const effH = getEffectiveCanvasH();
       const margin = MARGIN_PX;
-      if(x>=-margin && x<=W+margin && y>=-margin && y<=H+margin){
+      const isInsideMargin = (rawX >= -margin && rawX <= effW + margin && rawY >= -margin && rawY <= effH + margin);
+      if(isInsideMargin){
         if(isPathTool()) {
-          if(pathState !== 'idle') drawPathPreview(x, y);
-          else drawVinePreview(x, y);
+          if(pathState !== 'idle') drawPathPreview(x, y, rawX, rawY);
+          else drawVinePreview(x, y, rawX, rawY);
         }
-        else drawSprayPreview(x, y);
+        else drawSprayPreview(x, y, e.shiftKey, rawX, rawY);
       } else {
-        pctx.clearRect(0,0,W,H);
+        clearPreviewCanvas();
         if(isPathTool()) hideOverlayLabel();
       }
     }
@@ -9805,7 +10388,7 @@ void main(void)\r
     canvasWrap.classList.toggle('pan-cursor', actualTool==='pan');
     displayCanvas.classList.toggle('hide-cursor', false);
     canvasWrap.classList.toggle('hide-cursor', false);
-    if(actualTool !== 'spray' && pctx) pctx.clearRect(0,0,W,H);
+    if(actualTool !== 'spray' && pctx) clearPreviewCanvas();
     if(!isPathTool()){
       pathPoints = [];
       pathSegments = [];
@@ -14504,10 +15087,12 @@ void main(void)\r
     pushHistory();
     projectFileHandle = null;
     W = w; H = h;
+    const effW = getEffectiveCanvasW();
+    const effH = getEffectiveCanvasH();
     displayCanvas.width = W; displayCanvas.height = H;
     gridCanvas.width = W; gridCanvas.height = H;
     selectionCanvas.width = W; selectionCanvas.height = H;
-    cursorPreviewCanvas.width = W; cursorPreviewCanvas.height = H;
+    cursorPreviewCanvas.width = effW + MARGIN_PX*2; cursorPreviewCanvas.height = effH + MARGIN_PX*2;
     colorHighlightCanvas.width = W; colorHighlightCanvas.height = H;
     modalPreviewCanvas.width = W; modalPreviewCanvas.height = H;
     marginFadeCanvas.width = W + MARGIN_PX*2; marginFadeCanvas.height = H + MARGIN_PX*2;
@@ -15385,11 +15970,13 @@ void main(void)\r
 
     Promise.all([layerPromise, stampPromise, framesPromise]).then(([newLayers, newStamps, newFramesData])=>{
       W = proj.width; H = proj.height;
+      const effW = getEffectiveCanvasW();
+      const effH = getEffectiveCanvasH();
       displayCanvas.width = W; displayCanvas.height = H;
       gridCanvas.width = W; gridCanvas.height = H;
       selectionCanvas.width = W; selectionCanvas.height = H;
-    cursorPreviewCanvas.width = W; cursorPreviewCanvas.height = H;
-    colorHighlightCanvas.width = W; colorHighlightCanvas.height = H;
+      cursorPreviewCanvas.width = effW + MARGIN_PX*2; cursorPreviewCanvas.height = effH + MARGIN_PX*2;
+      colorHighlightCanvas.width = W; colorHighlightCanvas.height = H;
     modalPreviewCanvas.width = W; modalPreviewCanvas.height = H;
     marginFadeCanvas.width = W + MARGIN_PX*2; marginFadeCanvas.height = H + MARGIN_PX*2;
     resizePixiCanvas();
@@ -16837,7 +17424,9 @@ void main(void)\r
   displayCanvas.width = W; displayCanvas.height = H;
   gridCanvas.width = W; gridCanvas.height = H;
   selectionCanvas.width = W; selectionCanvas.height = H;
-  cursorPreviewCanvas.width = W; cursorPreviewCanvas.height = H;
+  const effW = getEffectiveCanvasW();
+  const effH = getEffectiveCanvasH();
+  cursorPreviewCanvas.width = effW + MARGIN_PX*2; cursorPreviewCanvas.height = effH + MARGIN_PX*2;
   colorHighlightCanvas.width = W; colorHighlightCanvas.height = H;
   modalPreviewCanvas.width = W; modalPreviewCanvas.height = H;
   marginFadeCanvas.width = W + MARGIN_PX*2; marginFadeCanvas.height = H + MARGIN_PX*2;
