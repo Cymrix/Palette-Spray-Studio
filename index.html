@@ -1908,6 +1908,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;">
           <h3 style="margin:0;">Palette</h3>
           <div class="palette-actions" style="margin:0;gap:4px;">
+            <button class="btn small" id="loadDefaultPaletteBtn" style="padding:2px 6px;font-size:10px;" title="Reset to default 99-color palette">Default</button>
             <label class="btn small file-btn" style="padding:2px 6px;font-size:10px;">Load<input type="file" id="loadPalette" accept=".gpl,.json,.txt"></label>
             <button class="btn small" id="savePaletteBtn" style="padding:2px 6px;font-size:10px;">Save</button>
           </div>
@@ -3243,7 +3244,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.247'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.248'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -3891,7 +3892,7 @@ void main(void)\r
   let vineEnableDecorations = true;
   let vinePresetIdCounter = 1;
   let activeVinePresetId = 'builtin-vine-classic';
-  let vinePresets = [
+  const DEFAULT_BUILTIN_VINE_PRESETS = [
     {
       id: 'builtin-vine-classic',
       name: 'Classic Green Ivy',
@@ -4078,6 +4079,7 @@ void main(void)\r
       }
     }
   ];
+  let vinePresets = JSON.parse(JSON.stringify(DEFAULT_BUILTIN_VINE_PRESETS));
   let pathSegments = [];
   let vineSessionBackupCanvas = null;
   let vineSeed = 42;
@@ -4115,7 +4117,7 @@ void main(void)\r
   let sprayCombineSameColor = false;
   let sprayInterpolate = true;
   let activeSprayPresetId = 'builtin-spray';
-  let sprayPresets = [
+  const DEFAULT_BUILTIN_SPRAY_PRESETS = [
     { id: 'builtin-pixelperfect', name: 'Pixel-Perfect Pencil', builtin: true,
       savedSettings: { sprayMode: 'paint', brushSize: 1, dabSize: 1, dabWidth: 1, dabHeight: 1, dabLockAspect: true, density: 100, falloff: 0, flow: 100, sizeJitterMin: 100, sizeJitterMax: 100, opacityJitterMin: 100, opacityJitterMax: 100, rotationMode: 'range', rotationMinAngle: 0, rotationMaxAngle: 0, dabShape: 'square', pixelPerfect: true, opacity: 100, sprayCombineSameColor: false, sprayInterpolate: true, spraySnapToGrid: false },
       settings: { sprayMode: 'paint', brushSize: 1, dabSize: 1, dabWidth: 1, dabHeight: 1, dabLockAspect: true, density: 100, falloff: 0, flow: 100, sizeJitterMin: 100, sizeJitterMax: 100, opacityJitterMin: 100, opacityJitterMax: 100, rotationMode: 'range', rotationMinAngle: 0, rotationMaxAngle: 0, dabShape: 'square', pixelPerfect: true, opacity: 100, sprayCombineSameColor: false, sprayInterpolate: true, spraySnapToGrid: false }
@@ -4165,6 +4167,7 @@ void main(void)\r
       settings: { sprayMode: 'path', brushSize: 4, vineDensity: 100, vineDecorSize: 4, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: true, vineTaperFinish: true, vineTaperOffshoots: false, vineTaperLength: 15, vineSizeJitter: 0, vineRightAnglesOnly: false, vineEnableDecorations: false }
     }
   ];
+  let sprayPresets = JSON.parse(JSON.stringify(DEFAULT_BUILTIN_SPRAY_PRESETS));
 
   let painting = false;
   let panning = false;
@@ -14622,6 +14625,34 @@ void main(void)\r
     return { colors: [], paletteName: null };
   }
 
+  function loadDefaultPalette(askConfirm = true){
+    if(askConfirm){
+      const otherGroupCount = groups.length - 1;
+      const warning = otherGroupCount > 0
+        ? `Resetting to the default palette will replace every color in the Main Palette (99 colors) and delete ${otherGroupCount} other group${otherGroupCount>1?'s':''}. Continue?`
+        : 'Reset to the default 99-color palette? Continue?';
+      if(!confirm(warning)) return;
+    }
+
+    const defaultPal = generateDefaultPaletteColors();
+    groups = [
+      { id: 0, name: 'Main Palette', isMain: true,
+        colors: defaultPal.colors,
+        collapsed: false, columns: 9 }
+    ];
+    groupIdCounter = 1;
+    mainColorIdCounter = defaultPal.nextId;
+    selectedColors = new Set();
+    rangeAnchor = { groupId: null, index: null };
+    const defaultWhiteIdx = allColors().indexOf('#ffffff');
+    selectPaletteIndex(defaultWhiteIdx !== -1 ? defaultWhiteIdx : 0);
+    refreshGroups();
+    fitSidePanelToPalette();
+    if(askConfirm && typeof showToast === 'function') showToast('Default palette loaded');
+  }
+
+  document.getElementById('loadDefaultPaletteBtn')?.addEventListener('click', ()=> loadDefaultPalette(true));
+
   document.getElementById('loadPalette').addEventListener('change', e=>{
     const file = e.target.files[0];
     if(!file) return;
@@ -15126,26 +15157,116 @@ void main(void)\r
 
   newProjCancelBtn.addEventListener('click', closeNewProjectModal);
 
-  newProjCreateBtn.addEventListener('click', ()=>{
-    const w = Math.max(1, Math.min(8192, parseInt(newProjWidthInput.value) || 512));
-    const h = Math.max(1, Math.min(8192, parseInt(newProjHeightInput.value) || 512));
-    closeNewProjectModal();
+  async function resetProjectToDefaults(w = 512, h = 512){
+    if(typeof isPlaying !== 'undefined' && isPlaying && typeof stopPlayback === 'function'){
+      stopPlayback();
+    }
+    if(typeof floatingSelection !== 'undefined' && floatingSelection && typeof anchorFloatingSelection === 'function'){
+      anchorFloatingSelection();
+    }
+    if(typeof clearSelection === 'function') clearSelection();
+    if(typeof updateSelectionUI === 'function') updateSelectionUI();
 
-    pushHistory();
     projectFileHandle = null;
-    W = w; H = h;
+    activeSaveLocation = 'local';
+    currentCloudFileId = null;
+    currentCloudFileName = null;
+    currentCloudProviderUsed = null;
+    if(typeof syncBackupUI === 'function') syncBackupUI();
+
+    W = Math.max(1, Math.min(8192, parseInt(w) || 512));
+    H = Math.max(1, Math.min(8192, parseInt(h) || 512));
     resizeAllCanvasesToWH();
     syncDocCompositeCanvasSize();
-    clearSelection();
+
+    undoStack = [];
+    redoStack = [];
+    pathUndoSnapshot = null;
+    if(typeof updateHistoryButtons === 'function') updateHistoryButtons();
+
+    onionSkinEnabled = false;
+    const onionSkinBtn = document.getElementById('onionSkinBtn');
+    if(onionSkinBtn) onionSkinBtn.classList.remove('active');
+    onionSkinCache = null;
+
+    layerIdCounter = 1;
+    frameIdCounter = 1;
     layers = [];
-    undoStack = []; redoStack = [];
     addLayer('Layer 1', null, true);
     frames = [makeFrame('Frame ' + frameIdCounter, layers, 0)];
     currentFrameIndex = 0;
     refreshFramesPanel();
+    if(typeof refreshMatrixTimeline === 'function') refreshMatrixTimeline();
+
+    loadDefaultPalette(false);
+
+    gradients = [];
+    selectedGradientIndex = 0;
+    buildingStops = [];
+    editingGradientIndex = null;
+    if(typeof refreshGradientList === 'function') refreshGradientList();
+    if(typeof populateGradientSourceDropdown === 'function') populateGradientSourceDropdown();
+    if(typeof populatePalettizeGradientDropdown === 'function') populatePalettizeGradientDropdown();
+
+    stamps = [];
+    selectedStampIndex = 0;
+    if(typeof initDefaultSvgStamps === 'function') await initDefaultSvgStamps();
+    if(typeof refreshStampList === 'function') refreshStampList();
+    if(typeof populateStampDropdown === 'function') populateStampDropdown();
+
+    grids = [];
+    gridMasterOn = false;
+    snapToGridEnabled = false;
+    gridIdCounter = 1;
+    const gridMasterToggle = document.getElementById('gridMasterToggle');
+    if(gridMasterToggle) gridMasterToggle.checked = false;
+    if(typeof refreshGridPanel === 'function') refreshGridPanel();
+    if(typeof drawGridOverlay === 'function') drawGridOverlay();
+
+    sprayPresets = JSON.parse(JSON.stringify(DEFAULT_BUILTIN_SPRAY_PRESETS));
+    activeSprayPresetId = 'builtin-spray';
+    sprayPresetIdCounter = 1;
+    if(typeof refreshSprayPresetList === 'function') refreshSprayPresetList();
+
+    vinePresets = JSON.parse(JSON.stringify(DEFAULT_BUILTIN_VINE_PRESETS));
+    activeVinePresetId = 'builtin-vine-classic';
+    vinePresetIdCounter = 1;
+    if(typeof refreshVinePresetList === 'function') refreshVinePresetList();
+
+    if(typeof applySprayPreset === 'function') applySprayPreset('builtin-spray');
+    if(typeof setTool === 'function') setTool('spray');
+
+    sourceKind = 'palette';
+    const sourceKindRadio = document.querySelector('input[name="sourceKind"][value="palette"]');
+    if(sourceKindRadio) sourceKindRadio.checked = true;
+
+    const dabLock = document.getElementById('dabLockAspect');
+    if(dabLock) dabLock.checked = true;
+    dabLockAspect = true;
+
+    const pixelPerf = document.getElementById('pixelPerfect');
+    if(pixelPerf) pixelPerf.checked = false;
+    pixelPerfect = false;
+
+    const seamlessToggle = document.getElementById('seamlessModeToggle');
+    if(seamlessToggle) seamlessToggle.checked = false;
+    seamlessModeEnabled = false;
+
+    const colorHighlightBtn = document.getElementById('highlightOnCanvasBtn');
+    if(colorHighlightBtn) colorHighlightBtn.classList.remove('active');
+    colorHighlightActive = false;
+
     fitCanvasToScreen(true);
     centerCanvas();
-    drawGridOverlay();
+    fitSidePanelToPalette();
+    render();
+  }
+
+  newProjCreateBtn.addEventListener('click', async ()=>{
+    const w = Math.max(1, Math.min(8192, parseInt(newProjWidthInput.value) || 512));
+    const h = Math.max(1, Math.min(8192, parseInt(newProjHeightInput.value) || 512));
+    closeNewProjectModal();
+    await resetProjectToDefaults(w, h);
   });
 
   function cropProjectToSelection(){
