@@ -2,29 +2,42 @@
   "name": "Palette Spray Studio",
   "short_name": "Palette Spray",
   "description": "Layered pixel-art painter with a palette and gradient-driven spray brush.",
-  "id": "palette-spray-studio",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "display_override": [
-    "standalone",
-    "minimal-ui"
-  ],
   "orientation": "any",
   "background_color": "#17181c",
   "theme_color": "#17181c",
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2220%22%20fill%3D%22%2317181c%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2222%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2278%22%20cy%3D%2230%22%20r%3D%226%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2274%22%20r%3D%225%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2282%22%20cy%3D%2270%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2226%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3C/svg%3E",
+      "src": "./icon-192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "type": "image/png",
+      "purpose": "any"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2220%22%20fill%3D%22%2317181c%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2222%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2278%22%20cy%3D%2230%22%20r%3D%226%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2274%22%20r%3D%225%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2282%22%20cy%3D%2270%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2226%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3C/svg%3E",
+      "src": "./icon-512.png",
       "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "./icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
       "type": "image/svg+xml",
-      "purpose": "any maskable"
+      "purpose": "any"
     }
   ]
 }

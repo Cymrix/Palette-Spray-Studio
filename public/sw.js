@@ -1,8 +1,11 @@
-const CACHE_NAME = "palette-spray-studio-v4";
+const CACHE_NAME = "palette-spray-studio-v5";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
-  "./manifest.json"
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./icon.svg"
 ];
 
 // Install Event - cache the core assets
@@ -17,15 +20,15 @@ self.addEventListener("install", (event) => {
   self.skipWaiting();
 });
 
-// Activate Event - clean up old caches
+// Activate Event - clean up old caches immediately
 self.addEventListener("activate", (event) => {
   event.waitUntil(
-    caches.keys().then((cacheNames) => {
+    caches.keys().then((keys) => {
       return Promise.all(
-        cacheNames.map((cache) => {
-          if (cache !== CACHE_NAME) {
-            console.log("Service Worker: Clearing Old Cache");
-            return caches.delete(cache);
+        keys.map((key) => {
+          if (key !== CACHE_NAME) {
+            console.log("Service Worker: Clearing Old Cache", key);
+            return caches.delete(key);
           }
         })
       );
@@ -61,21 +64,19 @@ self.addEventListener("fetch", (event) => {
 
   // Stale-While-Revalidate for other static assets
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      const fetchedResponse = fetch(event.request)
-        .then((networkResponse) => {
-          // Only cache successful responses
-          if (networkResponse && networkResponse.status === 200) {
-            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse.clone()));
-          }
-          return networkResponse;
-        })
-        .catch(() => {
-          // Return cached response if network fails
-          return cachedResponse;
-        });
+    caches.open(CACHE_NAME).then((cache) => {
+      return cache.match(event.request).then((cachedResponse) => {
+        const fetchedResponse = fetch(event.request)
+          .then((networkResponse) => {
+            if (networkResponse && networkResponse.status === 200) {
+              cache.put(event.request, networkResponse.clone());
+            }
+            return networkResponse;
+          })
+          .catch(() => {});
 
-      return cachedResponse || fetchedResponse;
+        return cachedResponse || fetchedResponse;
+      });
     })
   );
 });

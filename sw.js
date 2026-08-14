@@ -1,8 +1,11 @@
-const CACHE_NAME = "palette-spray-studio-v4";
+const CACHE_NAME = "palette-spray-studio-v5";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
-  "./manifest.json"
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png",
+  "./icon.svg"
 ];
 
 // Install Event - cache the core assets
@@ -24,6 +27,7 @@ self.addEventListener("activate", (event) => {
       return Promise.all(
         keys.map((key) => {
           if (key !== CACHE_NAME) {
+            console.log("Service Worker: Clearing Old Cache", key);
             return caches.delete(key);
           }
         })
