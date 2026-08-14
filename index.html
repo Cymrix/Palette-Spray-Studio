@@ -916,15 +916,17 @@
         </div>
       </div>
 
-      <div style="display:flex; gap:8px; margin-bottom:14px; background:var(--panel-2); padding:4px; border-radius:8px; border:1px solid var(--line);">
-        <button id="cloudTabGDrive" class="btn small primary" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; font-weight:600;">
-          <svg width="14" height="14" viewBox="0 0 87.3 78" fill="none"><path d="M6.6 66.85l13.1-22.7 20 34.6H13.1c-4.9 0-9.2-2.7-11.4-6.9l4.9-5z" fill="#0066DA"/><path d="M43.65 11.15L30.55 33.85l-20-34.6h26.2c4.9 0 9.2 2.7 11.4 6.9l-4.5 3.85z" fill="#00AC47"/><path d="M73.55 66.85l-13.1-22.7 13.1-22.7 13.1 22.7c2.2 4.2 2.2 9.2 0 13.4l-13.1 9.3z" fill="#EA4335"/><path d="M43.65 11.15l13.1 22.7-20 34.6-13.1-22.7 20-34.6z" fill="#FFBA00"/></svg>
-          Google Drive
-        </button>
-        <button id="cloudTabOneDrive" class="btn small" style="flex:1; display:flex; align-items:center; justify-content:center; gap:6px; font-weight:600;">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="#0078D4"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
-          OneDrive
-        </button>
+      <div style="display:flex; justify-content:center; align-items:center; margin-bottom:14px;">
+        <div class="cloud-provider-toggle-container" style="display:inline-flex; position:relative; background:var(--panel-2); border:1px solid var(--line); border-radius:24px; padding:3px; width:100%; box-shadow:inset 0 1px 3px rgba(0,0,0,0.25); user-select:none;">
+          <button type="button" id="cloudToggleGDrive" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:7px 14px; border:none; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.22s cubic-bezier(0.4, 0, 0.2, 1); z-index:2; background:var(--accent); color:var(--accent-text, #fff); box-shadow:0 2px 6px rgba(0,0,0,0.3);">
+            <svg width="15" height="15" viewBox="0 0 87.3 78" fill="none"><path d="M6.6 66.85l13.1-22.7 20 34.6H13.1c-4.9 0-9.2-2.7-11.4-6.9l4.9-5z" fill="#0066DA"/><path d="M43.65 11.15L30.55 33.85l-20-34.6h26.2c4.9 0 9.2 2.7 11.4 6.9l-4.5 3.85z" fill="#00AC47"/><path d="M73.55 66.85l-13.1-22.7 13.1-22.7 13.1 22.7c2.2 4.2 2.2 9.2 0 13.4l-13.1 9.3z" fill="#EA4335"/><path d="M43.65 11.15l13.1 22.7-20 34.6-13.1-22.7 20-34.6z" fill="#FFBA00"/></svg>
+            <span>Google Drive</span>
+          </button>
+          <button type="button" id="cloudToggleOneDrive" style="flex:1; display:flex; align-items:center; justify-content:center; gap:8px; padding:7px 14px; border:none; border-radius:20px; font-size:12px; font-weight:600; cursor:pointer; transition:all 0.22s cubic-bezier(0.4, 0, 0.2, 1); z-index:2; background:transparent; color:var(--text-dim); box-shadow:none;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="#0078D4"><path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+            <span>OneDrive</span>
+          </button>
+        </div>
       </div>
 
       <div id="cloudAuthBar" style="background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
@@ -936,39 +938,28 @@
       <div style="background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; margin-bottom:14px; display:flex; flex-direction:column; gap:8px;">
         <div>
           <label class="field" style="margin-top:0; font-size:11px; font-weight:600; text-transform:uppercase; color:var(--text-dim); letter-spacing:0.04em; display:flex; justify-content:space-between; align-items:center;">
-            <span>Target Cloud Folder</span>
+            <span>Target Cloud Folder (Full Path)</span>
             <button class="btn small" id="cloudBrowseFoldersBtn" style="font-size:10px; padding:2px 6px;">📁 Browse Folders</button>
           </label>
           <div style="display:flex; gap:8px; margin-top:4px;">
-            <input type="text" id="cloudTargetFolderInput" value="Palette Spray Studio" style="flex:1; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px 10px; font-size:12px;">
+            <input type="text" id="cloudTargetFolderInput" value="/Palette Spray Studio" placeholder="/Palette Spray Studio" style="flex:1; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:6px; padding:6px 10px; font-size:12px; font-family:monospace;">
             <button class="btn small" id="cloudSetFolderBtn" style="white-space:nowrap; font-size:11px; padding:2px 8px;">Apply</button>
           </div>
         </div>
-        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; border-top:1px solid var(--line); padding-top:8px; margin-top:2px; flex-wrap:wrap;">
-          <div style="display:flex; align-items:center; gap:8px;">
-            <input type="checkbox" id="cloudBackupsCheckbox" style="cursor:pointer; width:14px; height:14px;">
-            <label for="cloudBackupsCheckbox" style="font-size:11px; color:var(--text); cursor:pointer; user-select:none;">Automatic Cloud Backups</label>
-          </div>
-          <div style="display:flex; align-items:center; gap:6px;">
-            <label for="cloudBackupServiceSelect" style="font-size:11px; color:var(--text-dim); cursor:pointer;">Target Service:</label>
-            <select id="cloudBackupServiceSelect" style="font-size:11px; padding:3px 6px; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:4px; cursor:pointer;">
-              <option value="active">Active Tab Service</option>
-              <option value="onedrive">OneDrive Only</option>
-              <option value="gdrive">Google Drive Only</option>
-              <option value="both">Both (OneDrive &amp; GDrive)</option>
-            </select>
-          </div>
+        <div style="display:flex; align-items:center; gap:8px; border-top:1px solid var(--line); padding-top:8px; margin-top:2px;">
+          <input type="checkbox" id="cloudBackupsCheckbox" style="cursor:pointer; width:14px; height:14px; accent-color:var(--accent);">
+          <label for="cloudBackupsCheckbox" style="font-size:11px; color:var(--text); cursor:pointer; user-select:none;">Automatic Cloud Backups (saves backup to active cloud service)</label>
         </div>
       </div>
 
       <!-- Folder Browser Popover Sub-section (collapsible inside the modal) -->
-      <div id="cloudFolderBrowserSection" style="display:none; flex-direction:column; height:250px; min-height:160px; max-height:80vh; resize:vertical; overflow:hidden; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px; margin-bottom:14px;">
-        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-          <div style="display:flex; align-items:center; gap:6px;">
-            <button class="btn icon small" id="cloudBrowserUpBtn" title="Go up one level" disabled style="padding:2px; font-size:12px;">↑</button>
-            <span id="cloudBrowserPathLabel" style="font-size:11px; font-weight:600; color:var(--text-dim); max-width:120px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Root</span>
+      <div id="cloudFolderBrowserSection" style="display:none; flex-direction:column; height:260px; min-height:180px; max-height:80vh; resize:vertical; overflow:hidden; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px; margin-bottom:14px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px; gap:6px;">
+          <div style="display:flex; align-items:center; gap:6px; min-width:0; flex:1;">
+            <button class="btn icon small" id="cloudBrowserUpBtn" title="Go up one level" disabled style="padding:2px; font-size:12px; flex-shrink:0;">↑</button>
+            <span id="cloudBrowserPathLabel" style="font-size:11px; font-weight:600; color:var(--accent); font-family:monospace; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="/">/</span>
           </div>
-          <div style="display:flex; align-items:center; gap:6px;">
+          <div style="display:flex; align-items:center; gap:6px; flex-shrink:0;">
             <button class="btn small" id="cloudBrowserNewFolderBtn" style="font-size:10px; padding:2px 6px;">+ New</button>
             <button class="btn icon small" id="cloudCloseBrowserBtn" style="font-size:10px; padding:2px 6px;">✕</button>
           </div>
@@ -1025,9 +1016,9 @@
       <div id="cloudInstrContentGDrive" style="font-size:12px; line-height:1.5; color:var(--text);">
         <div style="font-weight:600; color:var(--accent); margin-bottom:6px;">Google Drive Storage</div>
         <ol style="margin:0 0 10px 0; padding-left:18px; display:flex; flex-direction:column; gap:6px;">
+          <li><strong>Active Service Toggle</strong>: Use the top slider to switch the active cloud service to Google Drive.</li>
           <li><strong>Sign In</strong>: Click <em>Sign In</em> to connect your Google account in the secure Google sign-in window.</li>
-          <li><strong>Target Folder</strong>: Projects save into the <code>Palette Spray Studio</code> folder on your Google Drive by default. You can enter any custom folder name and click <em>Apply</em>.</li>
-          <li><strong>Browse &amp; Create Folders</strong>: Click <em>Browse Folders</em> to navigate existing Google Drive directories or create new folders.</li>
+          <li><strong>Target Folder</strong>: Projects save into your configured full path (default: <code>/Palette Spray Studio</code>). You can enter any custom path (e.g. <code>/Art/Projects</code>) and click <em>Apply</em>, or navigate subfolders using <em>Browse Folders</em>.</li>
           <li><strong>Save &amp; Load</strong>: Enter a file name and click <em>Save to Cloud</em> to store your complete artwork project. Click <em>Load</em> on any file in the list to open it directly into the canvas.</li>
         </ol>
       </div>
@@ -1036,9 +1027,9 @@
       <div id="cloudInstrContentOneDrive" style="display:none; font-size:12px; line-height:1.5; color:var(--text);">
         <div style="font-weight:600; color:var(--accent); margin-bottom:6px;">Microsoft OneDrive Storage</div>
         <ol style="margin:0 0 10px 0; padding-left:18px; display:flex; flex-direction:column; gap:6px;">
+          <li><strong>Active Service Toggle</strong>: Use the top slider to switch the active cloud service to OneDrive.</li>
           <li><strong>Sign In</strong>: Click <em>Sign In</em> to connect your Microsoft account.</li>
-          <li><strong>Target Folder</strong>: Projects save into the <code>Palette Spray Studio</code> folder on your OneDrive by default. You can enter any custom folder name and click <em>Apply</em>.</li>
-          <li><strong>Browse &amp; Create Folders</strong>: Click <em>Browse Folders</em> to navigate and organize directories on your OneDrive.</li>
+          <li><strong>Target Folder</strong>: Projects save into your configured full path (default: <code>/Palette Spray Studio</code>). You can enter any custom path or browse directories directly.</li>
           <li><strong>Save &amp; Load</strong>: Save or load <code>.pssproj</code> projects seamlessly across your devices.</li>
         </ol>
       </div>
@@ -1047,7 +1038,7 @@
       <div id="cloudInstrContentBackups" style="display:none; font-size:12px; line-height:1.5; color:var(--text);">
         <div style="font-weight:600; color:var(--accent); margin-bottom:6px;">Automatic Cloud Backups &amp; Sync</div>
         <ul style="margin:0 0 10px 0; padding-left:18px; display:flex; flex-direction:column; gap:6px;">
-          <li><strong>Cloud Auto-Backups</strong>: Check <em>Enable Automatic Cloud Backups</em> to periodically upload project snapshots to your cloud folder.</li>
+          <li><strong>Automatic Cloud Backups</strong>: Check <em>Automatic Cloud Backups</em> to periodically upload project snapshots directly to your target folder on the active cloud service.</li>
           <li><strong>Active Cloud Association</strong>: Once a project is saved to or loaded from the cloud, pressing <kbd>Ctrl+S</kbd> or clicking Save updates the cloud file directly.</li>
           <li><strong>Data Security</strong>: Authentication tokens reside only in your local browser session; data transfers travel directly to official Google Drive and Microsoft Graph APIs.</li>
         </ul>
@@ -3252,7 +3243,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.242'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.245'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -15613,6 +15604,8 @@ void main(void)\r
     syncBackupUI();
   }
 
+  const BACKUP_SUBFOLDER_NAME = 'Palette Spray Studio Backups';
+
   async function toggleBackups(){
     if (activeSaveLocation === 'cloud') {
       const cb = document.getElementById('cloudBackupsCheckbox');
@@ -15638,7 +15631,7 @@ void main(void)\r
     }
     try {
       const dir = await window.showDirectoryPicker();
-      const subfolderName = projectName() + ' backups';
+      const subfolderName = BACKUP_SUBFOLDER_NAME;
       backupDirHandle = await dir.getDirectoryHandle(subfolderName, {create:true});
       saveBackupHandleToDB(dir);
       syncBackupUI();
@@ -15658,7 +15651,7 @@ void main(void)\r
     try {
       const perm = await storedDir.requestPermission({mode:'readwrite'});
       if(perm === 'granted'){
-        const subfolderName = projectName() + ' backups';
+        const subfolderName = BACKUP_SUBFOLDER_NAME;
         backupDirHandle = await storedDir.getDirectoryHandle(subfolderName, {create:true});
         document.getElementById('backupToggleBtn').textContent = 'Backups: On';
         document.getElementById('backupIntervalLabel').style.display = 'inline-flex';
@@ -15680,10 +15673,15 @@ void main(void)\r
   async function pruneOldBackups(){
     if(!backupDirHandle) return;
     const maxFiles = Math.max(1, +document.getElementById('backupMaxFilesInput').value || 10);
+    const currentProj = projectName();
+    const projPssprojSuffix = `_${currentProj}.pssproj`;
+    const projJsonSuffix = `_${currentProj}.json`;
     try {
       const names = [];
       for await (const [name, handle] of backupDirHandle.entries()){
-        if(handle.kind === 'file' && name.endsWith('.pssproj')) names.push(name);
+        if(handle.kind === 'file' && (name.endsWith(projPssprojSuffix) || name.endsWith(projJsonSuffix))){
+          names.push(name);
+        }
       }
       names.sort(); // timestamp-first filenames sort chronologically as plain strings
       while(names.length > maxFiles){
@@ -15693,6 +15691,215 @@ void main(void)\r
     } catch(err){
       console.warn('Backup pruning failed:', err);
     }
+  }
+
+  // Cloud Storage Provider State & Normalization Utilities
+  let currentCloudProvider = localStorage.getItem('active_cloud_provider') || 'gdrive'; // 'gdrive' or 'onedrive'
+  let gdriveToken = localStorage.getItem('gdrive_token') || null;
+  let onedriveToken = localStorage.getItem('onedrive_token') || null;
+
+  function normalizePath(rawPath) {
+    if (!rawPath) return '/';
+    let p = String(rawPath).trim().replace(/\\/g, '/');
+    if (!p.startsWith('/')) p = '/' + p;
+    p = p.replace(/\/+/g, '/');
+    if (p.length > 1 && p.endsWith('/')) p = p.slice(0, -1);
+    return p || '/';
+  }
+
+  function getTargetFolderPath(prov = currentCloudProvider) {
+    const key = prov === 'onedrive' ? 'onedrive_folder_path' : 'gdrive_folder_path';
+    let saved = localStorage.getItem(key);
+    if (!saved) {
+      const legacy = localStorage.getItem('cloud_folder_name');
+      if (legacy) saved = legacy;
+    }
+    return normalizePath(saved || '/Palette Spray Studio');
+  }
+
+  function getTargetFolderId(prov = currentCloudProvider) {
+    const key = prov === 'onedrive' ? 'onedrive_folder_id' : 'gdrive_folder_id';
+    return localStorage.getItem(key) || null;
+  }
+
+  function setTargetFolder(path, folderId, prov = currentCloudProvider) {
+    const normPath = normalizePath(path);
+    const pathKey = prov === 'onedrive' ? 'onedrive_folder_path' : 'gdrive_folder_path';
+    const idKey = prov === 'onedrive' ? 'onedrive_folder_id' : 'gdrive_folder_id';
+    localStorage.setItem(pathKey, normPath);
+    if (folderId && folderId !== 'root') {
+      localStorage.setItem(idKey, folderId);
+    } else {
+      localStorage.removeItem(idKey);
+    }
+    const inputEl = document.getElementById('cloudTargetFolderInput');
+    if (inputEl) inputEl.value = normPath;
+  }
+
+  async function resolveGoogleDriveFolder(targetPath, knownFolderId) {
+    if (!gdriveToken) return { id: 'root', path: '/' };
+    const normPath = normalizePath(targetPath);
+    if (normPath === '/' || normPath === '') return { id: 'root', path: '/' };
+
+    if (knownFolderId && knownFolderId !== 'root') {
+      try {
+        const verifyRes = await fetch(`https://www.googleapis.com/drive/v3/files/${knownFolderId}?fields=id,name,trashed`, {
+          headers: { 'Authorization': `Bearer ${gdriveToken}` }
+        });
+        if (verifyRes.ok) {
+          const vData = await verifyRes.json();
+          if (!vData.trashed) return { id: knownFolderId, path: normPath };
+        }
+      } catch (e) {}
+    }
+
+    const segments = normPath.split('/').filter(Boolean);
+    let currentParentId = 'root';
+    for (const seg of segments) {
+      const q = encodeURIComponent(`'${currentParentId}' in parents and name = '${seg.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`);
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, {
+        headers: { 'Authorization': `Bearer ${gdriveToken}` }
+      });
+      if (!res.ok) {
+        if (res.status === 401) {
+          gdriveToken = null;
+          localStorage.removeItem('gdrive_token');
+          if (typeof checkCloudAuthStatus === 'function') checkCloudAuthStatus();
+        }
+        return { id: currentParentId, path: normPath };
+      }
+      const data = await res.json();
+      if (data.files && data.files.length > 0) {
+        currentParentId = data.files[0].id;
+      } else {
+        const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${gdriveToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: seg,
+            mimeType: 'application/vnd.google-apps.folder',
+            parents: currentParentId !== 'root' ? [currentParentId] : undefined
+          })
+        });
+        if (!createRes.ok) return { id: currentParentId, path: normPath };
+        const newFolder = await createRes.json();
+        currentParentId = newFolder.id;
+      }
+    }
+    return { id: currentParentId, path: normPath };
+  }
+
+  async function resolveOneDriveFolder(targetPath, knownFolderId) {
+    if (!onedriveToken) return { id: 'root', path: '/' };
+    const normPath = normalizePath(targetPath);
+    if (normPath === '/' || normPath === '') return { id: 'root', path: '/' };
+
+    if (knownFolderId && knownFolderId !== 'root') {
+      try {
+        const verifyRes = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${knownFolderId}`, {
+          headers: { 'Authorization': `Bearer ${onedriveToken}` }
+        });
+        if (verifyRes.ok) {
+          return { id: knownFolderId, path: normPath };
+        }
+      } catch (e) {}
+    }
+
+    const segments = normPath.split('/').filter(Boolean);
+    let currentParentId = 'root';
+    for (const seg of segments) {
+      let listUrl = 'https://graph.microsoft.com/v1.0/me/drive/root/children';
+      if (currentParentId !== 'root') {
+        listUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${currentParentId}/children`;
+      }
+      const listRes = await fetch(listUrl, { headers: { 'Authorization': `Bearer ${onedriveToken}` } });
+      if (!listRes.ok) {
+        if (listRes.status === 401) {
+          onedriveToken = null;
+          localStorage.removeItem('onedrive_token');
+          if (typeof checkCloudAuthStatus === 'function') checkCloudAuthStatus();
+        }
+        return { id: currentParentId, path: normPath };
+      }
+      const data = await listRes.json();
+      const existing = (data.value || []).find(item => item.folder && item.name.toLowerCase() === seg.toLowerCase());
+      if (existing) {
+        currentParentId = existing.id;
+      } else {
+        let createUrl = 'https://graph.microsoft.com/v1.0/me/drive/root/children';
+        if (currentParentId !== 'root') {
+          createUrl = `https://graph.microsoft.com/v1.0/me/drive/items/${currentParentId}/children`;
+        }
+        const createRes = await fetch(createUrl, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${onedriveToken}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            name: seg,
+            folder: {},
+            '@microsoft.graph.conflictBehavior': 'rename'
+          })
+        });
+        if (!createRes.ok) return { id: currentParentId, path: normPath };
+        const newFolder = await createRes.json();
+        currentParentId = newFolder.id;
+      }
+    }
+    return { id: currentParentId, path: normPath };
+  }
+
+  async function pruneCloudBackupsGDrive(folderId, currentProj, maxFiles){
+    if (!gdriveToken || !folderId) return;
+    try {
+      const query = encodeURIComponent(`'${folderId}' in parents and (name contains '_${currentProj}.pssproj' or name contains '_${currentProj}.json') and trashed = false`);
+      const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,createdTime)&pageSize=100`, {
+        headers: { 'Authorization': `Bearer ${gdriveToken}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const files = (data.files || []).filter(f => f.name && (f.name.endsWith(`_${currentProj}.pssproj`) || f.name.endsWith(`_${currentProj}.json`)));
+      files.sort((a, b) => (a.name < b.name ? -1 : (a.name > b.name ? 1 : 0)));
+      while (files.length > maxFiles) {
+        const oldest = files.shift();
+        try {
+          await fetch(`https://www.googleapis.com/drive/v3/files/${oldest.id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${gdriveToken}` }
+          });
+        } catch(e) { console.warn('Failed to prune GDrive backup', oldest.name, e); }
+      }
+    } catch(err){ console.warn('GDrive pruning error:', err); }
+  }
+
+  async function pruneCloudBackupsOneDrive(folderId, currentProj, maxFiles){
+    if (!onedriveToken) return;
+    try {
+      let url = 'https://graph.microsoft.com/v1.0/me/drive/root/children?$top=100';
+      if (folderId && folderId !== 'root') {
+        url = `https://graph.microsoft.com/v1.0/me/drive/items/${folderId}/children?$top=100`;
+      }
+      const res = await fetch(url, {
+        headers: { 'Authorization': `Bearer ${onedriveToken}` }
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const files = (data.value || []).filter(f => f.name && (f.name.endsWith(`_${currentProj}.pssproj`) || f.name.endsWith(`_${currentProj}.json`)));
+      files.sort((a, b) => (a.name < b.name ? -1 : (a.name > b.name ? 1 : 0)));
+      while (files.length > maxFiles) {
+        const oldest = files.shift();
+        try {
+          await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${oldest.id}`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${onedriveToken}` }
+          });
+        } catch(e) { console.warn('Failed to prune OneDrive backup', oldest.name, e); }
+      }
+    } catch(err){ console.warn('OneDrive pruning error:', err); }
   }
 
   async function writeBackupCopy(){
@@ -15709,45 +15916,61 @@ void main(void)\r
       }
     }
 
-    // 2. Cloud backups
+    // 2. Cloud backups (always saves to the active cloud service)
     const cloudBackupsEnabled = document.getElementById('cloudBackupsCheckbox')?.checked;
     if (cloudBackupsEnabled) {
-      const folderName = document.getElementById('cloudTargetFolderInput')?.value.trim() || 'Palette Spray Studio';
+      const activeProv = currentCloudProviderUsed || currentCloudProvider || 'gdrive';
       const fileName = `backup_${backupFileStamp()}_${projectName()}.pssproj`;
       const projectDataStr = JSON.stringify(buildProjectData());
-      const backupServicePref = document.getElementById('cloudBackupServiceSelect')?.value || localStorage.getItem('cloud_backup_service_pref') || 'active';
+      const maxCloudFiles = Math.max(1, +document.getElementById('backupMaxFilesInput')?.value || 10);
 
-      const activeProv = currentCloudProviderUsed || currentCloudProvider;
-      const shouldBackupGDrive = (backupServicePref === 'gdrive' || backupServicePref === 'both' || (backupServicePref === 'active' && activeProv === 'gdrive')) && !!gdriveToken;
-      const shouldBackupOneDrive = (backupServicePref === 'onedrive' || backupServicePref === 'both' || (backupServicePref === 'active' && activeProv === 'onedrive')) && !!onedriveToken;
-
-      // GDrive backup
-      if (shouldBackupGDrive) {
+      // Active is Google Drive
+      if (activeProv === 'gdrive' && gdriveToken) {
         try {
-          const folderId = await getOrCreateGoogleDriveFolder(folderName);
-          const metadata = { name: fileName, mimeType: 'application/json', parents: [folderId] };
+          const targetPath = getTargetFolderPath('gdrive');
+          const targetFolderId = getTargetFolderId('gdrive');
+          const { id: folderId } = await resolveGoogleDriveFolder(targetPath, targetFolderId);
+          if (folderId && folderId !== targetFolderId) {
+            localStorage.setItem('gdrive_folder_id', folderId);
+          }
+          const metadata = {
+            name: fileName,
+            mimeType: 'application/json',
+            parents: folderId !== 'root' ? [folderId] : undefined
+          };
           const form = new FormData();
           form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
           form.append('file', new Blob([projectDataStr], { type: 'application/json' }));
 
-          await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
+          const res = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart', {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${gdriveToken}` },
             body: form
           });
+          if (res.ok) {
+            await pruneCloudBackupsGDrive(folderId, projectName(), maxCloudFiles);
+          }
         } catch (err) {
           console.warn('Cloud backup to Google Drive failed:', err);
         }
       }
 
-      // OneDrive backup
-      if (shouldBackupOneDrive) {
+      // Active is OneDrive
+      if (activeProv === 'onedrive' && onedriveToken) {
         try {
-          let url = `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(fileName)}:/content`;
-          if (folderName && folderName !== 'root') {
-            url = `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(folderName)}/${encodeURIComponent(fileName)}:/content`;
+          const targetPath = getTargetFolderPath('onedrive');
+          const targetFolderId = getTargetFolderId('onedrive');
+          const { id: folderId } = await resolveOneDriveFolder(targetPath, targetFolderId);
+          if (folderId && folderId !== targetFolderId) {
+            localStorage.setItem('onedrive_folder_id', folderId);
           }
-          await fetch(url, {
+          let url;
+          if (folderId && folderId !== 'root') {
+            url = `https://graph.microsoft.com/v1.0/me/drive/items/${folderId}:/${encodeURIComponent(fileName)}:/content`;
+          } else {
+            url = `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(fileName)}:/content`;
+          }
+          const res = await fetch(url, {
             method: 'PUT',
             headers: {
               'Authorization': `Bearer ${onedriveToken}`,
@@ -15755,6 +15978,9 @@ void main(void)\r
             },
             body: projectDataStr
           });
+          if (res.ok) {
+            await pruneCloudBackupsOneDrive(folderId, projectName(), maxCloudFiles);
+          }
         } catch (err) {
           console.warn('Cloud backup to OneDrive failed:', err);
         }
@@ -16276,10 +16502,6 @@ void main(void)\r
   });
 
   // ---------- Cloud Storage Manager (Google Drive & OneDrive) ----------
-  let currentCloudProvider = 'gdrive'; // 'gdrive' or 'onedrive'
-  let gdriveToken = localStorage.getItem('gdrive_token') || null;
-  let onedriveToken = localStorage.getItem('onedrive_token') || null;
-
   const cloudOverlay = document.getElementById('cloudStorageModalOverlay');
   const cloudModalCloseBtn = document.getElementById('cloudModalCloseBtn');
   const cloudInstructionsToggleBtn = document.getElementById('cloudInstructionsToggleBtn');
@@ -16324,8 +16546,8 @@ void main(void)\r
   if (cloudInstrTabOneDrive) cloudInstrTabOneDrive.addEventListener('click', () => setCloudInstructionsTab('onedrive'));
   if (cloudInstrTabBackups) cloudInstrTabBackups.addEventListener('click', () => setCloudInstructionsTab('backups'));
 
-  const cloudTabGDrive = document.getElementById('cloudTabGDrive');
-  const cloudTabOneDrive = document.getElementById('cloudTabOneDrive');
+  const cloudToggleGDrive = document.getElementById('cloudToggleGDrive');
+  const cloudToggleOneDrive = document.getElementById('cloudToggleOneDrive');
   const cloudAuthStatus = document.getElementById('cloudAuthStatus');
   const cloudAuthBtn = document.getElementById('cloudAuthBtn');
   const cloudSaveFilenameInput = document.getElementById('cloudSaveFilenameInput');
@@ -16337,27 +16559,18 @@ void main(void)\r
   const cloudTargetFolderInput = document.getElementById('cloudTargetFolderInput');
   const cloudSetFolderBtn = document.getElementById('cloudSetFolderBtn');
   const cloudBackupsCheckbox = document.getElementById('cloudBackupsCheckbox');
-  const cloudBackupServiceSelect = document.getElementById('cloudBackupServiceSelect');
 
   // Load persistence configurations from localStorage
   if (cloudTargetFolderInput) {
-    cloudTargetFolderInput.value = localStorage.getItem('cloud_folder_name') || 'Palette Spray Studio';
+    cloudTargetFolderInput.value = getTargetFolderPath(currentCloudProvider);
   }
   if (cloudBackupsCheckbox) {
     cloudBackupsCheckbox.checked = localStorage.getItem('cloud_backups_enabled') === 'true';
   }
-  if (cloudBackupServiceSelect) {
-    cloudBackupServiceSelect.value = localStorage.getItem('cloud_backup_service_pref') || 'active';
-    cloudBackupServiceSelect.addEventListener('change', () => {
-      localStorage.setItem('cloud_backup_service_pref', cloudBackupServiceSelect.value);
-      showToast(`Cloud backup destination set to: ${cloudBackupServiceSelect.options[cloudBackupServiceSelect.selectedIndex].text}`);
-      syncBackupUI();
-    });
-  }
 
-  function openCloudStorageModal(provider = 'gdrive') {
-    currentCloudProvider = provider;
-    switchCloudTab(provider);
+  function openCloudStorageModal(provider) {
+    const prov = provider || currentCloudProvider || 'gdrive';
+    switchCloudProvider(prov);
     if (cloudOverlay) cloudOverlay.style.display = 'flex';
     const projName = (typeof projectName === 'function') ? projectName() : 'Untitled';
     if (cloudSaveFilenameInput) cloudSaveFilenameInput.value = projName + '.pssproj';
@@ -16375,12 +16588,34 @@ void main(void)\r
     });
   }
 
-  document.getElementById('cloudDrivesBtn')?.addEventListener('click', () => { closeFileMenu(); openCloudStorageModal('gdrive'); });
+  document.getElementById('cloudDrivesBtn')?.addEventListener('click', () => { closeFileMenu(); openCloudStorageModal(currentCloudProvider); });
 
-  function switchCloudTab(provider) {
+  function switchCloudProvider(provider) {
     currentCloudProvider = provider;
-    if (cloudTabGDrive) cloudTabGDrive.classList.toggle('primary', provider === 'gdrive');
-    if (cloudTabOneDrive) cloudTabOneDrive.classList.toggle('primary', provider === 'onedrive');
+    localStorage.setItem('active_cloud_provider', provider);
+
+    // Update Slider Toggle Buttons UI
+    if (cloudToggleGDrive && cloudToggleOneDrive) {
+      if (provider === 'gdrive') {
+        cloudToggleGDrive.style.background = 'var(--accent)';
+        cloudToggleGDrive.style.color = 'var(--accent-text, #fff)';
+        cloudToggleGDrive.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+        cloudToggleOneDrive.style.background = 'transparent';
+        cloudToggleOneDrive.style.color = 'var(--text-dim)';
+        cloudToggleOneDrive.style.boxShadow = 'none';
+      } else {
+        cloudToggleOneDrive.style.background = 'var(--accent)';
+        cloudToggleOneDrive.style.color = 'var(--accent-text, #fff)';
+        cloudToggleOneDrive.style.boxShadow = '0 2px 6px rgba(0,0,0,0.3)';
+        cloudToggleGDrive.style.background = 'transparent';
+        cloudToggleGDrive.style.color = 'var(--text-dim)';
+        cloudToggleGDrive.style.boxShadow = 'none';
+      }
+    }
+
+    if (cloudTargetFolderInput) {
+      cloudTargetFolderInput.value = getTargetFolderPath(provider);
+    }
     if (cloudSaveSubmitBtn) {
       cloudSaveSubmitBtn.innerHTML = (provider === 'onedrive') ? '☁️ Save to OneDrive' : '☁️ Save to Google Drive';
     }
@@ -16390,18 +16625,33 @@ void main(void)\r
     if (cloudInstructionsPanel && cloudInstructionsPanel.style.display !== 'none') {
       setCloudInstructionsTab(provider);
     }
+    if (cloudFolderBrowserSection && cloudFolderBrowserSection.style.display !== 'none') {
+      cloudFolderBrowserSection.style.display = 'none';
+    }
     checkCloudAuthStatus();
+    syncBackupUI();
   }
 
-  if (cloudTabGDrive) cloudTabGDrive.addEventListener('click', () => switchCloudTab('gdrive'));
-  if (cloudTabOneDrive) cloudTabOneDrive.addEventListener('click', () => switchCloudTab('onedrive'));
+  if (cloudToggleGDrive) cloudToggleGDrive.addEventListener('click', () => switchCloudProvider('gdrive'));
+  if (cloudToggleOneDrive) cloudToggleOneDrive.addEventListener('click', () => switchCloudProvider('onedrive'));
+
+  function applyTargetFolderInput() {
+    const raw = cloudTargetFolderInput ? cloudTargetFolderInput.value : '';
+    const norm = normalizePath(raw || '/Palette Spray Studio');
+    setTargetFolder(norm, null, currentCloudProvider);
+    showToast(`Target cloud folder set to: "${norm}"`);
+    loadCloudFileList();
+  }
 
   if (cloudSetFolderBtn) {
-    cloudSetFolderBtn.addEventListener('click', () => {
-      const val = cloudTargetFolderInput.value.trim() || 'Palette Spray Studio';
-      localStorage.setItem('cloud_folder_name', val);
-      showToast(`Target cloud folder set to: "${val}"`);
-      loadCloudFileList();
+    cloudSetFolderBtn.addEventListener('click', applyTargetFolderInput);
+  }
+  if (cloudTargetFolderInput) {
+    cloudTargetFolderInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        applyTargetFolderInput();
+      }
     });
   }
 
@@ -16409,7 +16659,7 @@ void main(void)\r
     cloudBackupsCheckbox.addEventListener('change', () => {
       localStorage.setItem('cloud_backups_enabled', cloudBackupsCheckbox.checked ? 'true' : 'false');
       if (cloudBackupsCheckbox.checked) {
-        showToast('Automatic cloud backups enabled');
+        showToast('Automatic cloud backups enabled for ' + (currentCloudProvider === 'onedrive' ? 'OneDrive' : 'Google Drive'));
         startBackupIntervalTimer();
       } else {
         showToast('Automatic cloud backups disabled');
@@ -16429,12 +16679,12 @@ void main(void)\r
   const cloudBrowserCreateFolderBtn = document.getElementById('cloudBrowserCreateFolderBtn');
   const cloudBrowserSelectCurrentBtn = document.getElementById('cloudBrowserSelectCurrentBtn');
 
-  let cloudBrowserPath = [{ id: 'root', name: 'Root' }];
+  let cloudBrowserPath = [{ id: 'root', name: 'Root', path: '/' }];
 
   if (cloudBrowseFoldersBtn) {
     cloudBrowseFoldersBtn.addEventListener('click', () => {
       if (cloudFolderBrowserSection.style.display === 'none') {
-        cloudBrowserPath = [{ id: 'root', name: 'Root' }];
+        cloudBrowserPath = [{ id: 'root', name: 'Root', path: '/' }];
         cloudFolderBrowserSection.style.display = 'flex';
         if (cloudBrowserNewFolderDiv) cloudBrowserNewFolderDiv.style.display = 'none';
         fetchCloudFolders();
@@ -16477,25 +16727,25 @@ void main(void)\r
       cloudBrowserCreateFolderBtn.disabled = true;
       try {
         if (currentCloudProvider === 'gdrive') {
-           const res = await fetch('https://www.googleapis.com/drive/v3/files', {
-             method: 'POST',
-             headers: { 'Authorization': `Bearer ${gdriveToken}`, 'Content-Type': 'application/json' },
-             body: JSON.stringify({ 
-               name: name, 
-               mimeType: 'application/vnd.google-apps.folder', 
-               parents: currentFolder.id !== 'root' ? [currentFolder.id] : undefined 
-             })
-           });
-           if(res.ok) fetchCloudFolders();
+          const res = await fetch('https://www.googleapis.com/drive/v3/files', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${gdriveToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              name: name, 
+              mimeType: 'application/vnd.google-apps.folder', 
+              parents: currentFolder.id !== 'root' ? [currentFolder.id] : undefined 
+            })
+          });
+          if (res.ok) fetchCloudFolders();
         } else {
-           let url = 'https://graph.microsoft.com/v1.0/me/drive/root/children';
-           if (currentFolder.id !== 'root') url = `https://graph.microsoft.com/v1.0/me/drive/items/${currentFolder.id}/children`;
-           const res = await fetch(url, {
-             method: 'POST',
-             headers: { 'Authorization': `Bearer ${onedriveToken}`, 'Content-Type': 'application/json' },
-             body: JSON.stringify({ name: name, folder: {}, '@microsoft.graph.conflictBehavior': 'rename' })
-           });
-           if(res.ok) fetchCloudFolders();
+          let url = 'https://graph.microsoft.com/v1.0/me/drive/root/children';
+          if (currentFolder.id !== 'root') url = `https://graph.microsoft.com/v1.0/me/drive/items/${currentFolder.id}/children`;
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${onedriveToken}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: name, folder: {}, '@microsoft.graph.conflictBehavior': 'rename' })
+          });
+          if (res.ok) fetchCloudFolders();
         }
         cloudBrowserNewFolderInput.value = '';
         cloudBrowserNewFolderDiv.style.display = 'none';
@@ -16509,10 +16759,10 @@ void main(void)\r
   if (cloudBrowserSelectCurrentBtn) {
     cloudBrowserSelectCurrentBtn.addEventListener('click', () => {
       const currentFolder = cloudBrowserPath[cloudBrowserPath.length - 1];
-      cloudTargetFolderInput.value = currentFolder.name;
-      localStorage.setItem('cloud_folder_name', currentFolder.name);
+      const fullPath = currentFolder.path || '/';
+      setTargetFolder(fullPath, currentFolder.id, currentCloudProvider);
       cloudFolderBrowserSection.style.display = 'none';
-      showToast(`Target folder set to: "${currentFolder.name}"`);
+      showToast(`Target folder set to: "${fullPath}"`);
       loadCloudFileList();
     });
   }
@@ -16520,7 +16770,11 @@ void main(void)\r
   async function fetchCloudFolders() {
     if (!cloudFolderBrowserList) return;
     const currentFolder = cloudBrowserPath[cloudBrowserPath.length - 1];
-    if (cloudBrowserPathLabel) cloudBrowserPathLabel.textContent = currentFolder.name;
+    const displayPath = currentFolder.path || '/';
+    if (cloudBrowserPathLabel) {
+      cloudBrowserPathLabel.textContent = displayPath;
+      cloudBrowserPathLabel.title = displayPath;
+    }
     if (cloudBrowserUpBtn) cloudBrowserUpBtn.disabled = cloudBrowserPath.length <= 1;
 
     cloudFolderBrowserList.innerHTML = '<div style="text-align:center; padding:10px; font-size:11px; color:var(--text-dim);">Loading folder structure...</div>';
@@ -16535,6 +16789,12 @@ void main(void)\r
         const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)&pageSize=50`, {
           headers: { 'Authorization': `Bearer ${gdriveToken}` }
         });
+        if (res.status === 401) {
+          gdriveToken = null;
+          localStorage.removeItem('gdrive_token');
+          checkCloudAuthStatus();
+          return;
+        }
         const data = await res.json();
         renderFolderBrowser(data.files || []);
       } catch (err) {
@@ -16551,6 +16811,12 @@ void main(void)\r
         const res = await fetch(url, {
           headers: { 'Authorization': `Bearer ${onedriveToken}` }
         });
+        if (res.status === 401) {
+          onedriveToken = null;
+          localStorage.removeItem('onedrive_token');
+          checkCloudAuthStatus();
+          return;
+        }
         const data = await res.json();
         const folders = (data.value || []).filter(item => item.folder);
         renderFolderBrowser(folders);
@@ -16569,7 +16835,11 @@ void main(void)\r
       return;
     }
 
+    const currentFolder = cloudBrowserPath[cloudBrowserPath.length - 1];
+    const parentPath = (currentFolder.path === '/' || !currentFolder.path) ? '' : currentFolder.path;
+
     folders.forEach(folder => {
+      const folderFullPath = parentPath + '/' + folder.name;
       const row = document.createElement('div');
       row.style.cssText = 'display:flex; align-items:center; justify-content:space-between; padding:4px 6px; border-radius:4px; margin-top:2px;';
       
@@ -16578,7 +16848,7 @@ void main(void)\r
       navArea.innerHTML = `<span style="flex-shrink:0;">📁</span> <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${folder.name}</span>`;
       
       navArea.addEventListener('click', () => {
-        cloudBrowserPath.push({ id: folder.id, name: folder.name });
+        cloudBrowserPath.push({ id: folder.id, name: folder.name, path: folderFullPath });
         fetchCloudFolders();
       });
 
@@ -16587,10 +16857,9 @@ void main(void)\r
       selBtn.textContent = 'Select';
       selBtn.style.cssText = 'font-size:10px; padding:2px 6px; flex-shrink:0; margin-left:8px;';
       selBtn.addEventListener('click', () => {
-        cloudTargetFolderInput.value = folder.name;
-        localStorage.setItem('cloud_folder_name', folder.name);
+        setTargetFolder(folderFullPath, folder.id, currentCloudProvider);
         cloudFolderBrowserSection.style.display = 'none';
-        showToast(`Target folder set to: "${folder.name}"`);
+        showToast(`Target folder set to: "${folderFullPath}"`);
         loadCloudFileList();
       });
 
@@ -16761,50 +17030,22 @@ void main(void)\r
     }
   } catch (e) {}
 
-  async function getOrCreateGoogleDriveFolder(folderName) {
-    if (!folderName || folderName.trim() === '') return 'root';
-    const cleanName = folderName.trim();
-    try {
-      const q = encodeURIComponent(`name = '${cleanName.replace(/'/g, "\\'")}' and mimeType = 'application/vnd.google-apps.folder' and trashed = false`);
-      const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${q}&fields=files(id,name)`, {
-        headers: { 'Authorization': `Bearer ${gdriveToken}` }
-      });
-      const data = await res.json();
-      if (data.files && data.files.length > 0) {
-        return data.files[0].id;
-      }
-      // Not found, create it
-      const createRes = await fetch('https://www.googleapis.com/drive/v3/files', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${gdriveToken}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          name: cleanName,
-          mimeType: 'application/vnd.google-apps.folder'
-        })
-      });
-      const folderData = await createRes.json();
-      return folderData.id;
-    } catch (err) {
-      console.warn('Error resolving GDrive folder, falling back to root:', err);
-      return 'root';
-    }
-  }
-
   async function loadCloudFileList() {
     if (!cloudFileList) return;
     cloudFileList.innerHTML = '<div style="text-align:center; padding:16px; font-size:12px; color:var(--text-dim);">Loading cloud files...</div>';
 
-    const folderName = cloudTargetFolderInput?.value.trim() || 'Palette Spray Studio';
-
     if (currentCloudProvider === 'gdrive') {
       if (!gdriveToken) return;
       try {
-        const folderId = await getOrCreateGoogleDriveFolder(folderName);
+        const targetPath = getTargetFolderPath('gdrive');
+        const targetFolderId = getTargetFolderId('gdrive');
+        const { id: folderId } = await resolveGoogleDriveFolder(targetPath, targetFolderId);
+        if (folderId && folderId !== targetFolderId) {
+          localStorage.setItem('gdrive_folder_id', folderId);
+        }
+
         const query = encodeURIComponent(`'${folderId}' in parents and (name contains '.pssproj' or name contains '.json') and trashed = false`);
-        const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,mimeType,modifiedTime,size)&pageSize=30`, {
+        const res = await fetch(`https://www.googleapis.com/drive/v3/files?q=${query}&fields=files(id,name,mimeType,modifiedTime,size)&pageSize=50`, {
           headers: { 'Authorization': `Bearer ${gdriveToken}` }
         });
         if (res.status === 401) {
@@ -16822,9 +17063,16 @@ void main(void)\r
     } else {
       if (!onedriveToken) return;
       try {
-        let url = 'https://graph.microsoft.com/v1.0/me/drive/root/children';
-        if (folderName && folderName !== 'root') {
-          url = `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(folderName)}:/children`;
+        const targetPath = getTargetFolderPath('onedrive');
+        const targetFolderId = getTargetFolderId('onedrive');
+        const { id: folderId } = await resolveOneDriveFolder(targetPath, targetFolderId);
+        if (folderId && folderId !== targetFolderId) {
+          localStorage.setItem('onedrive_folder_id', folderId);
+        }
+
+        let url = 'https://graph.microsoft.com/v1.0/me/drive/root/children?$top=100';
+        if (folderId && folderId !== 'root') {
+          url = `https://graph.microsoft.com/v1.0/me/drive/items/${folderId}/children?$top=100`;
         }
         const res = await fetch(url, {
           headers: { 'Authorization': `Bearer ${onedriveToken}` }
@@ -16976,14 +17224,23 @@ void main(void)\r
       if (!fileName.endsWith('.pssproj') && !fileName.endsWith('.json')) fileName += '.pssproj';
 
       const projectDataStr = JSON.stringify(buildProjectData());
-      const folderName = cloudTargetFolderInput?.value.trim() || 'Palette Spray Studio';
 
       showToast('Saving to cloud...');
       if (currentCloudProvider === 'gdrive') {
         if (!gdriveToken) { alert('Please sign in to Google Drive first.'); return; }
         try {
-          const folderId = await getOrCreateGoogleDriveFolder(folderName);
-          const metadata = { name: fileName, mimeType: 'application/json', parents: [folderId] };
+          const targetPath = getTargetFolderPath('gdrive');
+          const targetFolderId = getTargetFolderId('gdrive');
+          const { id: folderId } = await resolveGoogleDriveFolder(targetPath, targetFolderId);
+          if (folderId && folderId !== targetFolderId) {
+            localStorage.setItem('gdrive_folder_id', folderId);
+          }
+
+          const metadata = {
+            name: fileName,
+            mimeType: 'application/json',
+            parents: folderId !== 'root' ? [folderId] : undefined
+          };
           const form = new FormData();
           form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
           form.append('file', new Blob([projectDataStr], { type: 'application/json' }));
@@ -17011,10 +17268,20 @@ void main(void)\r
       } else {
         if (!onedriveToken) { alert('Please sign in to OneDrive first.'); return; }
         try {
-          let url = `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(fileName)}:/content`;
-          if (folderName && folderName !== 'root') {
-            url = `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(folderName)}/${encodeURIComponent(fileName)}:/content`;
+          const targetPath = getTargetFolderPath('onedrive');
+          const targetFolderId = getTargetFolderId('onedrive');
+          const { id: folderId } = await resolveOneDriveFolder(targetPath, targetFolderId);
+          if (folderId && folderId !== targetFolderId) {
+            localStorage.setItem('onedrive_folder_id', folderId);
           }
+
+          let url;
+          if (folderId && folderId !== 'root') {
+            url = `https://graph.microsoft.com/v1.0/me/drive/items/${folderId}:/${encodeURIComponent(fileName)}:/content`;
+          } else {
+            url = `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(fileName)}:/content`;
+          }
+
           const res = await fetch(url, {
             method: 'PUT',
             headers: {
