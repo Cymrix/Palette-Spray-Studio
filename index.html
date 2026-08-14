@@ -944,9 +944,20 @@
             <button class="btn small" id="cloudSetFolderBtn" style="white-space:nowrap; font-size:11px; padding:2px 8px;">Apply</button>
           </div>
         </div>
-        <div style="display:flex; align-items:center; gap:8px; border-top:1px solid var(--line); padding-top:6px; margin-top:2px;">
-          <input type="checkbox" id="cloudBackupsCheckbox" style="cursor:pointer; width:14px; height:14px;">
-          <label for="cloudBackupsCheckbox" style="font-size:11px; color:var(--text); cursor:pointer; user-select:none;">Enable Automatic Cloud Backups (every save &amp; timer)</label>
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px; border-top:1px solid var(--line); padding-top:8px; margin-top:2px; flex-wrap:wrap;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="cloudBackupsCheckbox" style="cursor:pointer; width:14px; height:14px;">
+            <label for="cloudBackupsCheckbox" style="font-size:11px; color:var(--text); cursor:pointer; user-select:none;">Automatic Cloud Backups</label>
+          </div>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <label for="cloudBackupServiceSelect" style="font-size:11px; color:var(--text-dim); cursor:pointer;">Target Service:</label>
+            <select id="cloudBackupServiceSelect" style="font-size:11px; padding:3px 6px; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:4px; cursor:pointer;">
+              <option value="active">Active Tab Service</option>
+              <option value="onedrive">OneDrive Only</option>
+              <option value="gdrive">Google Drive Only</option>
+              <option value="both">Both (OneDrive &amp; GDrive)</option>
+            </select>
+          </div>
         </div>
       </div>
 
@@ -3241,7 +3252,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.241'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.242'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -15576,11 +15587,13 @@ void main(void)\r
     const locInd = document.getElementById('saveLocationIndicator');
     
     if (activeSaveLocation === 'cloud') {
-      if (locInd) { locInd.textContent = '☁️'; locInd.title = 'Cloud File'; }
+      const provName = currentCloudProviderUsed === 'onedrive' ? 'OneDrive' : 'Google Drive';
+      const provTag = currentCloudProviderUsed === 'onedrive' ? 'MS' : 'GD';
+      if (locInd) { locInd.textContent = `☁️ [${provTag}]`; locInd.title = `Cloud File (${provName}: ${currentCloudFileName || 'project'})`; }
       const menuSave = document.getElementById('saveProjectBtn');
-      if (menuSave) menuSave.innerHTML = 'Save to Cloud';
+      if (menuSave) menuSave.innerHTML = `Save to ${provName}`;
       const cloudOn = document.getElementById('cloudBackupsCheckbox')?.checked;
-      btn.textContent = cloudOn ? 'Backups: On (☁️)' : 'Backups: Off (☁️)';
+      btn.textContent = cloudOn ? `Backups: On (${provName})` : 'Backups: Off (☁️)';
       btn.classList.toggle('primary', cloudOn);
       if(intervalLabel) intervalLabel.style.display = cloudOn ? 'inline-flex' : 'none';
       if(maxLabel) maxLabel.style.display = 'none'; 
@@ -15702,9 +15715,14 @@ void main(void)\r
       const folderName = document.getElementById('cloudTargetFolderInput')?.value.trim() || 'Palette Spray Studio';
       const fileName = `backup_${backupFileStamp()}_${projectName()}.pssproj`;
       const projectDataStr = JSON.stringify(buildProjectData());
+      const backupServicePref = document.getElementById('cloudBackupServiceSelect')?.value || localStorage.getItem('cloud_backup_service_pref') || 'active';
+
+      const activeProv = currentCloudProviderUsed || currentCloudProvider;
+      const shouldBackupGDrive = (backupServicePref === 'gdrive' || backupServicePref === 'both' || (backupServicePref === 'active' && activeProv === 'gdrive')) && !!gdriveToken;
+      const shouldBackupOneDrive = (backupServicePref === 'onedrive' || backupServicePref === 'both' || (backupServicePref === 'active' && activeProv === 'onedrive')) && !!onedriveToken;
 
       // GDrive backup
-      if (gdriveToken) {
+      if (shouldBackupGDrive) {
         try {
           const folderId = await getOrCreateGoogleDriveFolder(folderName);
           const metadata = { name: fileName, mimeType: 'application/json', parents: [folderId] };
@@ -15723,7 +15741,7 @@ void main(void)\r
       }
 
       // OneDrive backup
-      if (onedriveToken) {
+      if (shouldBackupOneDrive) {
         try {
           let url = `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(fileName)}:/content`;
           if (folderName && folderName !== 'root') {
@@ -15799,7 +15817,8 @@ void main(void)\r
   }
   async function saveProject(forceNewLocation){
     if (activeSaveLocation === 'cloud' && !forceNewLocation && currentCloudFileId) {
-      showToast('Saving to cloud...');
+      const provName = currentCloudProviderUsed === 'onedrive' ? 'OneDrive' : 'Google Drive';
+      showToast(`Saving to ${provName}...`);
       const projectDataStr = JSON.stringify(buildProjectData());
       try {
         if (currentCloudProviderUsed === 'gdrive') {
@@ -15824,7 +15843,7 @@ void main(void)\r
         await writeBackupCopy();
       } catch (err) {
         console.error('Cloud save failed:', err);
-        alert('Could not save to cloud.');
+        alert(`Could not save to ${provName}.`);
       }
       return;
     }
@@ -16224,6 +16243,8 @@ void main(void)\r
         projectFileHandle = handle; // future Saves overwrite this same file
         activeSaveLocation = 'local';
         currentCloudFileId = null;
+        currentCloudProviderUsed = null;
+        currentCloudFileName = null;
         syncBackupUI();
         loadProjectData(proj);
         return;
@@ -16245,6 +16266,8 @@ void main(void)\r
       catch(err){ alert('Could not read that project file.'); return; }
       activeSaveLocation = 'local';
       currentCloudFileId = null;
+      currentCloudProviderUsed = null;
+      currentCloudFileName = null;
       syncBackupUI();
       loadProjectData(proj);
     };
@@ -16314,6 +16337,7 @@ void main(void)\r
   const cloudTargetFolderInput = document.getElementById('cloudTargetFolderInput');
   const cloudSetFolderBtn = document.getElementById('cloudSetFolderBtn');
   const cloudBackupsCheckbox = document.getElementById('cloudBackupsCheckbox');
+  const cloudBackupServiceSelect = document.getElementById('cloudBackupServiceSelect');
 
   // Load persistence configurations from localStorage
   if (cloudTargetFolderInput) {
@@ -16321,6 +16345,14 @@ void main(void)\r
   }
   if (cloudBackupsCheckbox) {
     cloudBackupsCheckbox.checked = localStorage.getItem('cloud_backups_enabled') === 'true';
+  }
+  if (cloudBackupServiceSelect) {
+    cloudBackupServiceSelect.value = localStorage.getItem('cloud_backup_service_pref') || 'active';
+    cloudBackupServiceSelect.addEventListener('change', () => {
+      localStorage.setItem('cloud_backup_service_pref', cloudBackupServiceSelect.value);
+      showToast(`Cloud backup destination set to: ${cloudBackupServiceSelect.options[cloudBackupServiceSelect.selectedIndex].text}`);
+      syncBackupUI();
+    });
   }
 
   function openCloudStorageModal(provider = 'gdrive') {
@@ -16349,6 +16381,12 @@ void main(void)\r
     currentCloudProvider = provider;
     if (cloudTabGDrive) cloudTabGDrive.classList.toggle('primary', provider === 'gdrive');
     if (cloudTabOneDrive) cloudTabOneDrive.classList.toggle('primary', provider === 'onedrive');
+    if (cloudSaveSubmitBtn) {
+      cloudSaveSubmitBtn.innerHTML = (provider === 'onedrive') ? '☁️ Save to OneDrive' : '☁️ Save to Google Drive';
+    }
+    if (cloudSaveFilenameInput) {
+      cloudSaveFilenameInput.placeholder = (provider === 'onedrive') ? 'project-name.pssproj (OneDrive)' : 'project-name.pssproj (Google Drive)';
+    }
     if (cloudInstructionsPanel && cloudInstructionsPanel.style.display !== 'none') {
       setCloudInstructionsTab(provider);
     }
@@ -16986,7 +17024,15 @@ void main(void)\r
             body: projectDataStr
           });
           if (!res.ok) throw new Error('Upload failed');
+          const data = await res.json();
           showToast(`Saved "${fileName}" to OneDrive`);
+
+          activeSaveLocation = 'cloud';
+          currentCloudFileId = data.id || fileName;
+          currentCloudProviderUsed = 'onedrive';
+          currentCloudFileName = fileName;
+          syncBackupUI();
+
           loadCloudFileList();
         } catch (err) {
           console.error(err);
