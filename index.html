@@ -11,53 +11,6 @@
 <meta property="og:type" content="website">
 <link rel="manifest" href="/Palette-Spray-Studio/assets/manifest-D2oiIJF4.json">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
-<script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-
-  const firebaseConfig = {
-    projectId: "peerless-robot-496902-g9",
-    appId: "1:43198960631:web:65504cd6cb55d79e5cd4f2",
-    apiKey: "AIzaSyCv6OcxA_rs1N-DQIJB4Ye45K3NJQw0Xs8",
-    authDomain: "peerless-robot-496902-g9.firebaseapp.com",
-    storageBucket: "peerless-robot-496902-g9.firebasestorage.app",
-    messagingSenderId: "43198960631"
-  };
-
-  const firebaseApp = initializeApp(firebaseConfig);
-  const firebaseAuth = getAuth(firebaseApp);
-  const googleProvider = new GoogleAuthProvider();
-  googleProvider.addScope('https://www.googleapis.com/auth/drive');
-
-  window.firebaseAuthLoginGoogleDrive = async function() {
-    try {
-      const result = await signInWithPopup(firebaseAuth, googleProvider);
-      const credential = GoogleAuthProvider.credentialFromResult(result);
-      if (credential && credential.accessToken) {
-        window.gdriveToken = credential.accessToken;
-        localStorage.setItem('gdrive_token', credential.accessToken);
-        if (typeof window.checkCloudAuthStatus === 'function') {
-          window.checkCloudAuthStatus();
-        }
-        if (typeof window.showToast === 'function') {
-          window.showToast('Signed in to Google Drive');
-        }
-        return credential.accessToken;
-      } else {
-        throw new Error('No access token returned from Google Auth');
-      }
-    } catch (err) {
-      console.error('Firebase Google Drive sign in error:', err);
-      throw err;
-    }
-  };
-
-  window.firebaseAuthSignOut = async function() {
-    try {
-      await signOut(firebaseAuth);
-    } catch(e) {}
-  };
-</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2220%22%20fill%3D%22%2317181c%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2222%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2278%22%20cy%3D%2230%22%20r%3D%226%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2274%22%20r%3D%225%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2282%22%20cy%3D%2270%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2226%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3C/svg%3E">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20100%20100%22%3E%3Crect%20width%3D%22100%22%20height%3D%22100%22%20rx%3D%2220%22%20fill%3D%22%2317181c%22/%3E%3Ccircle%20cx%3D%2250%22%20cy%3D%2250%22%20r%3D%2222%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2278%22%20cy%3D%2230%22%20r%3D%226%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2224%22%20cy%3D%2274%22%20r%3D%225%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2282%22%20cy%3D%2270%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3Ccircle%20cx%3D%2220%22%20cy%3D%2226%22%20r%3D%224%22%20fill%3D%22%23d4a017%22/%3E%3C/svg%3E">
 <meta name="theme-color" content="#17181c">
@@ -979,56 +932,6 @@
         <button class="btn small primary" id="cloudAuthBtn">Sign In</button>
       </div>
 
-      <!-- Google Drive Configuration Card (visible when Google Drive tab selected) -->
-      <div id="gDriveSetupCard" style="display:block; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; margin-bottom:14px; font-size:11px;">
-        <div style="font-weight:600; color:var(--text); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
-          <span>Google Cloud OAuth Credentials</span>
-          <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:none; font-size:10px;">Google Cloud Console ↗</a>
-        </div>
-        <div style="margin-bottom:8px; color:var(--text-dim); line-height:1.4;">
-          If you see <em>Error 400: origin_mismatch</em>, add your current Authorized JavaScript Origin in the Google Cloud Console:
-        </div>
-        <div style="margin-bottom:8px;">
-          <label style="display:block; font-size:10px; color:var(--text-dim); margin-bottom:3px;">Your App's Origin (add to Authorized JavaScript origins):</label>
-          <div style="display:flex; gap:6px;">
-            <input type="text" id="gDriveOriginInput" readonly style="flex:1; background:var(--panel); color:var(--text-dim); border:1px solid var(--line); border-radius:4px; padding:4px 8px; font-size:11px; font-family:monospace;">
-            <button class="btn small" id="copyGDriveOriginBtn" style="font-size:10px; padding:2px 8px;">📋 Copy</button>
-          </div>
-        </div>
-        <div>
-          <label style="display:block; font-size:10px; color:var(--text-dim); margin-bottom:3px;">Custom Google OAuth Client ID (optional):</label>
-          <div style="display:flex; gap:6px;">
-            <input type="text" id="gDriveClientIdInput" placeholder="43198960631-6pp3tp7tos4j1oddtqq8vfau514mrnpq.apps.googleusercontent.com" style="flex:1; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:4px; padding:4px 8px; font-size:11px; font-family:monospace;">
-            <button class="btn small primary" id="saveGDriveClientIdBtn" style="font-size:10px; padding:2px 8px;">Save</button>
-          </div>
-        </div>
-      </div>
-
-      <!-- OneDrive Configuration Card (visible only when OneDrive tab selected) -->
-      <div id="oneDriveSetupCard" style="display:none; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; margin-bottom:14px; font-size:11px;">
-        <div style="font-weight:600; color:var(--text); margin-bottom:6px; display:flex; align-items:center; justify-content:space-between;">
-          <span>Microsoft Azure App Credentials</span>
-          <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:none; font-size:10px;">Open Azure Portal ↗</a>
-        </div>
-        <div style="margin-bottom:8px; color:var(--text-dim); line-height:1.4;">
-          OneDrive requires an Azure SPA App Registration with <strong>Files.ReadWrite.All</strong> scope.
-        </div>
-        <div style="margin-bottom:8px;">
-          <label style="display:block; font-size:10px; color:var(--text-dim); margin-bottom:3px;">Your App's Redirect URI (copy to Azure):</label>
-          <div style="display:flex; gap:6px;">
-            <input type="text" id="oneDriveRedirectUriInput" readonly style="flex:1; background:var(--panel); color:var(--text-dim); border:1px solid var(--line); border-radius:4px; padding:4px 8px; font-size:11px; font-family:monospace;">
-            <button class="btn small" id="copyOneDriveRedirectBtn" style="font-size:10px; padding:2px 8px;">📋 Copy</button>
-          </div>
-        </div>
-        <div>
-          <label style="display:block; font-size:10px; color:var(--text-dim); margin-bottom:3px;">Azure Application (Client) ID:</label>
-          <div style="display:flex; gap:6px;">
-            <input type="text" id="oneDriveClientIdInput" placeholder="e.g. 00000000-0000-0000-0000-000000000000" style="flex:1; background:var(--panel); color:var(--text); border:1px solid var(--line); border-radius:4px; padding:4px 8px; font-size:11px; font-family:monospace;">
-            <button class="btn small primary" id="saveOneDriveClientIdBtn" style="font-size:10px; padding:2px 8px;">Save</button>
-          </div>
-        </div>
-      </div>
-
       <!-- Cloud Target Folder Configuration & Auto Backups -->
       <div style="background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:10px 12px; margin-bottom:14px; display:flex; flex-direction:column; gap:8px;">
         <div>
@@ -1103,48 +1006,29 @@
 
       <div style="display:flex; gap:6px; margin-bottom:12px; background:var(--panel-2); padding:3px; border-radius:6px; border:1px solid var(--line);">
         <button id="cloudInstrTabGDrive" class="btn small primary" style="flex:1; font-size:11px; padding:3px 6px;">Google Drive</button>
-        <button id="cloudInstrTabOneDrive" class="btn small" style="flex:1; font-size:11px; padding:3px 6px;">OneDrive / Azure</button>
+        <button id="cloudInstrTabOneDrive" class="btn small" style="flex:1; font-size:11px; padding:3px 6px;">OneDrive</button>
         <button id="cloudInstrTabBackups" class="btn small" style="flex:1; font-size:11px; padding:3px 6px;">Backups &amp; Sync</button>
       </div>
 
       <!-- Google Drive Guide Content -->
       <div id="cloudInstrContentGDrive" style="font-size:12px; line-height:1.5; color:var(--text);">
-        <div style="font-weight:600; color:var(--accent); margin-bottom:6px;">Google Drive Integration</div>
+        <div style="font-weight:600; color:var(--accent); margin-bottom:6px;">Google Drive Storage</div>
         <ol style="margin:0 0 10px 0; padding-left:18px; display:flex; flex-direction:column; gap:6px;">
-          <li><strong>Sign In</strong>: Click <em>Sign In</em> to connect your Google account via secure OAuth popup.</li>
-          <li><strong>Target Folder</strong>: Projects save into the <code>Palette Spray Studio</code> folder on your Google Drive by default. You can enter any folder name and click <em>Apply</em>.</li>
-          <li><strong>Browse &amp; Create Folders</strong>: Click <em>Browse Folders</em> to navigate existing Google Drive directories or create new ones.</li>
-          <li><strong>Save &amp; Load</strong>: Enter a file name and click <em>Save to Cloud</em> to store your complete project. Click <em>Load</em> on any file in the list to open it immediately.</li>
-        </ol>
-
-        <div style="font-weight:600; color:var(--accent); margin:12px 0 6px 0; border-top:1px solid var(--line); padding-top:10px;">Fixing "Error 400: origin_mismatch"</div>
-        <div style="margin-bottom:8px; font-size:11px; color:var(--text-dim);">
-          Google OAuth requires registering your app's web domain under <em>Authorized JavaScript origins</em>:
-        </div>
-        <ol style="margin:0 0 10px 0; padding-left:18px; display:flex; flex-direction:column; gap:6px; font-size:11px;">
-          <li>Open the <a href="https://console.cloud.google.com/apis/credentials" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline;">Google Cloud Credentials Console</a>.</li>
-          <li>Under <strong>OAuth 2.0 Client IDs</strong>, click on your OAuth 2.0 Web Client name.</li>
-          <li>Scroll to <strong>Authorized JavaScript origins</strong> and click <strong>+ ADD URI</strong>.</li>
-          <li>Copy and paste your app's origin URL (use the 📋 Copy button in the Google Drive settings above).</li>
-          <li>Click <strong>Save</strong>. (Changes take 1-5 minutes to propagate across Google servers).</li>
-          <li><em>Optional</em>: You can also create a dedicated OAuth Web Client ID and paste it into the <em>Custom Google OAuth Client ID</em> field.</li>
+          <li><strong>Sign In</strong>: Click <em>Sign In</em> to connect your Google account in the secure Google sign-in window.</li>
+          <li><strong>Target Folder</strong>: Projects save into the <code>Palette Spray Studio</code> folder on your Google Drive by default. You can enter any custom folder name and click <em>Apply</em>.</li>
+          <li><strong>Browse &amp; Create Folders</strong>: Click <em>Browse Folders</em> to navigate existing Google Drive directories or create new folders.</li>
+          <li><strong>Save &amp; Load</strong>: Enter a file name and click <em>Save to Cloud</em> to store your complete artwork project. Click <em>Load</em> on any file in the list to open it directly into the canvas.</li>
         </ol>
       </div>
 
-      <!-- OneDrive / Azure Guide Content -->
+      <!-- OneDrive Guide Content -->
       <div id="cloudInstrContentOneDrive" style="display:none; font-size:12px; line-height:1.5; color:var(--text);">
-        <div style="font-weight:600; color:var(--accent); margin-bottom:6px;">Microsoft OneDrive &amp; Azure Setup</div>
-        <div style="margin-bottom:8px; font-size:11px; color:var(--text-dim);">
-          To connect OneDrive storage, Microsoft requires registering a free Single-Page Application (SPA) in Azure:
-        </div>
+        <div style="font-weight:600; color:var(--accent); margin-bottom:6px;">Microsoft OneDrive Storage</div>
         <ol style="margin:0 0 10px 0; padding-left:18px; display:flex; flex-direction:column; gap:6px;">
-          <li>Open the <a href="https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade" target="_blank" rel="noopener" style="color:var(--accent); text-decoration:underline;">Azure App Registrations Portal</a>.</li>
-          <li>Click <strong>New registration</strong>. Name it <em>Palette Spray Studio</em>.</li>
-          <li>Under <em>Supported account types</em>, select <strong>Accounts in any organizational directory and personal Microsoft accounts</strong>.</li>
-          <li>Under <em>Redirect URI</em>, select <strong>Single-page application (SPA)</strong> and paste the Redirect URI from this modal (use the 📋 Copy button).</li>
-          <li>Go to <strong>API permissions</strong> &rarr; <em>Add a permission</em> &rarr; <em>Microsoft Graph</em> &rarr; <em>Delegated permissions</em> &rarr; check <code>Files.ReadWrite.All</code> and <code>User.Read</code>.</li>
-          <li>Copy your <strong>Application (client) ID</strong> from the Overview page, paste it into the <em>Azure Application ID</em> field, and click <strong>Save</strong>.</li>
-          <li>Click <strong>Sign In</strong> to authenticate and manage your OneDrive files.</li>
+          <li><strong>Sign In</strong>: Click <em>Sign In</em> to connect your Microsoft account.</li>
+          <li><strong>Target Folder</strong>: Projects save into the <code>Palette Spray Studio</code> folder on your OneDrive by default. You can enter any custom folder name and click <em>Apply</em>.</li>
+          <li><strong>Browse &amp; Create Folders</strong>: Click <em>Browse Folders</em> to navigate and organize directories on your OneDrive.</li>
+          <li><strong>Save &amp; Load</strong>: Save or load <code>.pssproj</code> projects seamlessly across your devices.</li>
         </ol>
       </div>
 
@@ -3357,7 +3241,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.236'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.238'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -16468,83 +16352,7 @@ void main(void)\r
     if (cloudInstructionsPanel && cloudInstructionsPanel.style.display !== 'none') {
       setCloudInstructionsTab(provider);
     }
-    const gDriveCard = document.getElementById('gDriveSetupCard');
-    if (gDriveCard) {
-      gDriveCard.style.display = (provider === 'gdrive') ? 'block' : 'none';
-      if (provider === 'gdrive') {
-        const originInput = document.getElementById('gDriveOriginInput');
-        if (originInput) originInput.value = window.location.origin;
-        const clientIdInput = document.getElementById('gDriveClientIdInput');
-        if (clientIdInput) clientIdInput.value = localStorage.getItem('gdrive_custom_client_id') || '';
-      }
-    }
-    const setupCard = document.getElementById('oneDriveSetupCard');
-    if (setupCard) {
-      setupCard.style.display = (provider === 'onedrive') ? 'block' : 'none';
-      if (provider === 'onedrive') {
-        const redirInput = document.getElementById('oneDriveRedirectUriInput');
-        if (redirInput) redirInput.value = window.location.origin + window.location.pathname;
-        const clientIdInput = document.getElementById('oneDriveClientIdInput');
-        if (clientIdInput) clientIdInput.value = localStorage.getItem('ms_client_id') || '';
-      }
-    }
     checkCloudAuthStatus();
-  }
-
-  const copyGDriveOriginBtn = document.getElementById('copyGDriveOriginBtn');
-  if (copyGDriveOriginBtn) {
-    copyGDriveOriginBtn.addEventListener('click', () => {
-      const originInput = document.getElementById('gDriveOriginInput');
-      if (originInput && originInput.value) {
-        navigator.clipboard.writeText(originInput.value);
-        showToast('Origin URL copied to clipboard!');
-      }
-    });
-  }
-
-  const saveGDriveClientIdBtn = document.getElementById('saveGDriveClientIdBtn');
-  if (saveGDriveClientIdBtn) {
-    saveGDriveClientIdBtn.addEventListener('click', () => {
-      const clientIdInput = document.getElementById('gDriveClientIdInput');
-      if (clientIdInput) {
-        const val = clientIdInput.value.trim();
-        if (val) {
-          localStorage.setItem('gdrive_custom_client_id', val);
-          showToast('Google OAuth Client ID saved!');
-        } else {
-          localStorage.removeItem('gdrive_custom_client_id');
-          showToast('Custom Client ID cleared (using default)');
-        }
-      }
-    });
-  }
-
-  const copyOneDriveRedirectBtn = document.getElementById('copyOneDriveRedirectBtn');
-  if (copyOneDriveRedirectBtn) {
-    copyOneDriveRedirectBtn.addEventListener('click', () => {
-      const redirInput = document.getElementById('oneDriveRedirectUriInput');
-      if (redirInput && redirInput.value) {
-        navigator.clipboard.writeText(redirInput.value);
-        showToast('Redirect URI copied to clipboard!');
-      }
-    });
-  }
-
-  const saveOneDriveClientIdBtn = document.getElementById('saveOneDriveClientIdBtn');
-  if (saveOneDriveClientIdBtn) {
-    saveOneDriveClientIdBtn.addEventListener('click', () => {
-      const clientIdInput = document.getElementById('oneDriveClientIdInput');
-      if (clientIdInput) {
-        const val = clientIdInput.value.trim();
-        if (val) {
-          localStorage.setItem('ms_client_id', val);
-          showToast('Azure Client ID saved!');
-        } else {
-          localStorage.removeItem('ms_client_id');
-          showToast('Azure Client ID cleared');
-        }
-      }
-    });
   }
 
   if (cloudTabGDrive) cloudTabGDrive.addEventListener('click', () => switchCloudTab('gdrive'));
@@ -16796,7 +16604,6 @@ void main(void)\r
         if (gdriveToken) {
           gdriveToken = null;
           localStorage.removeItem('gdrive_token');
-          if (typeof window.firebaseAuthSignOut === 'function') window.firebaseAuthSignOut();
           checkCloudAuthStatus();
           showToast('Signed out of Google Drive');
         } else {
@@ -16816,22 +16623,13 @@ void main(void)\r
   }
 
   async function loginGoogleDrive() {
-    if (typeof window.firebaseAuthLoginGoogleDrive === 'function') {
-      try {
-        await window.firebaseAuthLoginGoogleDrive();
-        return;
-      } catch (err) {
-        console.warn('Firebase Auth Google Drive sign in error:', err);
-      }
-    }
-
     if (typeof google === 'undefined' || !google.accounts || !google.accounts.oauth2) {
       alert('Google Identity Services library loading... Please check your internet connection.');
       return;
     }
 
     const customClientId = localStorage.getItem('gdrive_custom_client_id');
-    const clientId = customClientId || '43198960631-6pp3tp7tos4j1oddtqq8vfau514mrnpq.apps.googleusercontent.com';
+    const clientId = customClientId || '224808766646-bh7l19slj886iuuost5d05u655fhav8o.apps.googleusercontent.com';
 
     const client = google.accounts.oauth2.initTokenClient({
       client_id: clientId,
@@ -16844,13 +16642,7 @@ void main(void)\r
           showToast('Signed in to Google Drive');
         } else if (tokenResponse && tokenResponse.error) {
           console.error('Google OAuth error:', tokenResponse);
-          if (tokenResponse.error === 'origin_mismatch' || (tokenResponse.error_description && tokenResponse.error_description.includes('origin'))) {
-            toggleCloudInstructionsPanel(true);
-            setCloudInstructionsTab('gdrive');
-            alert(`Google OAuth Origin Mismatch:\n\nPlease add your current app origin:\n${window.location.origin}\n\nto "Authorized JavaScript origins" on your OAuth Web Client in Google Cloud Console.\n\nInstructions are now open on the side panel.`);
-          } else {
-            alert('Google OAuth error: ' + (tokenResponse.error_description || tokenResponse.error));
-          }
+          alert('Google sign-in was not completed: ' + (tokenResponse.error_description || tokenResponse.error));
         }
       }
     });
