@@ -1,15 +1,17 @@
-const CACHE_NAME = "palette-spray-studio-v2";
+const CACHE_NAME = "palette-spray-studio-v3";
 const ASSETS_TO_CACHE = [
-  "/Palette-Spray-Studio/",
-  "/Palette-Spray-Studio/index.html",
-  "/Palette-Spray-Studio/manifest.json"
+  "./",
+  "./index.html",
+  "./manifest.json"
 ];
 
 // Install Event - cache the core assets
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
+      return Promise.allSettled(
+        ASSETS_TO_CACHE.map((url) => cache.add(url).catch((e) => console.warn("PWA cache skip:", url, e)))
+      );
     })
   );
   self.skipWaiting();
@@ -33,8 +35,8 @@ self.addEventListener("activate", (event) => {
 
 // Fetch Event - Stale-While-Revalidate strategy
 self.addEventListener("fetch", (event) => {
-  // Only handle local HTTP/HTTPS requests (ignores data: URIs, browser extensions, etc.)
-  if (!event.request.url.startsWith(self.location.origin)) {
+  // Only handle GET and local HTTP/HTTPS requests
+  if (event.request.method !== "GET" || !event.request.url.startsWith(self.location.origin)) {
     return;
   }
 
@@ -43,7 +45,7 @@ self.addEventListener("fetch", (event) => {
       return cache.match(event.request).then((cachedResponse) => {
         const fetchedResponse = fetch(event.request)
           .then((networkResponse) => {
-            // Only cache successful requests
+            // Only cache successful responses
             if (networkResponse && networkResponse.status === 200) {
               cache.put(event.request, networkResponse.clone());
             }
