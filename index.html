@@ -3244,7 +3244,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.248'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.255'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -3717,10 +3717,10 @@ void main(void)\r
   const STAMP_SCRATCH_MAX = 256; // generous headroom above typical dab sizes; avoids per-dab canvas resize
   const stampScratch = document.createElement('canvas');
   stampScratch.width = STAMP_SCRATCH_MAX; stampScratch.height = STAMP_SCRATCH_MAX;
-  const stampScratchCtx = stampScratch.getContext('2d');
+  const stampScratchCtx = stampScratch.getContext('2d', { willReadFrequently: true });
   const shapeScratch = document.createElement('canvas');
   shapeScratch.width = STAMP_SCRATCH_MAX; shapeScratch.height = STAMP_SCRATCH_MAX;
-  const shapeScratchCtx = shapeScratch.getContext('2d');
+  const shapeScratchCtx = shapeScratch.getContext('2d', { willReadFrequently: true });
 
   // ---------- WebGL-accelerated stamp spraying (PixiJS ParticleContainer) ----------
   // Only the stamp dab shape routes through here — circle/square dabs stay on the existing
@@ -6699,7 +6699,7 @@ void main(void)\r
     return stamp.invertedMask || stamp.mask || null;
   }
   const tintedStampCache = new Map();
-  const MAX_TINTED_CACHE_SIZE = 500;
+  const MAX_TINTED_CACHE_SIZE = 1000;
 
   function getRotatedRectBounds(cx, cy, w, h, angle, pivotX = 0.5, pivotY = 0.5) {
     const x0 = -w * pivotX, x1 = w * (1 - pivotX);
@@ -6764,30 +6764,35 @@ void main(void)\r
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: isPP });
 
     ctx.clearRect(0, 0, w, h);
     ctx.globalCompositeOperation = 'source-over';
     ctx.imageSmoothingEnabled = !isPP;
-    ctx.drawImage(maskCanvas, 0, 0, w, h);
+    ctx.drawImage(maskCanvas, 0, 0, maskCanvas.width, maskCanvas.height, 0, 0, w, h);
     ctx.globalCompositeOperation = 'source-in';
     ctx.fillStyle = finalColor;
     ctx.fillRect(0, 0, w, h);
     ctx.globalCompositeOperation = 'source-over';
 
-    if(isPP){
+    if (isPP) {
       const imgData = ctx.getImageData(0, 0, w, h);
       const d = imgData.data;
-      for(let i=3; i<d.length; i+=4){
+      for (let i = 3; i < d.length; i += 4) {
         d[i] = d[i] >= 128 ? 255 : 0;
       }
       ctx.putImageData(imgData, 0, 0);
     }
 
-    const cachedEntry = { canvas, w, h };
+    const cachedEntry = {
+      canvas: canvas,
+      w: w,
+      h: h,
+      srcW: w,
+      srcH: h
+    };
 
     tintedStampCache.set(key, cachedEntry);
-
     if (tintedStampCache.size > MAX_TINTED_CACHE_SIZE) {
       const oldestKey = tintedStampCache.keys().next().value;
       tintedStampCache.delete(oldestKey);
@@ -6804,29 +6809,26 @@ void main(void)\r
     if (typeof dabWidth === 'number') sizes.add(Math.round(dabWidth));
     if (typeof dabHeight === 'number') sizes.add(Math.round(dabHeight));
 
-    const colors = new Set();
-    colors.add(fgColor);
-    colors.add('#000000');
-    colors.add('#ffffff');
-
+    const colors = [fgColor, '#000000', '#ffffff'];
     const activeStamps = [];
     if (typeof selectedStampIndex === 'number' && selectedStampIndex !== null && stamps[selectedStampIndex]) {
       activeStamps.push(stamps[selectedStampIndex]);
     } else if (stamps.length > 0) {
       activeStamps.push(stamps[0]);
     }
-
     activeStamps.forEach(stamp => {
       const m = getActiveStampMask(stamp);
-      colors.forEach(col => {
-        sizes.forEach(sz => {
-          buildTintedStamp(m, sz, col);
+      if (m) {
+        colors.forEach(col => {
+          sizes.forEach(sz => {
+            buildTintedStamp(m, sz, col);
+          });
         });
-      });
+      }
     });
   }
-  function drawBuiltStamp(ctx, sourceCanvas, w, h, cx, cy, angle, pivotX = 0.5, pivotY = 0.5){
-    // Places the already-built tinted stamp using nearest-neighbor or bilinear based on pixelPerfect.
+
+  function drawBuiltStamp(ctx, sourceCanvas, w, h, cx, cy, angle, pivotX = 0.5, pivotY = 0.5, srcW = undefined, srcH = undefined){
     ctx.save();
     ctx.imageSmoothingEnabled = !pixelPerfect;
     const finalCx = pixelPerfect ? Math.round(cx) : cx;
@@ -6835,9 +6837,12 @@ void main(void)\r
     if(angle) ctx.rotate(angle);
     const destX = pixelPerfect ? Math.round(-w * pivotX) : (-w * pivotX);
     const destY = pixelPerfect ? Math.round(-h * pivotY) : (-h * pivotY);
-    ctx.drawImage(sourceCanvas, 0, 0, w, h, destX, destY, w, h);
+    const sw = srcW || sourceCanvas.width;
+    const sh = srcH || sourceCanvas.height;
+    ctx.drawImage(sourceCanvas, 0, 0, sw, sh, destX, destY, w, h);
     ctx.restore();
   }
+
   function drawStampDab(ctx, maskCanvas, cx, cy, targetW, targetH, color, angle, pivotX = 0.5, pivotY = 0.5){
     if(!maskCanvas || !maskCanvas.width || !maskCanvas.height) return;
     let finalW, finalH, finalColor, finalAngle, finalPivotX, finalPivotY;
@@ -6862,7 +6867,7 @@ void main(void)\r
     }
     const built = buildTintedStamp(maskCanvas, finalW, finalH, finalColor);
     if(built){
-      drawBuiltStamp(ctx, built.canvas, built.w, built.h, cx, cy, finalAngle, finalPivotX, finalPivotY);
+      drawBuiltStamp(ctx, built.canvas, built.w, built.h, cx, cy, finalAngle, finalPivotX, finalPivotY, built.srcW, built.srcH);
     }
   }
 
@@ -7456,7 +7461,7 @@ void main(void)\r
 
         paintNoBlend(ctx, W, H, bounds.x, bounds.y, bounds.w, bounds.h, (sctx)=>{
           sctx.globalAlpha = opacity/100;
-          drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, 0, pX, pY);
+          drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, 0, pX, pY, built.srcW, built.srcH);
         });
       }
 
@@ -7468,7 +7473,7 @@ void main(void)\r
         const mfH = effH + MARGIN_PX*2;
         paintNoBlend(mfCtx, mfW, mfH, bounds.x+MARGIN_PX, bounds.y+MARGIN_PX, bounds.w, bounds.h, (sctx)=>{
           sctx.globalAlpha = opacity/100;
-          drawBuiltStamp(sctx, built.canvas, built.w, built.h, rawX+MARGIN_PX, rawY+MARGIN_PX, 0, pX, pY);
+          drawBuiltStamp(sctx, built.canvas, built.w, built.h, rawX+MARGIN_PX, rawY+MARGIN_PX, 0, pX, pY, built.srcW, built.srcH);
         });
       }
     } else {
@@ -7478,7 +7483,7 @@ void main(void)\r
       const bounds = getRotatedRectBounds(rawX, rawY, built.w, built.h, 0, pX, pY);
       paintNoBlend(mfCtx, mfW, mfH, bounds.x+MARGIN_PX, bounds.y+MARGIN_PX, bounds.w, bounds.h, (sctx)=>{
         sctx.globalAlpha = opacity/100;
-        drawBuiltStamp(sctx, built.canvas, built.w, built.h, rawX+MARGIN_PX, rawY+MARGIN_PX, 0, pX, pY);
+        drawBuiltStamp(sctx, built.canvas, built.w, built.h, rawX+MARGIN_PX, rawY+MARGIN_PX, 0, pX, pY, built.srcW, built.srcH);
       });
     }
   }
@@ -7600,25 +7605,39 @@ void main(void)\r
     let noBlendScratchCanvas = null, noBlendScratchCtx = null;
   let noBlendStencilCanvas = null, noBlendStencilCtx = null;
 
+  function ensureNoBlendScratch(bw, bh){
+    const reqW = Math.max(256, bw);
+    const reqH = Math.max(256, bh);
+    if(!noBlendScratchCanvas){
+      noBlendScratchCanvas = document.createElement('canvas');
+      noBlendScratchCanvas.width = reqW;
+      noBlendScratchCanvas.height = reqH;
+      noBlendScratchCtx = noBlendScratchCanvas.getContext('2d');
+      noBlendStencilCanvas = document.createElement('canvas');
+      noBlendStencilCanvas.width = reqW;
+      noBlendStencilCanvas.height = reqH;
+      noBlendStencilCtx = noBlendStencilCanvas.getContext('2d');
+    } else if(noBlendScratchCanvas.width < bw || noBlendScratchCanvas.height < bh){
+      const newW = Math.max(noBlendScratchCanvas.width * 2, reqW);
+      const newH = Math.max(noBlendScratchCanvas.height * 2, reqH);
+      noBlendScratchCanvas.width = newW;
+      noBlendScratchCanvas.height = newH;
+      noBlendStencilCanvas.width = newW;
+      noBlendStencilCanvas.height = newH;
+    }
+  }
+
   function paintNoBlend(realCtx, cw, ch, bx, by, bw, bh, drawFn, colorHex){
     bx = Math.floor(bx); by = Math.floor(by);
     bw = Math.ceil(bw); bh = Math.ceil(bh);
     if(bw <= 0 || bh <= 0) return;
+    if(bx >= cw || by >= ch || bx + bw <= 0 || by + bh <= 0) return;
 
-    if(!noBlendScratchCanvas){
-      noBlendScratchCanvas = document.createElement('canvas');
-      noBlendScratchCtx = noBlendScratchCanvas.getContext('2d');
-      noBlendStencilCanvas = document.createElement('canvas');
-      noBlendStencilCtx = noBlendStencilCanvas.getContext('2d');
-    }
-    if(noBlendScratchCanvas.width !== bw || noBlendScratchCanvas.height !== bh){
-      noBlendScratchCanvas.width = bw; noBlendScratchCanvas.height = bh;
-      noBlendStencilCanvas.width = bw; noBlendStencilCanvas.height = bh;
-    } else {
-      noBlendScratchCtx.clearRect(0, 0, bw, bh);
-      noBlendStencilCtx.clearRect(0, 0, bw, bh);
-    }
+    ensureNoBlendScratch(bw, bh);
+    noBlendScratchCtx.clearRect(0, 0, bw, bh);
+    noBlendStencilCtx.clearRect(0, 0, bw, bh);
 
+    // 1. Draw stencil with forced 100% opacity to cut the exact footprint
     noBlendStencilCtx.save();
     noBlendStencilCtx.translate(-bx, -by);
     const stencilProxy = new Proxy(noBlendStencilCtx, {
@@ -7627,54 +7646,20 @@ void main(void)\r
     });
     drawFn(stencilProxy);
     noBlendStencilCtx.restore();
-    const stencilData = noBlendStencilCtx.getImageData(0, 0, bw, bh).data;
 
+    // 2. Draw actual shape with correct opacity/color
     noBlendScratchCtx.save();
     noBlendScratchCtx.translate(-bx, -by);
     drawFn(noBlendScratchCtx);
     noBlendScratchCtx.restore();
-    const scratchData = noBlendScratchCtx.getImageData(0, 0, bw, bh).data;
 
-    const rx0 = Math.max(0, bx), ry0 = Math.max(0, by);
-    const rx1 = Math.min(cw, bx+bw), ry1 = Math.min(ch, by+bh);
-    if(rx1 <= rx0 || ry1 <= ry0) return;
-    const rw = rx1-rx0, rh = ry1-ry0;
-    const realImg = realCtx.getImageData(rx0, ry0, rw, rh);
-    const realData = realImg.data;
-
-    const sRgb = colorHex ? hexToRgb(colorHex) : null;
-
-    for(let yy=0; yy<rh; yy++){
-      for(let xx=0; xx<rw; xx++){
-        const sx = (rx0+xx)-bx, sy = (ry0+yy)-by;
-        const sIdx = (sy*bw+sx)*4;
-        const stencilA = stencilData[sIdx+3];
-        if(stencilA === 0) continue;
-
-        const rIdx = (yy*rw+xx)*4;
-        const sA = scratchData[sIdx+3];
-        const tA = realData[rIdx+3];
-
-        const outA = tA * (1 - stencilA/255);
-        const finalA = sA + outA * (1 - sA/255);
-
-        if(finalA > 0){
-          if(sRgb){
-            realData[rIdx]   = sRgb.r;
-            realData[rIdx+1] = sRgb.g;
-            realData[rIdx+2] = sRgb.b;
-          } else {
-            // Strict replacement without blending RGB when colorHex is missing
-            const sR = scratchData[sIdx], sG = scratchData[sIdx+1], sB = scratchData[sIdx+2];
-            realData[rIdx]   = sR;
-            realData[rIdx+1] = sG;
-            realData[rIdx+2] = sB;
-          }
-          realData[rIdx+3] = Math.round(finalA);
-        }
-      }
-    }
-    realCtx.putImageData(realImg, rx0, ry0);
+    // 3. Composite instantly on GPU (hardware accelerated, zero CPU readback)
+    realCtx.save();
+    realCtx.globalCompositeOperation = 'destination-out';
+    realCtx.drawImage(noBlendStencilCanvas, 0, 0, bw, bh, bx, by, bw, bh);
+    realCtx.globalCompositeOperation = 'source-over';
+    realCtx.drawImage(noBlendScratchCanvas, 0, 0, bw, bh, bx, by, bw, bh);
+    realCtx.restore();
   }
 
   function paintCombineSameColor(realCtx, cw, ch, bx, by, bw, bh, colorHex, opacityVal, drawFn){
@@ -7682,19 +7667,9 @@ void main(void)\r
     bw = Math.ceil(bw); bh = Math.ceil(bh);
     if(bw <= 0 || bh <= 0) return;
 
-    if(!noBlendScratchCanvas){
-      noBlendScratchCanvas = document.createElement('canvas');
-      noBlendScratchCtx = noBlendScratchCanvas.getContext('2d');
-      noBlendStencilCanvas = document.createElement('canvas');
-      noBlendStencilCtx = noBlendStencilCanvas.getContext('2d');
-    }
-    if(noBlendScratchCanvas.width !== bw || noBlendScratchCanvas.height !== bh){
-      noBlendScratchCanvas.width = bw; noBlendScratchCanvas.height = bh;
-      noBlendStencilCanvas.width = bw; noBlendStencilCanvas.height = bh;
-    } else {
-      noBlendScratchCtx.clearRect(0, 0, bw, bh);
-      noBlendStencilCtx.clearRect(0, 0, bw, bh);
-    }
+    ensureNoBlendScratch(bw, bh);
+    noBlendScratchCtx.clearRect(0, 0, bw, bh);
+    noBlendStencilCtx.clearRect(0, 0, bw, bh);
 
     noBlendStencilCtx.save();
     noBlendStencilCtx.translate(-bx, -by);
@@ -7747,15 +7722,8 @@ void main(void)\r
     bw = Math.ceil(bw); bh = Math.ceil(bh);
     if(bw <= 0 || bh <= 0) return;
 
-    if(!noBlendStencilCanvas){
-      noBlendStencilCanvas = document.createElement('canvas');
-      noBlendStencilCtx = noBlendStencilCanvas.getContext('2d');
-    }
-    if(noBlendStencilCanvas.width !== bw || noBlendStencilCanvas.height !== bh){
-      noBlendStencilCanvas.width = bw; noBlendStencilCanvas.height = bh;
-    } else {
-      noBlendStencilCtx.clearRect(0, 0, bw, bh);
-    }
+    ensureNoBlendScratch(bw, bh);
+    noBlendStencilCtx.clearRect(0, 0, bw, bh);
 
     noBlendStencilCtx.save();
     noBlendStencilCtx.translate(-bx, -by);
@@ -7764,7 +7732,7 @@ void main(void)\r
 
     realCtx.save();
     realCtx.globalCompositeOperation = 'destination-out';
-    realCtx.drawImage(noBlendStencilCanvas, bx, by);
+    realCtx.drawImage(noBlendStencilCanvas, 0, 0, bw, bh, bx, by, bw, bh);
     realCtx.restore();
   }
 
@@ -7773,15 +7741,8 @@ void main(void)\r
     bw = Math.ceil(bw); bh = Math.ceil(bh);
     if(bw <= 0 || bh <= 0) return;
 
-    if(!noBlendStencilCanvas){
-      noBlendStencilCanvas = document.createElement('canvas');
-      noBlendStencilCtx = noBlendStencilCanvas.getContext('2d');
-    }
-    if(noBlendStencilCanvas.width !== bw || noBlendStencilCanvas.height !== bh){
-      noBlendStencilCanvas.width = bw; noBlendStencilCanvas.height = bh;
-    } else {
-      noBlendStencilCtx.clearRect(0, 0, bw, bh);
-    }
+    ensureNoBlendScratch(bw, bh);
+    noBlendStencilCtx.clearRect(0, 0, bw, bh);
 
     noBlendStencilCtx.save();
     noBlendStencilCtx.translate(-bx, -by);
@@ -9641,7 +9602,7 @@ void main(void)\r
             const mask = getActiveStampMask(st);
             const built = mask ? buildTintedStamp(mask, targetW, targetH, dabColor) : null;
             if (built) {
-              drawBuiltStamp(sctx, built.canvas, built.w, built.h, px, py, rotAngle, pX, pY);
+              drawBuiltStamp(sctx, built.canvas, built.w, built.h, px, py, rotAngle, pX, pY, built.srcW, built.srcH);
             } else {
               drawDabShape(sctx, px, py, dW, dH, dabColor, rotAngle, 1);
             }
@@ -9689,7 +9650,7 @@ void main(void)\r
               const mask = getActiveStampMask(st);
               const built = mask ? buildTintedStamp(mask, targetW, targetH, dabColor) : null;
               if (built) {
-                drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, rotAngle, pX, pY);
+                drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, rotAngle, pX, pY, built.srcW, built.srcH);
               } else {
                 drawDabShape(sctx, tx, ty, dW, dH, dabColor, rotAngle, 1);
               }
@@ -9702,12 +9663,10 @@ void main(void)\r
             paintEraserDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn);
           } else if(sprayMode === 'colorize'){
             paintColorizeDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, drawDabFn);
+          } else if(sprayCombineSameColor){
+            paintCombineSameColor(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, dabAlpha * 255 * (opacity/100), drawDabFn);
           } else {
-            if(sprayCombineSameColor){
-              paintCombineSameColor(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, dabAlpha * 255 * (opacity/100), drawDabFn);
-            } else {
-              paintNoBlend(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn, dabColor);
-            }
+            paintNoBlend(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn, dabColor);
           }
         }
 
@@ -15043,14 +15002,8 @@ void main(void)\r
       if(!confirmReplace) return;
       const shouldSave = confirm('Save your current project first, before it gets replaced?');
       if(shouldSave) await saveProject(false); // awaited — buildProjectData() must run before the replace below overwrites this state
-      pushHistory();
-      W = img.width; H = img.height;
-      resizeAllCanvasesToWH();
-      clearSelection();
-      layers = [];
-      addLayer('Background', ctx=> ctx.drawImage(img,0,0), true);
-      fitCanvasToScreen(true);
-      drawGridOverlay();
+      const baseName = filename ? filename.replace(/\.[^.]+$/, '') : 'Untitled';
+      await resetProjectToDefaults(img.width, img.height, 'Background', ctx=> ctx.drawImage(img,0,0), baseName);
     }
   }
   function loadImageFileAndHandle(file){
@@ -15157,7 +15110,7 @@ void main(void)\r
 
   newProjCancelBtn.addEventListener('click', closeNewProjectModal);
 
-  async function resetProjectToDefaults(w = 512, h = 512){
+  async function resetProjectToDefaults(w = 512, h = 512, initialLayerName = 'Layer 1', initialDrawFn = null, projName = 'Untitled'){
     if(typeof isPlaying !== 'undefined' && isPlaying && typeof stopPlayback === 'function'){
       stopPlayback();
     }
@@ -15172,6 +15125,8 @@ void main(void)\r
     currentCloudFileId = null;
     currentCloudFileName = null;
     currentCloudProviderUsed = null;
+    const projNameInput = document.getElementById('projectNameInput');
+    if(projNameInput) projNameInput.value = projName || 'Untitled';
     if(typeof syncBackupUI === 'function') syncBackupUI();
 
     W = Math.max(1, Math.min(8192, parseInt(w) || 512));
@@ -15182,6 +15137,7 @@ void main(void)\r
     undoStack = [];
     redoStack = [];
     pathUndoSnapshot = null;
+    if(typeof pathSegments !== 'undefined') pathSegments = [];
     if(typeof updateHistoryButtons === 'function') updateHistoryButtons();
 
     onionSkinEnabled = false;
@@ -15192,7 +15148,7 @@ void main(void)\r
     layerIdCounter = 1;
     frameIdCounter = 1;
     layers = [];
-    addLayer('Layer 1', null, true);
+    addLayer(initialLayerName || 'Layer 1', initialDrawFn || null, true);
     frames = [makeFrame('Frame ' + frameIdCounter, layers, 0)];
     currentFrameIndex = 0;
     refreshFramesPanel();
