@@ -3243,7 +3243,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.245'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.246'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -14335,18 +14335,68 @@ void main(void)\r
     showNotice('Custom theme deleted.');
   }
 
-  function exportThemeJson() {
+  function showNotice(msg) {
+    if (typeof showToast === 'function') showToast(msg);
+  }
+
+  function getCanvasBlob(canvas, mimeType = 'image/png', quality) {
+    return new Promise((resolve, reject) => {
+      try {
+        canvas.toBlob(blob => {
+          if (blob) resolve(blob);
+          else reject(new Error('Failed to create canvas blob'));
+        }, mimeType, quality);
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  async function saveBlobWithPrompt(blob, suggestedName, types) {
+    if (typeof window.showSaveFilePicker === 'function') {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: suggestedName,
+          types: types || []
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+        return { success: true, name: handle.name || suggestedName, method: 'handle' };
+      } catch (err) {
+        if (err.name === 'AbortError') {
+          // User cancelled the file picker dialog
+          return { success: false, cancelled: true };
+        }
+        console.warn('showSaveFilePicker failed, falling back to download:', err);
+      }
+    }
+    // Fallback for browsers without File System Access API or when picker is blocked
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.download = suggestedName;
+    link.href = url;
+    link.click();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+    return { success: true, name: suggestedName, method: 'download' };
+  }
+
+  async function exportThemeJson() {
     const themeObj = getCurrentThemeObject();
     themeObj.name = themeObj.name || 'Custom Theme';
     const jsonStr = JSON.stringify(themeObj, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = (themeObj.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'theme') + '.json';
-    a.click();
-    URL.revokeObjectURL(url);
-    showNotice('Theme exported as JSON file!');
+    const filename = (themeObj.name.toLowerCase().replace(/[^a-z0-9]+/g, '-') || 'theme') + '.json';
+    try {
+      const res = await saveBlobWithPrompt(blob, filename, [
+        { description: 'JSON Theme File', accept: { 'application/json': ['.json'] } }
+      ]);
+      if (res.success) {
+        showNotice('Theme exported as "' + res.name + '"');
+      }
+    } catch(err) {
+      console.error('Error exporting theme JSON:', err);
+    }
   }
 
   function copyThemeJson() {
@@ -14610,12 +14660,22 @@ void main(void)\r
     });
     return out;
   }
-  document.getElementById('savePaletteBtn').addEventListener('click', ()=>{
-    const blob = new Blob([exportGPL()], {type:'text/plain'});
-    const link = document.createElement('a');
-    link.download = 'palette.gpl';
-    link.href = URL.createObjectURL(blob);
-    link.click();
+  document.getElementById('savePaletteBtn').addEventListener('click', async ()=>{
+    const gplText = exportGPL();
+    const blob = new Blob([gplText], {type:'text/plain'});
+    const main = mainGroup();
+    const baseName = sanitizeFilename(main.name) || (typeof projectName === 'function' ? projectName() : 'palette');
+    const filename = (baseName || 'palette') + '.gpl';
+    try {
+      const res = await saveBlobWithPrompt(blob, filename, [
+        { description: 'GIMP Palette File', accept: { 'text/plain': ['.gpl'] } }
+      ]);
+      if (res.success) {
+        showToast(`Palette exported as "${res.name}"`);
+      }
+    } catch (err) {
+      console.error('Error exporting palette:', err);
+    }
   });
 
   // ---------- Gradients ----------
@@ -15342,26 +15402,83 @@ void main(void)\r
     return sanitizeFilename(document.getElementById('projectNameInput').value);
   }
 
-  function exportFlattenedPNG(){
+  async function exportFlattenedPNG(){
     render();
-    const link = document.createElement('a');
-    link.download = projectName() + '.png';
-    link.href = displayCanvas.toDataURL('image/png');
-    link.click();
+    const filename = projectName() + '.png';
+    try {
+      const blob = await getCanvasBlob(displayCanvas, 'image/png');
+      const res = await saveBlobWithPrompt(blob, filename, [
+        { description: 'PNG Image', accept: { 'image/png': ['.png'] } }
+      ]);
+      if (res.success) {
+        showToast(`Exported "${res.name}"`);
+      }
+    } catch(err) {
+      console.error('Error exporting PNG:', err);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = displayCanvas.toDataURL('image/png');
+      link.click();
+      showToast('Exported "' + filename + '"');
+    }
   }
-  function exportLayersSeparately(visibleLayers){
+  async function exportLayersSeparately(visibleLayers){
+    if (typeof window.showDirectoryPicker === 'function') {
+      try {
+        const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
+        showToast(`Exporting ${visibleLayers.length} layers to folder...`);
+        let savedCount = 0;
+        for (let i = 0; i < visibleLayers.length; i++) {
+          const l = visibleLayers[i];
+          const tmp = document.createElement('canvas');
+          tmp.width = W; tmp.height = H;
+          const tctx = tmp.getContext('2d');
+          tctx.globalAlpha = l.opacity / 100;
+          tctx.drawImage(l.canvas, 0, 0);
+          const safeName = sanitizeFilename(l.name) || ('Layer' + (i + 1));
+          const filename = projectName() + '_' + safeName + '.png';
+          const blob = await getCanvasBlob(tmp, 'image/png');
+          
+          const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+          const writable = await fileHandle.createWritable();
+          await writable.write(blob);
+          await writable.close();
+          savedCount++;
+        }
+        showToast(`Exported ${savedCount} layers to "${dirHandle.name}"`);
+        return;
+      } catch(err) {
+        if (err.name === 'AbortError') {
+          // User cancelled folder selection
+          return;
+        }
+        console.warn('Directory picker failed or was denied, falling back:', err);
+      }
+    }
+
     visibleLayers.forEach((l, i)=>{
-      setTimeout(()=>{
+      setTimeout(async ()=>{
         const tmp = document.createElement('canvas');
         tmp.width = W; tmp.height = H;
         const tctx = tmp.getContext('2d');
         tctx.globalAlpha = l.opacity/100;
         tctx.drawImage(l.canvas, 0, 0);
         const safeName = sanitizeFilename(l.name) || ('Layer' + (i+1));
-        const link = document.createElement('a');
-        link.download = projectName() + '_' + safeName + '.png';
-        link.href = tmp.toDataURL('image/png');
-        link.click();
+        const filename = projectName() + '_' + safeName + '.png';
+        try {
+          const blob = await getCanvasBlob(tmp, 'image/png');
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = filename;
+          link.href = url;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 2000);
+        } catch(e) {
+          const link = document.createElement('a');
+          link.download = filename;
+          link.href = tmp.toDataURL('image/png');
+          link.click();
+        }
       }, i * 150); // stagger so browsers don't throttle rapid multi-file downloads
     });
   }
@@ -15380,7 +15497,7 @@ void main(void)\r
     }
     exportFlattenedPNG();
   });
-  function exportSpriteSheet(){
+  async function exportSpriteSheet(){
     captureCurrentFrameState(); // make sure the current frame's latest edits are included
     const sheet = document.createElement('canvas');
     sheet.width = W * frames.length;
@@ -15394,10 +15511,23 @@ void main(void)\r
       });
     });
     sctx.globalAlpha = 1;
-    const link = document.createElement('a');
-    link.download = projectName() + '_spritesheet.png';
-    link.href = sheet.toDataURL('image/png');
-    link.click();
+    const filename = projectName() + '_spritesheet.png';
+    try {
+      const blob = await getCanvasBlob(sheet, 'image/png');
+      const res = await saveBlobWithPrompt(blob, filename, [
+        { description: 'PNG Image', accept: { 'image/png': ['.png'] } }
+      ]);
+      if (res.success) {
+        showToast(`Exported "${res.name}"`);
+      }
+    } catch(err) {
+      console.error('Error exporting sprite sheet:', err);
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = sheet.toDataURL('image/png');
+      link.click();
+      showToast('Exported "' + filename + '"');
+    }
   }
   document.getElementById('exportSpriteSheetBtn').addEventListener('click', exportSpriteSheet);
   function exportAnimatedGif(){
@@ -15433,14 +15563,25 @@ void main(void)\r
         tctx.globalAlpha = 1;
         gif.addFrame(tmp, {delay: delayMs, copy: true});
       });
-      gif.on('finished', blob=>{
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = projectName() + '.gif';
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-        showToast('GIF exported');
+      gif.on('finished', async blob=>{
+        const filename = projectName() + '.gif';
+        try {
+          const res = await saveBlobWithPrompt(blob, filename, [
+            { description: 'GIF Animation', accept: { 'image/gif': ['.gif'] } }
+          ]);
+          if (res.success) {
+            showToast(`Exported "${res.name}"`);
+          }
+        } catch(err) {
+          console.error('Error exporting GIF:', err);
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.download = filename;
+          link.href = url;
+          link.click();
+          URL.revokeObjectURL(url);
+          showToast('GIF exported');
+        }
       });
       gif.render();
     } catch(err){
