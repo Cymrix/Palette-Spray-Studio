@@ -3241,7 +3241,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.238'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.240'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -16650,24 +16650,12 @@ void main(void)\r
   }
 
   function loginOneDrive() {
-    let customMsClientId = localStorage.getItem('ms_client_id');
-    if (!customMsClientId) {
-      customMsClientId = prompt('To connect Microsoft OneDrive, enter your Azure App Client ID (or click Cancel for setup instructions):', '');
-    }
-    if (customMsClientId) {
-      customMsClientId = customMsClientId.trim();
-      localStorage.setItem('ms_client_id', customMsClientId);
-    }
-    if (!customMsClientId) {
-      alert('OneDrive setup instructions:\n1. Register a Multi-Tenant SPA app in Azure Portal (https://portal.azure.com)\n2. Add Redirect URI: ' + window.location.origin + window.location.pathname + '\n3. Enter your Application (client) ID when signing in.');
-      return;
-    }
+    const defaultMsClientId = '59ecbd95-c151-4cc4-a50b-3eb0887cca38';
+    const clientId = localStorage.getItem('ms_client_id') || defaultMsClientId;
+    const redirectUri = window.location.href.split('#')[0].split('?')[0];
+    const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${encodeURIComponent(clientId)}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=Files.ReadWrite%20User.Read&response_mode=fragment&prompt=select_account`;
 
-    const clientId = customMsClientId;
-    const redirectUri = window.location.origin + window.location.pathname;
-    const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${encodeURIComponent(clientId)}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=Files.ReadWrite.All%20User.Read`;
-
-    const authWindow = window.open(authUrl, 'OneDrive Auth', 'width=500,height=600');
+    const authWindow = window.open(authUrl, 'OneDrive Auth', 'width=520,height=620');
     if (!authWindow) {
       alert('Popup blocked. Please allow popups for OneDrive authentication.');
       return;
@@ -16677,16 +16665,22 @@ void main(void)\r
       try {
         if (authWindow.closed) {
           clearInterval(timer);
+          const savedToken = localStorage.getItem('onedrive_token');
+          if (savedToken && savedToken !== onedriveToken) {
+            onedriveToken = savedToken;
+            checkCloudAuthStatus();
+            showToast('Signed in to OneDrive');
+          }
           return;
         }
-        if (authWindow.location.href.includes('access_token=')) {
+        if (authWindow.location && authWindow.location.href && authWindow.location.href.includes('access_token=')) {
           const hash = authWindow.location.hash || authWindow.location.search;
           const params = new URLSearchParams(hash.substring(1));
           const token = params.get('access_token');
           if (token) {
             onedriveToken = token;
             localStorage.setItem('onedrive_token', onedriveToken);
-            authWindow.close();
+            try { authWindow.close(); } catch(e){}
             clearInterval(timer);
             checkCloudAuthStatus();
             showToast('Signed in to OneDrive');
@@ -16695,18 +16689,39 @@ void main(void)\r
       } catch (err) {
         // Cross-origin polling expected until redirect completes
       }
-    }, 500);
+    }, 400);
   }
 
-  if (window.location.hash.includes('access_token=')) {
-    const params = new URLSearchParams(window.location.hash.substring(1));
-    const token = params.get('access_token');
-    if (token) {
-      onedriveToken = token;
+  // Handle postMessage token communication between popup and main app
+  window.addEventListener('message', (event) => {
+    if (event.data && event.data.type === 'ONEDRIVE_AUTH_SUCCESS' && event.data.token) {
+      onedriveToken = event.data.token;
       localStorage.setItem('onedrive_token', onedriveToken);
-      window.history.replaceState({}, document.title, window.location.pathname);
+      checkCloudAuthStatus();
+      showToast('Signed in to OneDrive');
     }
-  }
+  });
+
+  // Extract access token if app was opened/redirected with token in URL fragment
+  try {
+    const currentHash = window.location.hash;
+    if (currentHash && currentHash.includes('access_token=')) {
+      const params = new URLSearchParams(currentHash.substring(1));
+      const token = params.get('access_token');
+      if (token) {
+        onedriveToken = token;
+        localStorage.setItem('onedrive_token', onedriveToken);
+        if (window.opener) {
+          try {
+            window.opener.postMessage({ type: 'ONEDRIVE_AUTH_SUCCESS', token: token }, '*');
+            window.close();
+          } catch(e) {}
+        } else {
+          window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
+        }
+      }
+    }
+  } catch (e) {}
 
   async function getOrCreateGoogleDriveFolder(folderName) {
     if (!folderName || folderName.trim() === '') return 'root';
