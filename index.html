@@ -747,10 +747,13 @@
     </div>
   </div>
 
-  <div class="color-edit-popup" id="colorizeTargetPopup" style="display:none;width:220px;">
-    <label class="field" style="margin-top:0;">Colorize brush target color</label>
-    <div class="swatch-grid" id="colorizeTargetPaletteGrid" style="display:grid;grid-template-columns:repeat(6,26px);gap:6px;"></div>
-    <div class="color-edit-actions">
+  <div class="color-edit-popup" id="colorizeTargetPopup" style="display:none; width:260px; min-width:200px; min-height:160px; max-width:90vw; max-height:85vh; resize:both; overflow:hidden; z-index:2200; box-shadow:0 12px 30px rgba(0,0,0,.6); flex-direction:column;">
+    <div style="display:flex; align-items:center; justify-content:center; position:relative; margin-bottom:10px; cursor:move; padding-bottom:6px; border-bottom:1px solid var(--line); user-select:none; flex:0 0 auto;" id="colorizeTargetDragHandle">
+      <div style="font-weight:600; font-size:12px; color:var(--text); text-align:center; width:100%;">Colorize target color</div>
+      <button class="btn small" id="colorizeTargetCloseCross" style="position:absolute; right:0; top:0; padding:2px 6px; font-size:11px; line-height:1;" title="Close">✕</button>
+    </div>
+    <div class="swatch-grid" id="colorizeTargetPaletteGrid" style="display:grid; grid-template-columns:repeat(auto-fill, 26px); gap:6px; flex:1 1 auto; overflow-y:auto; margin-bottom:10px; min-height:48px; align-content:start;"></div>
+    <div class="color-edit-actions" style="margin-top:auto; padding-top:4px; flex:0 0 auto;">
       <button class="btn small primary" id="colorizeTargetDoneBtn">Done</button>
     </div>
   </div>
@@ -1665,7 +1668,8 @@
         <div id="spraySourceHint" style="display:none;"></div>
 
         <!-- Checkboxes -->
-        <label style="font-size:12px;display:flex;align-items:center;gap:6px;margin-top:10px;" data-tooltip="When checked, painting over the exact same RGB color builds opacity without creating new blend colors. Painting over a different color replaces it directly.">
+
+        <label style="font-size:12px;display:flex;align-items:center;gap:6px;margin-top:8px;" data-tooltip="When checked, painting over the exact same RGB color builds opacity without creating new blend colors. Painting over a different color replaces it directly.">
           <input type="checkbox" id="sprayCombineSameColorCheckbox"> Combine opacity if same color
         </label>
 
@@ -3250,7 +3254,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.261'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.269'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -4120,7 +4124,7 @@ void main(void)\r
   let sprayLineAnchorY = null;
   let falloff = 40;
   let sprayPresetIdCounter = 1;
-  let sprayCombineSameColor = false;
+    let sprayCombineSameColor = false;
   let sprayInterpolate = true;
   let activeSprayPresetId = 'builtin-spray';
   const DEFAULT_BUILTIN_SPRAY_PRESETS = [
@@ -5820,15 +5824,22 @@ void main(void)\r
     hctx.clearRect(0, 0, W, H);
     if(!colorHighlightActive || selectedColors.size===0 || !layers[activeLayer]) return;
     const src = layers[activeLayer].colorCtx.getImageData(0, 0, W, H).data;
-    const targetKeys = new Set([...selectedColors].map(hex=>{
-      const {r,g,b} = hexToRgb(hex);
-      return r*65536 + g*256 + b;
-    }));
+    const targetRgbs = [...selectedColors].map(hex=>hexToRgb(hex)).filter(Boolean);
     const outImg = hctx.createImageData(W, H);
     const out = outImg.data;
     for(let i=0; i<src.length; i+=4){
-      if(src[i+3] === 0) continue;
-      if(targetKeys.has(src[i]*65536 + src[i+1]*256 + src[i+2])){
+      const a = src[i+3];
+      if(a === 0) continue;
+      const r = src[i], g = src[i+1], b = src[i+2];
+      const maxDev = a < 255 ? (Math.ceil(128 / a) + 2) : 0;
+      let matched = false;
+      for(let tr of targetRgbs){
+        if(Math.abs(r - tr.r) <= maxDev && Math.abs(g - tr.g) <= maxDev && Math.abs(b - tr.b) <= maxDev){
+          matched = true;
+          break;
+        }
+      }
+      if(matched){
         out[i]=255; out[i+1]=255; out[i+2]=0; out[i+3]=180; // yellow highlight overlay
       }
     }
@@ -6489,6 +6500,32 @@ void main(void)\r
         const a = layer.colorBuffer[idx + 3];
         if(a > 0){
           const r = layer.colorBuffer[idx], g = layer.colorBuffer[idx+1], b = layer.colorBuffer[idx+2];
+          // Account for canvas 2D premultiplied alpha quantization when checking palette colors:
+          if(a < 255){
+            const maxDev = Math.ceil(128 / a) + 2;
+            const mainColors = mainGroup()?.colors || [];
+            let bestHex = null, bestDist = Infinity, bestR = r, bestG = g, bestB = b;
+            for(let c of mainColors){
+              const prgb = hexToRgb(c.hex);
+              if(!prgb) continue;
+              const dr = Math.abs(prgb.r - r);
+              const dg = Math.abs(prgb.g - g);
+              const db = Math.abs(prgb.b - b);
+              if(dr <= maxDev && dg <= maxDev && db <= maxDev){
+                const dist = dr*dr + dg*dg + db*db;
+                if(dist < bestDist){
+                  bestDist = dist;
+                  bestHex = c.hex;
+                  bestR = prgb.r;
+                  bestG = prgb.g;
+                  bestB = prgb.b;
+                }
+              }
+            }
+            if(bestHex){
+              return { r: bestR, g: bestG, b: bestB, a, hex: bestHex };
+            }
+          }
           return { r, g, b, a, hex: rgbToHex(r, g, b) };
         }
       }
@@ -6507,13 +6544,32 @@ void main(void)\r
     setTool('colorpick');
   }
   function selectPaletteColorByHex(hex){
-    const entry = mainGroup().colors.find(c => c.hex === hex);
+    if(!hex) return;
+    let entry = mainGroup().colors.find(c => c.hex.toLowerCase() === hex.toLowerCase());
+    if(!entry){
+      const rgb = hexToRgb(hex);
+      if(rgb){
+        let bestDist = Infinity, bestEntry = null;
+        for(let c of mainGroup().colors){
+          const crgb = hexToRgb(c.hex);
+          if(!crgb) continue;
+          const d = Math.abs(crgb.r - rgb.r) + Math.abs(crgb.g - rgb.g) + Math.abs(crgb.b - rgb.b);
+          if(d < bestDist){
+            bestDist = d;
+            bestEntry = c;
+          }
+        }
+        if(bestEntry && bestDist <= 30){
+          entry = bestEntry;
+        }
+      }
+    }
     if(!entry){
       alert('That color isn\'t in your Main Palette.');
       return;
     }
-    selectedColors = new Set([hex]);
-    setFg(hex);
+    selectedColors = new Set([entry.hex]);
+    setFg(entry.hex);
     refreshGroups();
   }
   function lerp(a,b,t){ return a + (b-a)*t; }
@@ -7542,7 +7598,7 @@ void main(void)\r
           sctx.beginPath();
           sctx.arc(tx, ty, r, 0, Math.PI*2);
           sctx.fill();
-        });
+        }, fgColor);
       }
 
       const nearEdge = rawX < brushSize || rawX > effW - brushSize || rawY < brushSize || rawY > effH - brushSize;
@@ -7556,7 +7612,7 @@ void main(void)\r
           sctx.beginPath();
           sctx.arc(rawX+MARGIN_PX, rawY+MARGIN_PX, r, 0, Math.PI*2);
           sctx.fill();
-        });
+        }, fgColor);
       }
     } else {
       marginHasContent = true;
@@ -7568,7 +7624,7 @@ void main(void)\r
         sctx.beginPath();
         sctx.arc(rawX+MARGIN_PX, rawY+MARGIN_PX, r, 0, Math.PI*2);
         sctx.fill();
-      });
+      }, fgColor);
     }
   }
   function brushCircleLineTo(px, py){
@@ -7598,18 +7654,12 @@ void main(void)\r
     if(h < heightMin) return (h - (heightMin-soft)) / soft;
     return ((heightMax+soft) - h) / soft;
   }
-  // ---------- No-blend compositing ----------
+  // ---------- Full replacement pixel painting (no blend) ----------
   // Paint operations replace pixels outright rather than alpha-blending with what's already
-  // there — a semi-transparent stroke can exist, but repainting over it (even with more
-  // semi-transparent paint) replaces it, never compounds. Canvas 2D's native compositing modes
-  // either still blend (source-over) or wipe the ENTIRE canvas (copy), not just the drawn
-  // shape's footprint, so this works by drawing the shape normally onto a small transparent
-  // scratch canvas first, then directly overwriting (not compositing) only the pixels the
-  // scratch actually covers onto the real layer. Works uniformly for any shape — square, circle,
-  // or an arbitrary stamp alpha mask — since it only cares about the scratch's final pixel
-  // result, not how it was drawn.
-    let noBlendScratchCanvas = null, noBlendScratchCtx = null;
-  let noBlendStencilCanvas = null, noBlendStencilCtx = null;
+  // there — painting over existing pixels behaves identically to painting over fully transparent pixels.
+  // Any pixel touched by the new stroke/dab replaces whatever was underneath with its exact RGBA,
+  // preventing out-of-palette blend colors or edge bleeding.
+  let noBlendScratchCanvas = null, noBlendScratchCtx = null;
 
   function ensureNoBlendScratch(bw, bh){
     const reqW = Math.max(256, bw);
@@ -7618,18 +7668,13 @@ void main(void)\r
       noBlendScratchCanvas = document.createElement('canvas');
       noBlendScratchCanvas.width = reqW;
       noBlendScratchCanvas.height = reqH;
-      noBlendScratchCtx = noBlendScratchCanvas.getContext('2d');
-      noBlendStencilCanvas = document.createElement('canvas');
-      noBlendStencilCanvas.width = reqW;
-      noBlendStencilCanvas.height = reqH;
-      noBlendStencilCtx = noBlendStencilCanvas.getContext('2d');
+      noBlendScratchCtx = noBlendScratchCanvas.getContext('2d', { willReadFrequently: true });
     } else if(noBlendScratchCanvas.width < bw || noBlendScratchCanvas.height < bh){
-      const newW = Math.max(noBlendScratchCanvas.width * 2, reqW);
-      const newH = Math.max(noBlendScratchCanvas.height * 2, reqH);
-      noBlendScratchCanvas.width = newW;
-      noBlendScratchCanvas.height = newH;
-      noBlendStencilCanvas.width = newW;
-      noBlendStencilCanvas.height = newH;
+      const nw = Math.max(noBlendScratchCanvas.width, reqW);
+      const nh = Math.max(noBlendScratchCanvas.height, reqH);
+      noBlendScratchCanvas.width = nw;
+      noBlendScratchCanvas.height = nh;
+      noBlendScratchCtx = noBlendScratchCanvas.getContext('2d', { willReadFrequently: true });
     }
   }
 
@@ -7641,127 +7686,173 @@ void main(void)\r
 
     ensureNoBlendScratch(bw, bh);
     noBlendScratchCtx.clearRect(0, 0, bw, bh);
-    noBlendStencilCtx.clearRect(0, 0, bw, bh);
 
-    // 1. Draw stencil with forced 100% opacity to cut the exact footprint
-    noBlendStencilCtx.save();
-    noBlendStencilCtx.translate(-bx, -by);
-    const stencilProxy = new Proxy(noBlendStencilCtx, {
-      set(target, prop, value){ target[prop] = (prop === 'globalAlpha') ? 1 : value; return true; },
-      get(target, prop){ const v = target[prop]; return (typeof v === 'function') ? v.bind(target) : v; }
-    });
-    drawFn(stencilProxy);
-    noBlendStencilCtx.restore();
-
-    // 2. Draw actual shape with correct opacity/color
+    // 1. Draw shape onto transparent scratch canvas
     noBlendScratchCtx.save();
     noBlendScratchCtx.translate(-bx, -by);
     drawFn(noBlendScratchCtx);
     noBlendScratchCtx.restore();
 
-    // 3. Composite instantly on GPU (hardware accelerated, zero CPU readback)
-    realCtx.save();
-    realCtx.globalCompositeOperation = 'destination-out';
-    realCtx.drawImage(noBlendStencilCanvas, 0, 0, bw, bh, bx, by, bw, bh);
-    realCtx.globalCompositeOperation = 'source-over';
-    realCtx.drawImage(noBlendScratchCanvas, 0, 0, bw, bh, bx, by, bw, bh);
-    realCtx.restore();
+    // 2. Direct pixel replacement: where scratch has alpha > 0, overwrite layer pixel
+    const rx0 = Math.max(0, bx), ry0 = Math.max(0, by);
+    const rx1 = Math.min(cw, bx + bw), ry1 = Math.min(ch, by + bh);
+    if(rx1 <= rx0 || ry1 <= ry0) return;
+    const rw = rx1 - rx0, rh = ry1 - ry0;
+
+    const realImg = realCtx.getImageData(rx0, ry0, rw, rh);
+    const realData = realImg.data;
+    const sx0 = rx0 - bx, sy0 = ry0 - by;
+    const scratchImg = noBlendScratchCtx.getImageData(sx0, sy0, rw, rh);
+    const scratchData = scratchImg.data;
+
+    const sRgb = colorHex ? hexToRgb(colorHex) : null;
+    let modified = false;
+    for(let i = 0; i < scratchData.length; i += 4){
+      const sA = scratchData[i + 3];
+      if(sA > 0){
+        if(sRgb){
+          realData[i]     = sRgb.r;
+          realData[i + 1] = sRgb.g;
+          realData[i + 2] = sRgb.b;
+          realData[i + 3] = sA;
+          modified = true;
+        } else {
+          realData[i]     = scratchData[i];
+          realData[i + 1] = scratchData[i + 1];
+          realData[i + 2] = scratchData[i + 2];
+          realData[i + 3] = sA;
+          modified = true;
+        }
+      }
+    }
+
+    if(modified){
+      realCtx.putImageData(realImg, rx0, ry0);
+    }
   }
 
   function paintCombineSameColor(realCtx, cw, ch, bx, by, bw, bh, colorHex, opacityVal, drawFn){
     bx = Math.floor(bx); by = Math.floor(by);
     bw = Math.ceil(bw); bh = Math.ceil(bh);
     if(bw <= 0 || bh <= 0) return;
+    if(bx >= cw || by >= ch || bx + bw <= 0 || by + bh <= 0) return;
 
     ensureNoBlendScratch(bw, bh);
     noBlendScratchCtx.clearRect(0, 0, bw, bh);
-    noBlendStencilCtx.clearRect(0, 0, bw, bh);
-
-    noBlendStencilCtx.save();
-    noBlendStencilCtx.translate(-bx, -by);
-    const stencilProxy = new Proxy(noBlendStencilCtx, {
-      set(target, prop, value){ target[prop] = (prop === 'globalAlpha') ? 1 : value; return true; },
-      get(target, prop){ const v = target[prop]; return (typeof v === 'function') ? v.bind(target) : v; }
-    });
-    drawFn(stencilProxy);
-    noBlendStencilCtx.restore();
-    const stencilData = noBlendStencilCtx.getImageData(0, 0, bw, bh).data;
 
     noBlendScratchCtx.save();
     noBlendScratchCtx.translate(-bx, -by);
     drawFn(noBlendScratchCtx);
     noBlendScratchCtx.restore();
-    const scratchData = noBlendScratchCtx.getImageData(0, 0, bw, bh).data;
 
     const rx0 = Math.max(0, bx), ry0 = Math.max(0, by);
-    const rx1 = Math.min(cw, bx+bw), ry1 = Math.min(ch, by+bh);
+    const rx1 = Math.min(cw, bx + bw), ry1 = Math.min(ch, by + bh);
     if(rx1 <= rx0 || ry1 <= ry0) return;
-    const rw = rx1-rx0, rh = ry1-ry0;
+    const rw = rx1 - rx0, rh = ry1 - ry0;
+
     const realImg = realCtx.getImageData(rx0, ry0, rw, rh);
     const realData = realImg.data;
+    const sx0 = rx0 - bx, sy0 = ry0 - by;
+    const scratchImg = noBlendScratchCtx.getImageData(sx0, sy0, rw, rh);
+    const scratchData = scratchImg.data;
     const sRgb = hexToRgb(colorHex);
 
-    for(let yy=0; yy<rh; yy++){
-      for(let xx=0; xx<rw; xx++){
-        const sx = (rx0+xx)-bx, sy = (ry0+yy)-by;
-        const sIdx = (sy*bw+sx)*4;
-        if(stencilData[sIdx+3] === 0) continue;
-
-        const rIdx = (yy*rw+xx)*4;
-        const sA = scratchData[sIdx+3];
-        const tA = realData[rIdx+3];
-
-        const finalA = sA + tA * (1 - sA/255);
-        if(finalA > 0){
-          realData[rIdx]   = sRgb.r;
-          realData[rIdx+1] = sRgb.g;
-          realData[rIdx+2] = sRgb.b;
-          realData[rIdx+3] = Math.round(finalA);
+    let modified = false;
+    for(let i = 0; i < scratchData.length; i += 4){
+      const sA = scratchData[i + 3];
+      if(sA > 0){
+        const tA = realData[i + 3];
+        const maxDev = tA > 0 ? (Math.ceil(128 / tA) + 2) : 0;
+        const isSameColor = (tA === 0) || (
+          Math.abs(realData[i] - sRgb.r) <= maxDev &&
+          Math.abs(realData[i+1] - sRgb.g) <= maxDev &&
+          Math.abs(realData[i+2] - sRgb.b) <= maxDev
+        );
+        if(isSameColor){
+          const finalA = Math.min(255, sA + tA * (1 - sA / 255));
+          realData[i]     = sRgb.r;
+          realData[i + 1] = sRgb.g;
+          realData[i + 2] = sRgb.b;
+          realData[i + 3] = Math.round(finalA);
+        } else {
+          realData[i]     = sRgb.r;
+          realData[i + 1] = sRgb.g;
+          realData[i + 2] = sRgb.b;
+          realData[i + 3] = sA;
         }
+        modified = true;
       }
     }
-    realCtx.putImageData(realImg, rx0, ry0);
+
+    if(modified){
+      realCtx.putImageData(realImg, rx0, ry0);
+    }
   }
 
   function paintEraserDab(realCtx, cw, ch, bx, by, bw, bh, drawFn){
     bx = Math.floor(bx); by = Math.floor(by);
     bw = Math.ceil(bw); bh = Math.ceil(bh);
     if(bw <= 0 || bh <= 0) return;
+    if(bx >= cw || by >= ch || bx + bw <= 0 || by + bh <= 0) return;
 
     ensureNoBlendScratch(bw, bh);
-    noBlendStencilCtx.clearRect(0, 0, bw, bh);
+    noBlendScratchCtx.clearRect(0, 0, bw, bh);
 
-    noBlendStencilCtx.save();
-    noBlendStencilCtx.translate(-bx, -by);
-    drawFn(noBlendStencilCtx);
-    noBlendStencilCtx.restore();
+    noBlendScratchCtx.save();
+    noBlendScratchCtx.translate(-bx, -by);
+    drawFn(noBlendScratchCtx);
+    noBlendScratchCtx.restore();
 
-    realCtx.save();
-    realCtx.globalCompositeOperation = 'destination-out';
-    realCtx.drawImage(noBlendStencilCanvas, 0, 0, bw, bh, bx, by, bw, bh);
-    realCtx.restore();
+    const rx0 = Math.max(0, bx), ry0 = Math.max(0, by);
+    const rx1 = Math.min(cw, bx + bw), ry1 = Math.min(ch, by + bh);
+    if(rx1 <= rx0 || ry1 <= ry0) return;
+    const rw = rx1 - rx0, rh = ry1 - ry0;
+
+    const realImg = realCtx.getImageData(rx0, ry0, rw, rh);
+    const realData = realImg.data;
+    const sx0 = rx0 - bx, sy0 = ry0 - by;
+    const scratchImg = noBlendScratchCtx.getImageData(sx0, sy0, rw, rh);
+    const scratchData = scratchImg.data;
+
+    let modified = false;
+    for(let i = 0; i < scratchData.length; i += 4){
+      const sA = scratchData[i + 3];
+      if(sA > 0 && realData[i + 3] > 0){
+        const factor = 1 - (sA / 255);
+        realData[i + 3] = Math.round(realData[i + 3] * factor);
+        modified = true;
+      }
+    }
+
+    if(modified){
+      realCtx.putImageData(realImg, rx0, ry0);
+    }
   }
 
   function paintColorizeDab(realCtx, cw, ch, bx, by, bw, bh, colorHex, drawFn){
     bx = Math.floor(bx); by = Math.floor(by);
     bw = Math.ceil(bw); bh = Math.ceil(bh);
     if(bw <= 0 || bh <= 0) return;
+    if(bx >= cw || by >= ch || bx + bw <= 0 || by + bh <= 0) return;
 
     ensureNoBlendScratch(bw, bh);
-    noBlendStencilCtx.clearRect(0, 0, bw, bh);
+    noBlendScratchCtx.clearRect(0, 0, bw, bh);
 
-    noBlendStencilCtx.save();
-    noBlendStencilCtx.translate(-bx, -by);
-    drawFn(noBlendStencilCtx);
-    noBlendStencilCtx.restore();
-    const stencilData = noBlendStencilCtx.getImageData(0, 0, bw, bh).data;
+    noBlendScratchCtx.save();
+    noBlendScratchCtx.translate(-bx, -by);
+    drawFn(noBlendScratchCtx);
+    noBlendScratchCtx.restore();
 
     const rx0 = Math.max(0, bx), ry0 = Math.max(0, by);
-    const rx1 = Math.min(cw, bx+bw), ry1 = Math.min(ch, by+bh);
+    const rx1 = Math.min(cw, bx + bw), ry1 = Math.min(ch, by + bh);
     if(rx1 <= rx0 || ry1 <= ry0) return;
-    const rw = rx1-rx0, rh = ry1-ry0;
+    const rw = rx1 - rx0, rh = ry1 - ry0;
+
     const realImg = realCtx.getImageData(rx0, ry0, rw, rh);
     const realData = realImg.data;
+    const sx0 = rx0 - bx, sy0 = ry0 - by;
+    const scratchImg = noBlendScratchCtx.getImageData(sx0, sy0, rw, rh);
+    const scratchData = scratchImg.data;
 
     let maskRgb = null;
     if(colorizeTargetHex){
@@ -7769,29 +7860,36 @@ void main(void)\r
     }
     const targetRgb = hexToRgb(colorHex);
 
-    for(let yy=0; yy<rh; yy++){
-      for(let xx=0; xx<rw; xx++){
-        const sx = (rx0+xx)-bx, sy = (ry0+yy)-by;
-        const sIdx = (sy*bw+sx)*4;
-        if(stencilData[sIdx+3] === 0) continue;
-
-        const rIdx = (yy*rw+xx)*4;
-        if(realData[rIdx+3] === 0) continue;
-
+    let modified = false;
+    for(let i = 0; i < scratchData.length; i += 4){
+      const sA = scratchData[i + 3];
+      const tA = realData[i + 3];
+      if(sA > 0 && tA > 0){
         if(maskRgb){
-          if(realData[rIdx] !== maskRgb.r || realData[rIdx+1] !== maskRgb.g || realData[rIdx+2] !== maskRgb.b){
-            continue;
+          const maxDev = tA < 255 ? (Math.ceil(128 / tA) + 2) : 0;
+          if(Math.abs(realData[i] - maskRgb.r) <= maxDev &&
+             Math.abs(realData[i+1] - maskRgb.g) <= maxDev &&
+             Math.abs(realData[i+2] - maskRgb.b) <= maxDev){
+            realData[i]     = targetRgb.r;
+            realData[i + 1] = targetRgb.g;
+            realData[i + 2] = targetRgb.b;
+            modified = true;
           }
+        } else {
+          realData[i]     = targetRgb.r;
+          realData[i + 1] = targetRgb.g;
+          realData[i + 2] = targetRgb.b;
+          modified = true;
         }
-
-        realData[rIdx]   = targetRgb.r;
-        realData[rIdx+1] = targetRgb.g;
-        realData[rIdx+2] = targetRgb.b;
       }
     }
-    realCtx.putImageData(realImg, rx0, ry0);
+
+    if(modified){
+      realCtx.putImageData(realImg, rx0, ry0);
+    }
   }
-    function withHeightMask(bx, by, bw, bh, paintFn){
+
+  function withHeightMask(bx, by, bw, bh, paintFn){
     if(!heightPaintEnabled || heightSourceLayerIndex === null || !layers[heightSourceLayerIndex] || !layers[activeLayer]){
       paintFn();
       return;
@@ -8589,6 +8687,7 @@ void main(void)\r
       const effH = getEffectiveCanvasH();
       const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
 
+      const r = Math.max(0.5, diameter/2);
       if(isCore){
         const normX = seamlessModeEnabled ? (((cx % W) + W) % W) : cx;
         const normY = seamlessModeEnabled ? (((cy % H) + H) % H) : cy;
@@ -8602,36 +8701,40 @@ void main(void)\r
         for (let offset of offsets) {
           const tx = normX + offset[0];
           const ty = normY + offset[1];
-          const ctx = layers[activeLayer].ctx;
-          ctx.save();
-          ctx.globalAlpha = opacity/100;
-          ctx.fillStyle = fgColor;
-          ctx.beginPath();
-          ctx.arc(tx, ty, Math.max(0.5, diameter/2), 0, Math.PI*2);
-          ctx.fill();
-          ctx.restore();
+          if (tx < -r || ty < -r || tx > W + r || ty > H + r) continue;
+          paintNoBlend(layers[activeLayer].ctx, W, H, tx-r, ty-r, r*2, r*2, (sctx)=>{
+            sctx.globalAlpha = opacity/100;
+            sctx.fillStyle = fgColor;
+            sctx.beginPath();
+            sctx.arc(tx, ty, r, 0, Math.PI*2);
+            sctx.fill();
+          }, fgColor);
         }
 
         const nearEdge = rawX < diameter || rawX > effW - diameter || rawY < diameter || rawY > effH - diameter;
         if(nearEdge){
           marginHasContent = true;
-          mfCtx.save();
-          mfCtx.globalAlpha = opacity/100;
-          mfCtx.fillStyle = fgColor;
-          mfCtx.beginPath();
-          mfCtx.arc(rawX + MARGIN_PX, rawY + MARGIN_PX, Math.max(0.5, diameter/2), 0, Math.PI*2);
-          mfCtx.fill();
-          mfCtx.restore();
+          const mfW = effW + MARGIN_PX*2;
+          const mfH = effH + MARGIN_PX*2;
+          paintNoBlend(mfCtx, mfW, mfH, rawX+MARGIN_PX-r, rawY+MARGIN_PX-r, r*2, r*2, (sctx)=>{
+            sctx.globalAlpha = opacity/100;
+            sctx.fillStyle = fgColor;
+            sctx.beginPath();
+            sctx.arc(rawX+MARGIN_PX, rawY+MARGIN_PX, r, 0, Math.PI*2);
+            sctx.fill();
+          }, fgColor);
         }
       } else {
         marginHasContent = true;
-        mfCtx.save();
-        mfCtx.globalAlpha = opacity/100;
-        mfCtx.fillStyle = fgColor;
-        mfCtx.beginPath();
-        mfCtx.arc(rawX + MARGIN_PX, rawY + MARGIN_PX, Math.max(0.5, diameter/2), 0, Math.PI*2);
-        mfCtx.fill();
-        mfCtx.restore();
+        const mfW = effW + MARGIN_PX*2;
+        const mfH = effH + MARGIN_PX*2;
+        paintNoBlend(mfCtx, mfW, mfH, rawX+MARGIN_PX-r, rawY+MARGIN_PX-r, r*2, r*2, (sctx)=>{
+          sctx.globalAlpha = opacity/100;
+          sctx.fillStyle = fgColor;
+          sctx.beginPath();
+          sctx.arc(rawX+MARGIN_PX, rawY+MARGIN_PX, r, 0, Math.PI*2);
+          sctx.fill();
+        }, fgColor);
       }
     }
   }
@@ -8644,45 +8747,51 @@ void main(void)\r
     const effH = getEffectiveCanvasH();
     const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
 
-    const drawLeafToCtx = (targetCtx, lx, ly) => {
-      targetCtx.save();
-      targetCtx.globalAlpha = opacity/100;
-      targetCtx.fillStyle = fgColor;
-      if(pixelPerfect){
-        targetCtx.imageSmoothingEnabled = false;
-        const finalCx = Math.round(lx);
-        const finalCy = Math.round(ly);
-        const sz = Math.max(2, Math.round(size));
-        const l = sz * 0.65, w = sz * 0.5;
-        const boxW = Math.min(STAMP_SCRATCH_MAX, Math.max(4, Math.ceil((l + w) * 2)));
-        const boxH = boxW;
-        shapeScratchCtx.clearRect(0, 0, boxW, boxH);
-        shapeScratchCtx.fillStyle = fgColor;
-        shapeScratchCtx.save();
-        shapeScratchCtx.translate(boxW/2, boxH/2);
-        shapeScratchCtx.beginPath();
-        shapeScratchCtx.moveTo(l, 0);
-        shapeScratchCtx.quadraticCurveTo(l*0.3, w, -l*0.6, 0);
-        shapeScratchCtx.quadraticCurveTo(l*0.3, -w, l, 0);
-        shapeScratchCtx.closePath();
-        shapeScratchCtx.fill();
-        shapeScratchCtx.restore();
+    const drawLeafToCtx = (targetCtx, cw, ch, lx, ly) => {
+      const sz = Math.max(2, Math.round(size));
+      const boxW = Math.ceil(sz * 2 + 4);
+      const boxH = boxW;
+      const bx = lx - boxW/2;
+      const by = ly - boxH/2;
+      paintNoBlend(targetCtx, cw, ch, bx, by, boxW, boxH, (sctx) => {
+        sctx.save();
+        sctx.globalAlpha = opacity/100;
+        sctx.fillStyle = fgColor;
+        if(pixelPerfect){
+          sctx.imageSmoothingEnabled = false;
+          const finalCx = Math.round(lx);
+          const finalCy = Math.round(ly);
+          const l = sz * 0.65, w = sz * 0.5;
+          const sboxW = Math.min(STAMP_SCRATCH_MAX, Math.max(4, Math.ceil((l + w) * 2)));
+          const sboxH = sboxW;
+          shapeScratchCtx.clearRect(0, 0, sboxW, sboxH);
+          shapeScratchCtx.fillStyle = fgColor;
+          shapeScratchCtx.save();
+          shapeScratchCtx.translate(sboxW/2, sboxH/2);
+          shapeScratchCtx.beginPath();
+          shapeScratchCtx.moveTo(l, 0);
+          shapeScratchCtx.quadraticCurveTo(l*0.3, w, -l*0.6, 0);
+          shapeScratchCtx.quadraticCurveTo(l*0.3, -w, l, 0);
+          shapeScratchCtx.closePath();
+          shapeScratchCtx.fill();
+          shapeScratchCtx.restore();
 
-        targetCtx.translate(finalCx, finalCy);
-        targetCtx.rotate(angle);
-        targetCtx.drawImage(shapeScratch, 0, 0, boxW, boxH, -boxW/2, -boxH/2, boxW, boxH);
-      } else {
-        targetCtx.translate(lx, ly);
-        targetCtx.rotate(angle);
-        const l = size*0.65, w = size*0.5;
-        targetCtx.beginPath();
-        targetCtx.moveTo(l, 0);
-        targetCtx.quadraticCurveTo(l*0.3, w, -l*0.6, 0);
-        targetCtx.quadraticCurveTo(l*0.3, -w, l, 0);
-        targetCtx.closePath();
-        targetCtx.fill();
-      }
-      targetCtx.restore();
+          sctx.translate(finalCx, finalCy);
+          sctx.rotate(angle);
+          sctx.drawImage(shapeScratch, 0, 0, sboxW, sboxH, -sboxW/2, -sboxH/2, sboxW, sboxH);
+        } else {
+          sctx.translate(lx, ly);
+          sctx.rotate(angle);
+          const l = size*0.65, w = size*0.5;
+          sctx.beginPath();
+          sctx.moveTo(l, 0);
+          sctx.quadraticCurveTo(l*0.3, w, -l*0.6, 0);
+          sctx.quadraticCurveTo(l*0.3, -w, l, 0);
+          sctx.closePath();
+          sctx.fill();
+        }
+        sctx.restore();
+      }, fgColor);
     };
 
     if(isCore){
@@ -8696,17 +8805,17 @@ void main(void)\r
         ] : [[0,0]];
 
       for (let offset of offsets) {
-        drawLeafToCtx(layers[activeLayer].ctx, normX + offset[0], normY + offset[1]);
+        drawLeafToCtx(layers[activeLayer].ctx, W, H, normX + offset[0], normY + offset[1]);
       }
 
       const nearEdge = rawX < size || rawX > effW - size || rawY < size || rawY > effH - size;
       if(nearEdge){
         marginHasContent = true;
-        drawLeafToCtx(mfCtx, rawX + MARGIN_PX, rawY + MARGIN_PX);
+        drawLeafToCtx(mfCtx, effW + MARGIN_PX*2, effH + MARGIN_PX*2, rawX + MARGIN_PX, rawY + MARGIN_PX);
       }
     } else {
       marginHasContent = true;
-      drawLeafToCtx(mfCtx, rawX + MARGIN_PX, rawY + MARGIN_PX);
+      drawLeafToCtx(mfCtx, effW + MARGIN_PX*2, effH + MARGIN_PX*2, rawX + MARGIN_PX, rawY + MARGIN_PX);
     }
   }
   function vineNextDecorationDistance(){
@@ -8767,11 +8876,12 @@ void main(void)\r
           for (let offset of offsets) {
             const tx = normX + offset[0];
             const ty = normY + offset[1];
-            const ctx = layers[activeLayer].ctx;
-            ctx.save();
-            ctx.globalAlpha = opacity/100;
-            drawBuiltStamp(ctx, built.canvas, built.w, built.h, tx, ty, angle, pX, pY);
-            ctx.restore();
+            const bounds = getRotatedRectBounds(tx, ty, built.w, built.h, angle, pX, pY);
+            if (bounds.x >= W || bounds.y >= H || bounds.x + bounds.w <= 0 || bounds.y + bounds.h <= 0) continue;
+            paintNoBlend(layers[activeLayer].ctx, W, H, bounds.x, bounds.y, bounds.w, bounds.h, (sctx)=>{
+              sctx.globalAlpha = opacity/100;
+              drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, angle, pX, pY, built.srcW, built.srcH);
+            });
           }
         }
       }
@@ -9501,17 +9611,25 @@ void main(void)\r
       ctx.fillRect(rx, ry, finalDW, finalDH);
     } else {
       if(pixelPerfect){
-        const sw = Math.min(STAMP_SCRATCH_MAX, finalDW);
-        const sh = Math.min(STAMP_SCRATCH_MAX, finalDH);
+        const sw = Math.min(STAMP_SCRATCH_MAX, Math.max(1, Math.round(finalDW)));
+        const sh = Math.min(STAMP_SCRATCH_MAX, Math.max(1, Math.round(finalDH)));
         shapeScratchCtx.clearRect(0, 0, sw, sh);
         shapeScratchCtx.fillStyle = color;
         drawVectorPrimitivePath(shapeScratchCtx, dabShape, sw/2, sh/2, sw, sh);
 
-        // Threshold alpha channel to guarantee crisp binary opacity (no semi-opaque edge pixels!)
+        // Clean thresholding for pixel-perfect mode: ensure inside pixels are pure solid color RGB
+        const cRgb = hexToRgb(color) || { r: 128, g: 0, b: 128 };
         const imgData = shapeScratchCtx.getImageData(0, 0, sw, sh);
         const d = imgData.data;
-        for(let i=3; i<d.length; i+=4){
-          d[i] = d[i] >= 128 ? 255 : 0;
+        for(let i=0; i<d.length; i+=4){
+          if(d[i+3] >= 128){
+            d[i]   = cRgb.r;
+            d[i+1] = cRgb.g;
+            d[i+2] = cRgb.b;
+            d[i+3] = 255;
+          } else {
+            d[i+3] = 0;
+          }
         }
         shapeScratchCtx.putImageData(imgData, 0, 0);
 
@@ -12196,9 +12314,13 @@ void main(void)\r
     const sourceRgbs = [...selectedColors].map(hex => hexToRgb(hex));
     const {r:tR, g:tG, b:tB} = hexToRgb(targetHex);
     for(let i=0;i<data.length;i+=4){
-      if(data[i+3] === 0) continue; // fully transparent — nothing to shift
+      const a = data[i+3];
+      if(a === 0) continue; // fully transparent — nothing to shift
+      const maxDev = a < 255 ? (Math.ceil(128 / a) + 2) : 0;
       for(const src of sourceRgbs){
-        if(data[i]===src.r && data[i+1]===src.g && data[i+2]===src.b){
+        if(Math.abs(data[i] - src.r) <= maxDev &&
+           Math.abs(data[i+1] - src.g) <= maxDev &&
+           Math.abs(data[i+2] - src.b) <= maxDev){
           data[i]=tR; data[i+1]=tG; data[i+2]=tB;
           break;
         }
@@ -12226,9 +12348,13 @@ void main(void)\r
         const dx = (bx+xx+0.5) - px, dy = (by+yy+0.5) - py;
         if(dx*dx+dy*dy > r*r) continue; // circular brush shape
         const i = (yy*bw+xx)*4;
-        if(data[i+3] === 0) continue;
+        const a = data[i+3];
+        if(a === 0) continue;
+        const maxDev = a < 255 ? (Math.ceil(128 / a) + 2) : 0;
         for(const src of sourceRgbs){
-          if(data[i]===src.r && data[i+1]===src.g && data[i+2]===src.b){
+          if(Math.abs(data[i] - src.r) <= maxDev &&
+             Math.abs(data[i+1] - src.g) <= maxDev &&
+             Math.abs(data[i+2] - src.b) <= maxDev){
             data[i]=tR; data[i+1]=tG; data[i+2]=tB;
             break;
           }
@@ -13634,13 +13760,19 @@ void main(void)\r
       });
       if(grid) grid.appendChild(sw);
     });
-    popup.style.display = 'block';
-    const sidePanel = document.querySelector('.side-panel');
-    if(sidePanel){
-      const panelRect = sidePanel.getBoundingClientRect();
-      const popupRect = popup.getBoundingClientRect();
-      popup.style.left = Math.max(10, panelRect.left - popupRect.width - 10) + 'px';
-      popup.style.top = Math.max(10, Math.min(window.innerHeight - popupRect.height - 10, 150)) + 'px';
+    popup.style.display = 'flex';
+    if(!popup.style.left || !popup.style.top){
+      const sidePanel = document.querySelector('.side-panel');
+      if(sidePanel){
+        const panelRect = sidePanel.getBoundingClientRect();
+        const popupRect = popup.getBoundingClientRect();
+        popup.style.left = Math.max(10, panelRect.left - popupRect.width - 10) + 'px';
+        popup.style.top = Math.max(10, Math.min(window.innerHeight - popupRect.height - 10, 150)) + 'px';
+      } else {
+        const popupRect = popup.getBoundingClientRect();
+        popup.style.left = Math.max(10, (window.innerWidth - popupRect.width)/2) + 'px';
+        popup.style.top = Math.max(10, (window.innerHeight - popupRect.height)/2) + 'px';
+      }
     }
   }
   function closeColorizeTargetPopup(){
@@ -13653,6 +13785,9 @@ void main(void)\r
   if(ctsw) ctsw.addEventListener('click', openColorizeTargetPopup);
   const ctdb = document.getElementById('colorizeTargetDoneBtn');
   if(ctdb) ctdb.addEventListener('click', closeColorizeTargetPopup);
+  const ctcCross = document.getElementById('colorizeTargetCloseCross');
+  if(ctcCross) ctcCross.addEventListener('click', closeColorizeTargetPopup);
+  makePopupDraggable(document.getElementById('colorizeTargetPopup'), document.getElementById('colorizeTargetDragHandle'));
 
   function openAboutPopup(){
     const popup = document.getElementById('aboutPopup');
