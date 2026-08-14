@@ -3241,7 +3241,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.240'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.241'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -16653,7 +16653,7 @@ void main(void)\r
     const defaultMsClientId = '59ecbd95-c151-4cc4-a50b-3eb0887cca38';
     const clientId = localStorage.getItem('ms_client_id') || defaultMsClientId;
     const redirectUri = window.location.href.split('#')[0].split('?')[0];
-    const authUrl = `https://login.microsoftonline.com/common/oauth2/v2.0/authorize?client_id=${encodeURIComponent(clientId)}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=Files.ReadWrite%20User.Read&response_mode=fragment&prompt=select_account`;
+    const authUrl = `https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=${encodeURIComponent(clientId)}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=Files.ReadWrite%20User.Read&response_mode=fragment&prompt=select_account`;
 
     const authWindow = window.open(authUrl, 'OneDrive Auth', 'width=520,height=620');
     if (!authWindow) {
