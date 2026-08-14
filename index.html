@@ -3243,7 +3243,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.246'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.247'; // bump this on every deploy — shown only in the About popup
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -15657,6 +15657,7 @@ void main(void)\r
       }
     };
   }
+  const BACKUP_SUBFOLDER_NAME = 'Palette Spray Studio Backups';
   let projectFileHandle = null; // File System Access handle, when supported — lets Save overwrite in place
   let backupDirHandle = null; // File System Access directory handle for the chosen backups folder, when enabled
   let backupIntervalTimer = null;
@@ -15745,8 +15746,6 @@ void main(void)\r
     syncBackupUI();
   }
 
-  const BACKUP_SUBFOLDER_NAME = 'Palette Spray Studio Backups';
-
   async function toggleBackups(){
     if (activeSaveLocation === 'cloud') {
       const cb = document.getElementById('cloudBackupsCheckbox');
@@ -15772,12 +15771,18 @@ void main(void)\r
     }
     try {
       const dir = await window.showDirectoryPicker();
-      const subfolderName = BACKUP_SUBFOLDER_NAME;
-      backupDirHandle = await dir.getDirectoryHandle(subfolderName, {create:true});
+      let targetHandle;
+      if (dir.name === BACKUP_SUBFOLDER_NAME) {
+        targetHandle = dir;
+      } else {
+        targetHandle = await dir.getDirectoryHandle(BACKUP_SUBFOLDER_NAME, {create:true});
+      }
+      backupDirHandle = targetHandle;
       saveBackupHandleToDB(dir);
       syncBackupUI();
       startBackupIntervalTimer();
-      showToast('Backups on — into "' + dir.name + '/' + subfolderName + '", every save plus every ' + document.getElementById('backupIntervalInput').value + ' min');
+      const displayFolderName = (dir.name === BACKUP_SUBFOLDER_NAME) ? dir.name : (dir.name + '/' + BACKUP_SUBFOLDER_NAME);
+      showToast('Backups on — into "' + displayFolderName + '", every save plus every ' + document.getElementById('backupIntervalInput').value + ' min');
     } catch(err){
       if(err.name !== 'AbortError'){ console.error(err); alert('Could not access that folder for backups.'); }
     }
@@ -15792,14 +15797,18 @@ void main(void)\r
     try {
       const perm = await storedDir.requestPermission({mode:'readwrite'});
       if(perm === 'granted'){
-        const subfolderName = BACKUP_SUBFOLDER_NAME;
-        backupDirHandle = await storedDir.getDirectoryHandle(subfolderName, {create:true});
+        if (storedDir.name === BACKUP_SUBFOLDER_NAME) {
+          backupDirHandle = storedDir;
+        } else {
+          backupDirHandle = await storedDir.getDirectoryHandle(BACKUP_SUBFOLDER_NAME, {create:true});
+        }
         document.getElementById('backupToggleBtn').textContent = 'Backups: On';
         document.getElementById('backupIntervalLabel').style.display = 'inline-flex';
         document.getElementById('backupMaxLabel').style.display = 'inline-flex';
         refreshBackupButtonStyle();
         startBackupIntervalTimer();
-        showToast('Backups re-enabled into "' + storedDir.name + '/' + subfolderName + '"');
+        const displayFolderName = (storedDir.name === BACKUP_SUBFOLDER_NAME) ? storedDir.name : (storedDir.name + '/' + BACKUP_SUBFOLDER_NAME);
+        showToast('Backups re-enabled into "' + displayFolderName + '"');
       } else {
         toggleBackups(); // permission denied — fall back to a fresh folder picker
       }
@@ -15856,6 +15865,17 @@ void main(void)\r
       if (legacy) saved = legacy;
     }
     return normalizePath(saved || '/Palette Spray Studio');
+  }
+
+  function getCloudBackupFolderPath(prov = currentCloudProvider) {
+    const targetPath = getTargetFolderPath(prov);
+    if (targetPath.endsWith(BACKUP_SUBFOLDER_NAME)) {
+      return targetPath;
+    }
+    if (targetPath === '/' || targetPath === '') {
+      return '/' + BACKUP_SUBFOLDER_NAME;
+    }
+    return targetPath + '/' + BACKUP_SUBFOLDER_NAME;
   }
 
   function getTargetFolderId(prov = currentCloudProvider) {
@@ -16057,27 +16077,23 @@ void main(void)\r
       }
     }
 
-    // 2. Cloud backups (always saves to the active cloud service)
+    // 2. Cloud backups (always saves to the active cloud service inside the 'Palette Spray Studio Backups' folder)
     const cloudBackupsEnabled = document.getElementById('cloudBackupsCheckbox')?.checked;
     if (cloudBackupsEnabled) {
       const activeProv = currentCloudProviderUsed || currentCloudProvider || 'gdrive';
       const fileName = `backup_${backupFileStamp()}_${projectName()}.pssproj`;
       const projectDataStr = JSON.stringify(buildProjectData());
       const maxCloudFiles = Math.max(1, +document.getElementById('backupMaxFilesInput')?.value || 10);
+      const backupPath = getCloudBackupFolderPath(activeProv);
 
       // Active is Google Drive
       if (activeProv === 'gdrive' && gdriveToken) {
         try {
-          const targetPath = getTargetFolderPath('gdrive');
-          const targetFolderId = getTargetFolderId('gdrive');
-          const { id: folderId } = await resolveGoogleDriveFolder(targetPath, targetFolderId);
-          if (folderId && folderId !== targetFolderId) {
-            localStorage.setItem('gdrive_folder_id', folderId);
-          }
+          const { id: backupFolderId } = await resolveGoogleDriveFolder(backupPath);
           const metadata = {
             name: fileName,
             mimeType: 'application/json',
-            parents: folderId !== 'root' ? [folderId] : undefined
+            parents: (backupFolderId && backupFolderId !== 'root') ? [backupFolderId] : undefined
           };
           const form = new FormData();
           form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
@@ -16089,7 +16105,7 @@ void main(void)\r
             body: form
           });
           if (res.ok) {
-            await pruneCloudBackupsGDrive(folderId, projectName(), maxCloudFiles);
+            await pruneCloudBackupsGDrive(backupFolderId, projectName(), maxCloudFiles);
           }
         } catch (err) {
           console.warn('Cloud backup to Google Drive failed:', err);
@@ -16099,15 +16115,10 @@ void main(void)\r
       // Active is OneDrive
       if (activeProv === 'onedrive' && onedriveToken) {
         try {
-          const targetPath = getTargetFolderPath('onedrive');
-          const targetFolderId = getTargetFolderId('onedrive');
-          const { id: folderId } = await resolveOneDriveFolder(targetPath, targetFolderId);
-          if (folderId && folderId !== targetFolderId) {
-            localStorage.setItem('onedrive_folder_id', folderId);
-          }
+          const { id: backupFolderId } = await resolveOneDriveFolder(backupPath);
           let url;
-          if (folderId && folderId !== 'root') {
-            url = `https://graph.microsoft.com/v1.0/me/drive/items/${folderId}:/${encodeURIComponent(fileName)}:/content`;
+          if (backupFolderId && backupFolderId !== 'root') {
+            url = `https://graph.microsoft.com/v1.0/me/drive/items/${backupFolderId}:/${encodeURIComponent(fileName)}:/content`;
           } else {
             url = `https://graph.microsoft.com/v1.0/me/drive/root:/${encodeURIComponent(fileName)}:/content`;
           }
@@ -16120,7 +16131,7 @@ void main(void)\r
             body: projectDataStr
           });
           if (res.ok) {
-            await pruneCloudBackupsOneDrive(folderId, projectName(), maxCloudFiles);
+            await pruneCloudBackupsOneDrive(backupFolderId, projectName(), maxCloudFiles);
           }
         } catch (err) {
           console.warn('Cloud backup to OneDrive failed:', err);
@@ -17402,6 +17413,7 @@ void main(void)\r
           syncBackupUI();
 
           loadCloudFileList();
+          await writeBackupCopy();
         } catch (err) {
           console.error(err);
           alert('Failed to save file to Google Drive.');
@@ -17442,6 +17454,7 @@ void main(void)\r
           syncBackupUI();
 
           loadCloudFileList();
+          await writeBackupCopy();
         } catch (err) {
           console.error(err);
           alert('Failed to save file to OneDrive.');
