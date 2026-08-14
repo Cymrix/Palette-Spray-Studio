@@ -1,4 +1,4 @@
-const CACHE_NAME = "palette-spray-studio-v3";
+const CACHE_NAME = "palette-spray-studio-v4";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
@@ -34,20 +34,39 @@ self.addEventListener("activate", (event) => {
   return self.clients.claim();
 });
 
-// Fetch Event - Stale-While-Revalidate strategy
+// Fetch Event
 self.addEventListener("fetch", (event) => {
   // Only handle GET and local HTTP/HTTPS requests
   if (event.request.method !== "GET" || !event.request.url.startsWith(self.location.origin)) {
     return;
   }
 
+  // Network-First for HTML navigation / documents so latest version is always loaded when online
+  if (event.request.mode === "navigate" || event.request.destination === "document") {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const copy = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
+          return networkResponse;
+        })
+        .catch(() => {
+          return caches.match(event.request).then((cached) => cached || caches.match("./index.html"));
+        })
+    );
+    return;
+  }
+
+  // Stale-While-Revalidate for other static assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchedResponse = fetch(event.request)
         .then((networkResponse) => {
           // Only cache successful responses
           if (networkResponse && networkResponse.status === 200) {
-            cache.put(event.request, networkResponse.clone());
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, networkResponse.clone()));
           }
           return networkResponse;
         })
