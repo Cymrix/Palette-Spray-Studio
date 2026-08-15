@@ -912,6 +912,78 @@
     </div>
   </div>
 
+  <!-- Export Options Modal (Color, Height, Roughness maps) -->
+  <div class="modal-backdrop" id="exportModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.65); backdrop-filter:blur(2px); z-index:3000; align-items:center; justify-content:center;">
+    <div class="color-edit-popup" id="exportModalPopup" style="display:flex; flex-direction:column; position:relative; z-index:3001; width:440px; max-width:94vw; max-height:90vh; box-shadow:0 16px 40px rgba(0,0,0,0.7); overflow-y:auto;">
+      <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--line); padding-bottom:8px; margin-bottom:10px;">
+        <label class="field" style="margin:0; font-weight:700; font-size:14px; color:var(--text);">💾 Export Project & Texture Maps</label>
+        <button class="btn icon small" id="exportModalCloseBtn" style="padding:2px 6px;">✕</button>
+      </div>
+
+      <!-- Preview Area -->
+      <div style="background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:8px; margin-bottom:12px; text-align:center;">
+        <div style="display:flex; justify-content:center; gap:6px; margin-bottom:8px;">
+          <button class="btn small primary" id="exportPreviewTabColor" style="padding:3px 10px; font-size:11px;">Color Map</button>
+          <button class="btn small" id="exportPreviewTabHeight" style="padding:3px 10px; font-size:11px;">Height Map</button>
+          <button class="btn small" id="exportPreviewTabRoughness" style="padding:3px 10px; font-size:11px;">Roughness Map</button>
+        </div>
+        <div style="width:100%; height:160px; display:flex; align-items:center; justify-content:center; background:rgba(0,0,0,0.25); border-radius:4px; overflow:hidden;">
+          <canvas id="exportModalPreviewCanvas" width="128" height="128" style="max-width:100%; max-height:100%; object-fit:contain; image-rendering:pixelated;"></canvas>
+        </div>
+        <div id="exportPreviewLabel" class="hint" style="margin-top:4px; font-size:11px;">Showing: Composite Color (Albedo) Map</div>
+      </div>
+
+      <!-- Map Selection Checkboxes -->
+      <label class="field" style="margin-top:0; font-weight:600; font-size:12px;">Maps to Export</label>
+      <div style="display:flex; flex-direction:column; gap:6px; background:var(--panel-2); border:1px solid var(--line); border-radius:6px; padding:8px; margin-top:4px;">
+        <label style="font-size:12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+          <span style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="exportIncludeColor" checked style="accent-color:var(--accent);">
+            <span><strong>Color / Albedo</strong> (Diffuse)</span>
+          </span>
+          <span class="hint" id="exportFilenameColor" style="font-size:10px; opacity:0.8;">name.png</span>
+        </label>
+        <label style="font-size:12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+          <span style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="exportIncludeHeight" style="accent-color:var(--accent);">
+            <span><strong>Height Map</strong> (Displacement / Bump)</span>
+          </span>
+          <span class="hint" id="exportFilenameHeight" style="font-size:10px; opacity:0.8;">name_height.png</span>
+        </label>
+        <label style="font-size:12px; display:flex; align-items:center; justify-content:space-between; cursor:pointer;">
+          <span style="display:flex; align-items:center; gap:8px;">
+            <input type="checkbox" id="exportIncludeRoughness" style="accent-color:var(--accent);">
+            <span><strong>Roughness Map</strong> (Gloss / PBR)</span>
+          </span>
+          <span class="hint" id="exportFilenameRoughness" style="font-size:10px; opacity:0.8;">name_roughness.png</span>
+        </label>
+      </div>
+
+      <!-- Export Mode Selection -->
+      <label class="field" style="margin-top:10px; font-weight:600; font-size:12px;">Export Target</label>
+      <div style="display:flex; flex-direction:column; gap:6px; margin-top:4px;">
+        <label style="font-size:12px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="radio" name="exportTargetMode" value="flattened" checked style="accent-color:var(--accent);">
+          <span><strong>Flattened Image</strong> (Composite of all visible layers)</span>
+        </label>
+        <label style="font-size:12px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="radio" name="exportTargetMode" value="layers" style="accent-color:var(--accent);">
+          <span><strong>Individual Layers</strong> (Export each visible layer as its own file)</span>
+        </label>
+        <label style="font-size:12px; display:flex; align-items:center; gap:8px; cursor:pointer;">
+          <input type="radio" name="exportTargetMode" value="spritesheet" style="accent-color:var(--accent);">
+          <span><strong>Sprite Sheet</strong> (All animation frames horizontal strip)</span>
+        </label>
+      </div>
+
+      <!-- Actions Footer -->
+      <div class="color-edit-actions" style="margin-top:16px; display:flex; gap:6px; justify-content:flex-end;">
+        <button class="btn small" id="exportModalCancelBtn">Cancel</button>
+        <button class="btn small primary" id="exportModalSubmitBtn" style="font-weight:600; padding:4px 14px;">Export Selected</button>
+      </div>
+    </div>
+  </div>
+
   <div class="modal-backdrop" id="newProjectModalOverlay" style="display:none; position:fixed; top:0; left:0; width:100vw; height:100vh; background:rgba(0,0,0,0.55); z-index:2200; align-items:center; justify-content:center;">
     <div class="color-edit-popup" id="newProjectPopup" style="display:block; position:relative; z-index:2201; width:300px; box-shadow:0 16px 40px rgba(0,0,0,0.7);">
       <label class="field" style="margin-top:0; font-weight:600; font-size:14px; color:var(--text);">New Project</label>
@@ -1490,7 +1562,9 @@
           Cloud Drives
         </button>
         <div class="menu-divider"></div>
-        <button class="menu-item" id="exportBtn">Export PNG</button>
+        <button class="menu-item" id="exportBtn">Export PNG & Maps…</button>
+        <button class="menu-item" id="exportHeightBtn">Export Heightmap PNG</button>
+        <button class="menu-item" id="exportRoughnessBtn">Export Roughness Map PNG</button>
         <button class="menu-item" id="exportSpriteSheetBtn">Export Sprite Sheet</button>
         <button class="menu-item" id="exportGifBtn">Export Animated GIF</button>
         <div class="menu-divider"></div>
@@ -2167,7 +2241,8 @@
         <div class="hint" style="font-size:10px;">Black = low, White = high.</div>
         <div style="display:flex;gap:4px;margin-top:4px;">
           <button class="btn small" id="regenHeightBtn" style="flex:1;padding:4px;font-size:10px;">Regen from Color</button>
-          <button class="btn small danger" id="clearHeightBtn" style="flex:1;padding:4px;font-size:10px;" title="Clear heightmap for active layer">Clear Map</button>
+          <button class="btn small" id="exportLayerHeightBtn" style="flex:1;padding:4px;font-size:10px;" title="Export heightmap PNG">Export Map</button>
+          <button class="btn small danger" id="clearHeightBtn" style="flex:1;padding:4px;font-size:10px;" title="Clear heightmap for active layer">Clear</button>
         </div>
         <label class="field" style="margin-top:6px;font-size:10px;">Height Scale <span class="field-value" id="heightScaleVal">100%</span></label>
         <input type="range" id="heightScaleSlider" min="0" max="400" value="100">
@@ -2182,7 +2257,8 @@
         </div>
         <div style="display:flex;gap:4px;margin-top:4px;">
           <button class="btn small" id="regenRoughnessBtn" style="flex:1;padding:4px;font-size:10px;">Regen from Color</button>
-          <button class="btn small danger" id="clearRoughnessBtn" style="flex:1;padding:4px;font-size:10px;" title="Clear roughness map for active layer">Clear Map</button>
+          <button class="btn small" id="exportLayerRoughnessBtn" style="flex:1;padding:4px;font-size:10px;" title="Export roughness map PNG">Export Map</button>
+          <button class="btn small danger" id="clearRoughnessBtn" style="flex:1;padding:4px;font-size:10px;" title="Clear roughness map for active layer">Clear</button>
         </div>
         <label class="field" style="margin-top:6px;font-size:10px;">Roughness Scale <span class="field-value" id="roughnessScaleVal">100%</span></label>
         <input type="range" id="roughnessScaleSlider" min="0" max="200" value="100">
@@ -3399,7 +3475,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.319'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.320'; // bump this on every deploy — shown only in the About popup
 
   // Override window.alert to be iframe-safe and style-consistent
   window.alert = function(message) {
@@ -17848,132 +17924,430 @@ void main(void)\r
     return sanitizeFilename(document.getElementById('projectNameInput').value);
   }
 
-  async function exportFlattenedPNG(){
-    render();
-    const filename = projectName() + '.png';
-    try {
-      const blob = await getCanvasBlob(displayCanvas, 'image/png');
-      const res = await saveBlobWithPrompt(blob, filename, [
-        { description: 'PNG Image', accept: { 'image/png': ['.png'] } }
-      ]);
-      if (res.success) {
-        showToast(`Exported "${res.name}"`);
+  // ---------- Texture Maps Export Helpers (Color, Height, Roughness) ----------
+  function getAutoHeightCanvas(layer) {
+    if (!layer) return null;
+    if (layer.heightCanvas) return layer.heightCanvas;
+    const colCanvas = layer.colorCanvas || layer.canvas;
+    if (!colCanvas) return null;
+    const hc = document.createElement('canvas');
+    hc.width = W; hc.height = H;
+    const hctx = hc.getContext('2d', { willReadFrequently: true });
+    const colCtx = colCanvas.getContext ? colCanvas.getContext('2d', { willReadFrequently: true }) : null;
+    if (!colCtx) return null;
+    const imgData = colCtx.getImageData(0, 0, W, H);
+    const data = imgData.data;
+    const hImgData = hctx.createImageData(W, H);
+    const hd = hImgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      const lum = Math.round(0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2]);
+      hd[i] = lum; hd[i + 1] = lum; hd[i + 2] = lum; hd[i + 3] = data[i + 3];
+    }
+    hctx.putImageData(hImgData, 0, 0);
+    return hc;
+  }
+
+  function getAutoRoughnessCanvas(layer) {
+    if (!layer) return null;
+    if (layer.roughnessCanvas) return layer.roughnessCanvas;
+    const colCanvas = layer.colorCanvas || layer.canvas;
+    if (!colCanvas) return null;
+    const rc = document.createElement('canvas');
+    rc.width = W; rc.height = H;
+    const rctx = rc.getContext('2d', { willReadFrequently: true });
+    const colCtx = colCanvas.getContext ? colCanvas.getContext('2d', { willReadFrequently: true }) : null;
+    if (!colCtx) return null;
+    const imgData = colCtx.getImageData(0, 0, W, H);
+    const data = imgData.data;
+    const rImgData = rctx.createImageData(W, H);
+    const rd = rImgData.data;
+    for (let i = 0; i < data.length; i += 4) {
+      if (data[i + 3] === 0) {
+        rd[i] = 255; rd[i + 1] = 255; rd[i + 2] = 255; rd[i + 3] = 0;
+        continue;
       }
-    } catch(err) {
-      console.error('Error exporting PNG:', err);
+      const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+      const roughnessVal = Math.max(0, Math.min(255, Math.round(255 - lum * 0.8)));
+      rd[i] = roughnessVal; rd[i + 1] = roughnessVal; rd[i + 2] = roughnessVal; rd[i + 3] = data[i + 3];
+    }
+    rctx.putImageData(rImgData, 0, 0);
+    return rc;
+  }
+
+  function buildCompositeExportCanvas(type = 'color', targetLayers = null) {
+    const list = targetLayers || layers.filter(l => l.visible);
+    const c = document.createElement('canvas');
+    c.width = W; c.height = H;
+    const ctx = c.getContext('2d', { willReadFrequently: true });
+    list.forEach(l => {
+      if (!l.visible) return;
+      ctx.globalAlpha = l.opacity / 100;
+      if (type === 'height') {
+        const hc = getAutoHeightCanvas(l);
+        if (hc) ctx.drawImage(hc, 0, 0);
+      } else if (type === 'roughness') {
+        const rc = getAutoRoughnessCanvas(l);
+        if (rc) ctx.drawImage(rc, 0, 0);
+      } else {
+        const sc = l.colorCanvas || l.canvas;
+        if (sc) ctx.drawImage(sc, 0, 0);
+      }
+    });
+    ctx.globalAlpha = 1;
+    return c;
+  }
+
+  function buildSpriteSheetExportCanvas(type = 'color') {
+    captureCurrentFrameState();
+    const sheet = document.createElement('canvas');
+    sheet.width = W * frames.length;
+    sheet.height = H;
+    const sctx = sheet.getContext('2d', { willReadFrequently: true });
+    frames.forEach((f, i) => {
+      (f.layers || []).forEach(l => {
+        if (!l.visible) return;
+        sctx.globalAlpha = l.opacity / 100;
+        if (type === 'height') {
+          const hc = getAutoHeightCanvas(l);
+          if (hc) sctx.drawImage(hc, i * W, 0);
+        } else if (type === 'roughness') {
+          const rc = getAutoRoughnessCanvas(l);
+          if (rc) sctx.drawImage(rc, i * W, 0);
+        } else {
+          const sc = l.colorCanvas || l.canvas;
+          if (sc) sctx.drawImage(sc, i * W, 0);
+        }
+      });
+    });
+    sctx.globalAlpha = 1;
+    return sheet;
+  }
+
+  async function saveCanvasAsPng(canvas, defaultFilename, description = 'PNG Image') {
+    try {
+      const blob = await getCanvasBlob(canvas, 'image/png');
+      const res = await saveBlobWithPrompt(blob, defaultFilename, [
+        { description, accept: { 'image/png': ['.png'] } }
+      ]);
+      if (res && res.success) {
+        showToast(`Exported "${res.name}"`);
+        return true;
+      }
+    } catch (err) {
+      console.warn('saveBlobWithPrompt failed or was aborted:', err);
+    }
+    try {
+      const blob = await getCanvasBlob(canvas, 'image/png');
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.download = filename;
-      link.href = displayCanvas.toDataURL('image/png');
+      link.download = defaultFilename;
+      link.href = url;
       link.click();
-      showToast('Exported "' + filename + '"');
+      setTimeout(() => URL.revokeObjectURL(url), 2000);
+      showToast(`Exported "${defaultFilename}"`);
+      return true;
+    } catch (e) {
+      const link = document.createElement('a');
+      link.download = defaultFilename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast(`Exported "${defaultFilename}"`);
+      return true;
     }
   }
-  async function exportLayersSeparately(visibleLayers){
+
+  async function exportFlattenedPNG() {
+    render();
+    const c = buildCompositeExportCanvas('color');
+    await saveCanvasAsPng(c, projectName() + '.png', 'PNG Color Image');
+  }
+
+  async function exportSingleMap(type = 'height', forActiveLayerOnly = false) {
+    render();
+    const pName = projectName();
+    let canvasToExport = null;
+    let filename = '';
+
+    if (forActiveLayerOnly) {
+      const l = layers[activeLayer];
+      if (!l) return;
+      const safeName = sanitizeFilename(l.name) || ('Layer' + (activeLayer + 1));
+      if (type === 'height') {
+        canvasToExport = getAutoHeightCanvas(l);
+        filename = `${pName}_${safeName}_height.png`;
+      } else if (type === 'roughness') {
+        canvasToExport = getAutoRoughnessCanvas(l);
+        filename = `${pName}_${safeName}_roughness.png`;
+      } else {
+        canvasToExport = l.colorCanvas || l.canvas;
+        filename = `${pName}_${safeName}.png`;
+      }
+    } else {
+      if (type === 'height') {
+        canvasToExport = buildCompositeExportCanvas('height');
+        filename = `${pName}_height.png`;
+      } else if (type === 'roughness') {
+        canvasToExport = buildCompositeExportCanvas('roughness');
+        filename = `${pName}_roughness.png`;
+      } else {
+        canvasToExport = buildCompositeExportCanvas('color');
+        filename = `${pName}.png`;
+      }
+    }
+
+    if (canvasToExport) {
+      await saveCanvasAsPng(canvasToExport, filename, `${type === 'height' ? 'Heightmap' : type === 'roughness' ? 'Roughness Map' : 'Color Map'} PNG`);
+    }
+  }
+
+  async function exportLayersSeparately(visibleLayers, includeColor = true, includeHeight = false, includeRoughness = false) {
+    const pName = projectName();
+    const filesToSave = [];
+
+    visibleLayers.forEach((l, i) => {
+      const safeName = sanitizeFilename(l.name) || ('Layer' + (i + 1));
+      if (includeColor) {
+        const tmp = document.createElement('canvas');
+        tmp.width = W; tmp.height = H;
+        const tctx = tmp.getContext('2d', { willReadFrequently: true });
+        tctx.globalAlpha = l.opacity / 100;
+        const sc = l.colorCanvas || l.canvas;
+        if (sc) tctx.drawImage(sc, 0, 0);
+        filesToSave.push({
+          filename: `${pName}_${safeName}.png`,
+          canvas: tmp
+        });
+      }
+      if (includeHeight) {
+        const tmp = document.createElement('canvas');
+        tmp.width = W; tmp.height = H;
+        const tctx = tmp.getContext('2d', { willReadFrequently: true });
+        tctx.globalAlpha = l.opacity / 100;
+        const hc = getAutoHeightCanvas(l);
+        if (hc) tctx.drawImage(hc, 0, 0);
+        filesToSave.push({
+          filename: `${pName}_${safeName}_height.png`,
+          canvas: tmp
+        });
+      }
+      if (includeRoughness) {
+        const tmp = document.createElement('canvas');
+        tmp.width = W; tmp.height = H;
+        const tctx = tmp.getContext('2d', { willReadFrequently: true });
+        tctx.globalAlpha = l.opacity / 100;
+        const rc = getAutoRoughnessCanvas(l);
+        if (rc) tctx.drawImage(rc, 0, 0);
+        filesToSave.push({
+          filename: `${pName}_${safeName}_roughness.png`,
+          canvas: tmp
+        });
+      }
+    });
+
+    if (filesToSave.length === 0) {
+      showToast('No maps selected to export.');
+      return;
+    }
+
     if (typeof window.showDirectoryPicker === 'function') {
       try {
         const dirHandle = await window.showDirectoryPicker({ mode: 'readwrite' });
-        showToast(`Exporting ${visibleLayers.length} layers to folder...`);
+        showToast(`Exporting ${filesToSave.length} files to folder...`);
         let savedCount = 0;
-        for (let i = 0; i < visibleLayers.length; i++) {
-          const l = visibleLayers[i];
-          const tmp = document.createElement('canvas');
-          tmp.width = W; tmp.height = H;
-          const tctx = tmp.getContext('2d', { willReadFrequently: true });
-          tctx.globalAlpha = l.opacity / 100;
-          tctx.drawImage(l.canvas, 0, 0);
-          const safeName = sanitizeFilename(l.name) || ('Layer' + (i + 1));
-          const filename = projectName() + '_' + safeName + '.png';
-          const blob = await getCanvasBlob(tmp, 'image/png');
-          
-          const fileHandle = await dirHandle.getFileHandle(filename, { create: true });
+        for (let i = 0; i < filesToSave.length; i++) {
+          const item = filesToSave[i];
+          const blob = await getCanvasBlob(item.canvas, 'image/png');
+          const fileHandle = await dirHandle.getFileHandle(item.filename, { create: true });
           const writable = await fileHandle.createWritable();
           await writable.write(blob);
           await writable.close();
           savedCount++;
         }
-        showToast(`Exported ${savedCount} layers to "${dirHandle.name}"`);
+        showToast(`Exported ${savedCount} files to "${dirHandle.name}"`);
         return;
-      } catch(err) {
-        if (err.name === 'AbortError') {
-          // User cancelled folder selection
-          return;
-        }
+      } catch (err) {
+        if (err.name === 'AbortError') return;
         console.warn('Directory picker failed or was denied, falling back:', err);
       }
     }
 
-    visibleLayers.forEach((l, i)=>{
-      setTimeout(async ()=>{
-        const tmp = document.createElement('canvas');
-        tmp.width = W; tmp.height = H;
-        const tctx = tmp.getContext('2d', { willReadFrequently: true });
-        tctx.globalAlpha = l.opacity/100;
-        tctx.drawImage(l.canvas, 0, 0);
-        const safeName = sanitizeFilename(l.name) || ('Layer' + (i+1));
-        const filename = projectName() + '_' + safeName + '.png';
+    // Fallback: staggered downloads
+    filesToSave.forEach((item, idx) => {
+      setTimeout(async () => {
         try {
-          const blob = await getCanvasBlob(tmp, 'image/png');
+          const blob = await getCanvasBlob(item.canvas, 'image/png');
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
-          link.download = filename;
+          link.download = item.filename;
           link.href = url;
           link.click();
           setTimeout(() => URL.revokeObjectURL(url), 2000);
-        } catch(e) {
+        } catch (e) {
           const link = document.createElement('a');
-          link.download = filename;
-          link.href = tmp.toDataURL('image/png');
+          link.download = item.filename;
+          link.href = item.canvas.toDataURL('image/png');
           link.click();
         }
-      }, i * 150); // stagger so browsers don't throttle rapid multi-file downloads
+      }, idx * 150);
     });
+    showToast(`Exporting ${filesToSave.length} files...`);
   }
-  document.getElementById('exportBtn').addEventListener('click', ()=>{
-    const visibleLayers = layers.filter(l=>l.visible);
-    if(visibleLayers.length > 1){
-      const separate = confirm(
-        'Export ' + visibleLayers.length + ' visible layers separately as individual PNG files?\n\n' +
-        'OK = export each layer as its own PNG\n' +
-        'Cancel = export as one flattened image'
-      );
-      if(separate){
-        exportLayersSeparately(visibleLayers);
-        return;
-      }
+
+  // ---------- Export Modal Controller ----------
+  let currentExportPreviewTab = 'color';
+
+  function updateExportModalFilenames() {
+    const pName = projectName();
+    const fCol = document.getElementById('exportFilenameColor');
+    const fH = document.getElementById('exportFilenameHeight');
+    const fR = document.getElementById('exportFilenameRoughness');
+    if (fCol) fCol.textContent = `${pName}.png`;
+    if (fH) fH.textContent = `${pName}_height.png`;
+    if (fR) fR.textContent = `${pName}_roughness.png`;
+  }
+
+  function updateExportModalPreview(tab = 'color') {
+    currentExportPreviewTab = tab;
+    const btnColor = document.getElementById('exportPreviewTabColor');
+    const btnH = document.getElementById('exportPreviewTabHeight');
+    const btnR = document.getElementById('exportPreviewTabRoughness');
+    const label = document.getElementById('exportPreviewLabel');
+    const prevCanvas = document.getElementById('exportModalPreviewCanvas');
+    if (!prevCanvas) return;
+
+    if (btnColor) btnColor.classList.toggle('primary', tab === 'color');
+    if (btnH) btnH.classList.toggle('primary', tab === 'height');
+    if (btnR) btnR.classList.toggle('primary', tab === 'roughness');
+
+    if (label) {
+      if (tab === 'color') label.textContent = 'Showing: Composite Color (Albedo) Map';
+      else if (tab === 'height') label.textContent = 'Showing: Composite Height Map (Displacement)';
+      else if (tab === 'roughness') label.textContent = 'Showing: Composite Roughness Map (Gloss/PBR)';
     }
-    exportFlattenedPNG();
+
+    const compCanvas = buildCompositeExportCanvas(tab);
+    prevCanvas.width = compCanvas.width;
+    prevCanvas.height = compCanvas.height;
+    const pctx = prevCanvas.getContext('2d', { willReadFrequently: true });
+    pctx.clearRect(0, 0, prevCanvas.width, prevCanvas.height);
+    pctx.drawImage(compCanvas, 0, 0);
+  }
+
+  function openExportModal(initialTab = 'color') {
+    render();
+    updateExportModalFilenames();
+
+    // Check if project already has custom height/roughness painted
+    const hasAnyHeight = layers.some(l => l && l.heightCanvas);
+    const hasAnyRoughness = layers.some(l => l && l.roughnessCanvas);
+
+    const cbColor = document.getElementById('exportIncludeColor');
+    const cbHeight = document.getElementById('exportIncludeHeight');
+    const cbRoughness = document.getElementById('exportIncludeRoughness');
+    if (cbColor) cbColor.checked = true;
+    if (cbHeight && !cbHeight._userTouched) cbHeight.checked = hasAnyHeight;
+    if (cbRoughness && !cbRoughness._userTouched) cbRoughness.checked = hasAnyRoughness;
+
+    updateExportModalPreview(initialTab);
+
+    const overlay = document.getElementById('exportModalOverlay');
+    if (overlay) overlay.style.display = 'flex';
+  }
+
+  function closeExportModal() {
+    const overlay = document.getElementById('exportModalOverlay');
+    if (overlay) overlay.style.display = 'none';
+  }
+
+  document.getElementById('exportModalCloseBtn')?.addEventListener('click', closeExportModal);
+  document.getElementById('exportModalCancelBtn')?.addEventListener('click', closeExportModal);
+  document.getElementById('exportModalOverlay')?.addEventListener('click', e => {
+    if (e.target === document.getElementById('exportModalOverlay')) {
+      closeExportModal();
+    }
   });
-  async function exportSpriteSheet(){
-    captureCurrentFrameState(); // make sure the current frame's latest edits are included
-    const sheet = document.createElement('canvas');
-    sheet.width = W * frames.length;
-    sheet.height = H;
-    const sctx = sheet.getContext('2d', { willReadFrequently: true });
-    frames.forEach((f, i)=>{
-      f.layers.forEach(l=>{
-        if(!l.visible) return;
-        sctx.globalAlpha = l.opacity/100;
-        sctx.drawImage(l.canvas, i*W, 0);
-      });
-    });
-    sctx.globalAlpha = 1;
-    const filename = projectName() + '_spritesheet.png';
-    try {
-      const blob = await getCanvasBlob(sheet, 'image/png');
-      const res = await saveBlobWithPrompt(blob, filename, [
-        { description: 'PNG Image', accept: { 'image/png': ['.png'] } }
-      ]);
-      if (res.success) {
-        showToast(`Exported "${res.name}"`);
-      }
-    } catch(err) {
-      console.error('Error exporting sprite sheet:', err);
-      const link = document.createElement('a');
-      link.download = filename;
-      link.href = sheet.toDataURL('image/png');
-      link.click();
-      showToast('Exported "' + filename + '"');
+
+  document.getElementById('exportPreviewTabColor')?.addEventListener('click', () => updateExportModalPreview('color'));
+  document.getElementById('exportPreviewTabHeight')?.addEventListener('click', () => updateExportModalPreview('height'));
+  document.getElementById('exportPreviewTabRoughness')?.addEventListener('click', () => updateExportModalPreview('roughness'));
+
+  document.getElementById('exportIncludeHeight')?.addEventListener('change', e => {
+    e.target._userTouched = true;
+    if (e.target.checked) updateExportModalPreview('height');
+  });
+  document.getElementById('exportIncludeRoughness')?.addEventListener('change', e => {
+    e.target._userTouched = true;
+    if (e.target.checked) updateExportModalPreview('roughness');
+  });
+  document.getElementById('exportIncludeColor')?.addEventListener('change', e => {
+    if (e.target.checked) updateExportModalPreview('color');
+  });
+
+  document.getElementById('exportModalSubmitBtn')?.addEventListener('click', async () => {
+    const includeColor = !!document.getElementById('exportIncludeColor')?.checked;
+    const includeHeight = !!document.getElementById('exportIncludeHeight')?.checked;
+    const includeRoughness = !!document.getElementById('exportIncludeRoughness')?.checked;
+
+    if (!includeColor && !includeHeight && !includeRoughness) {
+      showToast('Please select at least one map (Color, Height, or Roughness) to export.');
+      return;
     }
+
+    const targetMode = document.querySelector('input[name="exportTargetMode"]:checked')?.value || 'flattened';
+    closeExportModal();
+
+    const pName = projectName();
+
+    if (targetMode === 'flattened') {
+      const tasks = [];
+      if (includeColor) tasks.push({ canvas: buildCompositeExportCanvas('color'), filename: `${pName}.png`, desc: 'Color Image' });
+      if (includeHeight) tasks.push({ canvas: buildCompositeExportCanvas('height'), filename: `${pName}_height.png`, desc: 'Height Map' });
+      if (includeRoughness) tasks.push({ canvas: buildCompositeExportCanvas('roughness'), filename: `${pName}_roughness.png`, desc: 'Roughness Map' });
+
+      for (let i = 0; i < tasks.length; i++) {
+        await saveCanvasAsPng(tasks[i].canvas, tasks[i].filename, tasks[i].desc);
+      }
+    } else if (targetMode === 'layers') {
+      const visibleLayers = layers.filter(l => l.visible);
+      await exportLayersSeparately(visibleLayers, includeColor, includeHeight, includeRoughness);
+    } else if (targetMode === 'spritesheet') {
+      if (includeColor) {
+        const sc = buildSpriteSheetExportCanvas('color');
+        await saveCanvasAsPng(sc, `${pName}_spritesheet.png`, 'Color Sprite Sheet');
+      }
+      if (includeHeight) {
+        const hc = buildSpriteSheetExportCanvas('height');
+        await saveCanvasAsPng(hc, `${pName}_spritesheet_height.png`, 'Height Sprite Sheet');
+      }
+      if (includeRoughness) {
+        const rc = buildSpriteSheetExportCanvas('roughness');
+        await saveCanvasAsPng(rc, `${pName}_spritesheet_roughness.png`, 'Roughness Sprite Sheet');
+      }
+    }
+  });
+
+  // Wire up File Menu and Sidebar Buttons
+  document.getElementById('exportBtn')?.addEventListener('click', () => {
+    openExportModal('color');
+  });
+  document.getElementById('exportHeightBtn')?.addEventListener('click', () => {
+    exportSingleMap('height', false);
+  });
+  document.getElementById('exportRoughnessBtn')?.addEventListener('click', () => {
+    exportSingleMap('roughness', false);
+  });
+  document.getElementById('exportLayerHeightBtn')?.addEventListener('click', () => {
+    exportSingleMap('height', true);
+  });
+  document.getElementById('exportLayerRoughnessBtn')?.addEventListener('click', () => {
+    exportSingleMap('roughness', true);
+  });
+
+  async function exportSpriteSheet() {
+    captureCurrentFrameState();
+    const sheet = buildSpriteSheetExportCanvas('color');
+    const filename = projectName() + '_spritesheet.png';
+    await saveCanvasAsPng(sheet, filename, 'Sprite Sheet Image');
   }
   document.getElementById('exportSpriteSheetBtn').addEventListener('click', exportSpriteSheet);
   function exportAnimatedGif(){
