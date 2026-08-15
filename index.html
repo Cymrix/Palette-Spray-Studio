@@ -3399,7 +3399,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.318'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.319'; // bump this on every deploy — shown only in the About popup
 
   // Override window.alert to be iframe-safe and style-consistent
   window.alert = function(message) {
@@ -9961,7 +9961,7 @@ void main(void)\r
         sctx.save();
         sctx.globalAlpha = opacity/100;
         sctx.fillStyle = leafColor;
-        if(pixelPerfect || rotationAlgorithm === 'rotsprite' || rotationAlgorithm === 'areasample'){
+        if(pixelPerfect){
           const rot = getRotatedShapeCanvas('leaf', sz, sz, angle, leafColor);
           if (rot) {
             sctx.imageSmoothingEnabled = false;
@@ -11063,7 +11063,7 @@ void main(void)\r
       const rx = Math.round(finalPx - finalDW/2);
       const ry = Math.round(finalPy - finalDH/2);
       ctx.fillRect(rx, ry, finalDW, finalDH);
-    } else if(pixelPerfect || rotationAlgorithm === 'rotsprite' || rotationAlgorithm === 'areasample'){
+    } else if(pixelPerfect){
       if (hasRot) {
         const rot = getRotatedShapeCanvas(dabShape, finalDW, finalDH, normRot, color);
         if (rot) {
