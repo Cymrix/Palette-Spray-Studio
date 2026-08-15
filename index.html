@@ -1749,7 +1749,7 @@
             </select>
             <div id="gradientCycleOptions" style="display:none;">
               <label class="field" style="margin-top:4px; font-size:0.75rem;" data-tooltip="Cycle length: Distance in pixels to complete one full cycle of the gradient colors">Cycle length (px) <span class="field-value" id="gradientCycleLengthVal">200</span></label>
-              <input type="range" id="gradientCycleLengthSlider" min="10" max="1000" value="200" step="5" data-tooltip="Cycle length: Distance in pixels to complete one full cycle of the gradient colors">
+              <input type="range" id="gradientCycleLengthSlider" min="10" max="2000" value="200" step="5" data-tooltip="Cycle length: Distance in pixels to complete one full cycle of the gradient colors">
             </div>
             <div id="gradientDabsOptions" style="display:none;">
               <label class="field" style="margin-top:4px; font-size:0.75rem;" data-tooltip="Dabs to paint: Number of dabs to paint of each gradient color stop before switching to the next stop in order">Dabs to paint <span class="field-value" id="gradientDabsPerColorVal">1</span></label>
@@ -1774,6 +1774,10 @@
 
         <label style="font-size:12px;display:flex;align-items:center;gap:6px;margin-top:8px;" data-tooltip="Snaps each generated dab center to the active grid cell center or nearest pixel.">
           <input type="checkbox" id="spraySnapGridCheckbox"> Snap dabs to grid
+        </label>
+
+        <label id="spraySnapClearCellRow" style="font-size:12px;display:flex;align-items:center;gap:6px;margin-top:4px;margin-left:18px;" data-tooltip="When grid snapping is enabled, clears/erases the entire grid square before placing the dab into it.">
+          <input type="checkbox" id="spraySnapClearCellCheckbox"> Clear grid cell before placing dab
         </label>
 
         <!-- Main Options (affecting spray tool in every mode) -->
@@ -1861,6 +1865,14 @@
           <option value="away">Away from Anchor Point</option>
         </select>
 
+        <label class="field" style="margin-top:8px;" data-tooltip="Rotation Algorithm: Choose RotSprite for pixel-art rotation with zero dropped edge pixels, Area Sampling, Smooth, or Nearest">Rotation Quality</label>
+        <select id="rotationAlgorithmSelect" data-tooltip="Rotation Algorithm: Choose RotSprite for pixel-art rotation with zero dropped edge pixels, Area Sampling, Smooth, or Nearest">
+          <option value="rotsprite">RotSprite (Pixel-Art Crisp, Edge-Preserving)</option>
+          <option value="areasample">Area Sampling (Super-Sampled Coverage)</option>
+          <option value="smooth">Smooth (Bilinear / Anti-aliased)</option>
+          <option value="nearest">Fast Nearest (Classic 1x)</option>
+        </select>
+
         <!-- Spray Anchor Point Setup -->
         <div style="margin-top:8px;padding:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;" data-tooltip="Set Anchor Point: Click canvas or Alt+Click to set rotational direction anchor">
           <div style="display:flex;gap:6px;align-items:center;">
@@ -1871,21 +1883,32 @@
         </div>
 
         <!-- Clock Dial Widget for Rotation Angle Range -->
-        <div style="margin-top:10px;text-align:center;padding:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;" data-tooltip="Rotation Range Dial: Drag clock hands on dial to set angle range">
-          <label class="field" style="margin-top:0;">Rotation Range Dial <span class="field-value" id="rotationRangeVal">-180° to 180°</span></label>
+        <div style="margin-top:10px;text-align:center;padding:8px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:6px;" data-tooltip="Rotation Range Dial: Set one or multiple rotation ranges (e.g. 4 cardinal directions). Drag hands on the dial or use inputs.">
+          <label class="field" style="margin-top:0;">Rotation Range Dial <span class="field-value" id="rotationRangeVal">0° to 0°</span></label>
           <div style="position:relative;display:inline-block;margin:6px 0;">
-            <canvas id="rotationDialCanvas" width="130" height="130" style="background:#13131c;border:1px solid #333;border-radius:50%;cursor:pointer;display:block;touch-action:none;"></canvas>
+            <canvas id="rotationDialCanvas" width="136" height="136" style="background:#13131c;border:1px solid #333;border-radius:50%;cursor:pointer;display:block;touch-action:none;"></canvas>
           </div>
+
+          <!-- Multiple Ranges Chips & Manager -->
+          <div id="rotationRangesList" style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:4px;margin-bottom:6px;max-height:80px;overflow-y:auto;"></div>
+          <div style="display:flex;gap:4px;justify-content:center;margin-bottom:6px;">
+            <button class="btn small" id="addRotationRangeBtn" type="button" style="padding:2px 8px;font-size:10px;" data-tooltip="Add another rotation range on the dial">+ Add Range</button>
+            <button class="btn small" id="removeRotationRangeBtn" type="button" style="padding:2px 8px;font-size:10px;display:none;color:#f87171;" data-tooltip="Remove currently active rotation range">✖ Remove Range</button>
+          </div>
+
           <div style="display:flex;gap:8px;justify-content:center;align-items:center;margin-top:4px;">
-            <label style="font-size:11px;color:var(--text-dim);">Min: <input type="number" id="rotationMinValInput" value="-180" min="-360" max="360" style="width:52px;font-size:11px;padding:2px 4px;background:#181824;border:1px solid var(--border);color:#fff;border-radius:3px;">°</label>
-            <label style="font-size:11px;color:var(--text-dim);">Max: <input type="number" id="rotationMaxValInput" value="180" min="-360" max="360" style="width:52px;font-size:11px;padding:2px 4px;background:#181824;border:1px solid var(--border);color:#fff;border-radius:3px;">°</label>
+            <label style="font-size:11px;color:var(--text-dim);">Min: <input type="number" id="rotationMinValInput" value="0" min="-360" max="360" style="width:52px;font-size:11px;padding:2px 4px;background:#181824;border:1px solid var(--border);color:#fff;border-radius:3px;">°</label>
+            <label style="font-size:11px;color:var(--text-dim);">Max: <input type="number" id="rotationMaxValInput" value="0" min="-360" max="360" style="width:52px;font-size:11px;padding:2px 4px;background:#181824;border:1px solid var(--border);color:#fff;border-radius:3px;">°</label>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:4px;justify-content:center;margin-top:6px;">
-            <button class="btn small" id="rotPreset0" style="padding:2px 6px;font-size:10px;">0° (Fixed)</button>
-            <button class="btn small" id="rotPreset15" style="padding:2px 6px;font-size:10px;">±15°</button>
-            <button class="btn small" id="rotPreset45" style="padding:2px 6px;font-size:10px;">±45°</button>
-            <button class="btn small" id="rotPreset90" style="padding:2px 6px;font-size:10px;">90° (Right)</button>
-            <button class="btn small" id="rotPresetFull" style="padding:2px 6px;font-size:10px;">Full (360°)</button>
+            <button class="btn small" id="rotPreset0" style="padding:2px 6px;font-size:10px;" data-tooltip="Single range: 0° Fixed">0° (Fixed)</button>
+            <button class="btn small" id="rotPreset15" style="padding:2px 6px;font-size:10px;" data-tooltip="Single range: ±15°">±15°</button>
+            <button class="btn small" id="rotPreset45" style="padding:2px 6px;font-size:10px;" data-tooltip="Single range: ±45°">±45°</button>
+            <button class="btn small" id="rotPreset90" style="padding:2px 6px;font-size:10px;" data-tooltip="Single range: 90° (Right)">90° (Right)</button>
+            <button class="btn small" id="rotPresetFull" style="padding:2px 6px;font-size:10px;" data-tooltip="Single range: Full 360°">Full (360°)</button>
+            <button class="btn small" id="rotPresetCardinal" style="padding:2px 6px;font-size:10px;border-color:var(--accent);" data-tooltip="4 Ranges: North, East, South, West (Cardinal directions with ±15° jitter)">Cardinal (4-Way)</button>
+            <button class="btn small" id="rotPresetDiagonal" style="padding:2px 6px;font-size:10px;" data-tooltip="4 Ranges: NE, SE, SW, NW (Diagonal directions with ±15° jitter)">Diagonal (4-Way)</button>
+            <button class="btn small" id="rotPresetHV" style="padding:2px 6px;font-size:10px;" data-tooltip="2 Ranges: Vertical (0°±15°) and Horizontal (90°±15°)">H/V (2-Way)</button>
           </div>
         </div>
       </div>
@@ -3376,7 +3399,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.314'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.318'; // bump this on every deploy — shown only in the About popup
 
   // Override window.alert to be iframe-safe and style-consistent
   window.alert = function(message) {
@@ -4418,11 +4441,15 @@ void main(void)\r
   let opacityJitterMax = 100;
   let rotationJitterAmt = 0;
   let rotationMode = 'range'; // 'range' | 'toward' | 'away'
+  let rotationAlgorithm = 'rotsprite'; // 'rotsprite' | 'areasample' | 'smooth' | 'nearest'
   let rotationMinAngle = 0;
   let rotationMaxAngle = 0;
+  let rotationRanges = [{ min: 0, max: 0 }];
+  let activeRotationRangeIndex = 0;
   let sprayTargetAnchorX = null;
   let sprayTargetAnchorY = null;
   let spraySnapToGrid = false;
+  let spraySnapClearCell = false;
   let settingSprayAnchorMode = false;
   let sprayLineAnchorX = null;
   let sprayLineAnchorY = null;
@@ -7506,6 +7533,11 @@ void main(void)\r
   const MAX_TINTED_CACHE_SIZE = 256;
 
   function getRotatedRectBounds(cx, cy, w, h, angle, pivotX = 0.5, pivotY = 0.5) {
+    if (!angle || Math.abs(angle) < 0.0008) {
+      const destX = Math.round(cx - w * pivotX);
+      const destY = Math.round(cy - h * pivotY);
+      return { x: destX - 1, y: destY - 1, w: Math.ceil(w) + 2, h: Math.ceil(h) + 2 };
+    }
     const x0 = -w * pivotX, x1 = w * (1 - pivotX);
     const y0 = -h * pivotY, y1 = h * (1 - pivotY);
     const cos = Math.cos(angle), sin = Math.sin(angle);
@@ -7522,11 +7554,340 @@ void main(void)\r
     const minY = cy + Math.min(...ys);
     const maxY = cy + Math.max(...ys);
     return {
-      x: Math.floor(minX) - 1,
-      y: Math.floor(minY) - 1,
-      w: Math.ceil(maxX) - Math.floor(minX) + 2,
-      h: Math.ceil(maxY) - Math.floor(minY) + 2
+      x: Math.floor(minX) - 2,
+      y: Math.floor(minY) - 2,
+      w: Math.ceil(maxX) - Math.floor(minX) + 4,
+      h: Math.ceil(maxY) - Math.floor(minY) + 4
     };
+  }
+
+  function scale2xImageData(srcData, srcW, srcH) {
+    const dstW = srcW * 2;
+    const dstH = srcH * 2;
+    const dst32 = new Uint32Array(dstW * dstH);
+    const src32 = new Uint32Array(srcData.data.buffer);
+    for (let y = 0; y < srcH; y++) {
+      const yPrev = y > 0 ? y - 1 : y;
+      const yNext = y < srcH - 1 ? y + 1 : y;
+      const rowIdx = y * srcW;
+      const prevRowIdx = yPrev * srcW;
+      const nextRowIdx = yNext * srcW;
+      const outRow0 = (y * 2) * dstW;
+      const outRow1 = (y * 2 + 1) * dstW;
+      for (let x = 0; x < srcW; x++) {
+        const xPrev = x > 0 ? x - 1 : x;
+        const xNext = x < srcW - 1 ? x + 1 : x;
+        const p = src32[rowIdx + x];
+        const a = src32[prevRowIdx + x];
+        const c = src32[rowIdx + xPrev];
+        const b = src32[rowIdx + xNext];
+        const d = src32[nextRowIdx + x];
+
+        const e0 = (c === a && c !== d && a !== b) ? a : p;
+        const e1 = (a === b && a !== c && b !== d) ? b : p;
+        const e2 = (d === c && d !== b && c !== a) ? c : p;
+        const e3 = (b === d && b !== a && d !== c) ? d : p;
+
+        const outCol = x * 2;
+        dst32[outRow0 + outCol] = e0;
+        dst32[outRow0 + outCol + 1] = e1;
+        dst32[outRow1 + outCol] = e2;
+        dst32[outRow1 + outCol + 1] = e3;
+      }
+    }
+    return { data32: dst32, w: dstW, h: dstH };
+  }
+
+  const rotatedStampCache = new Map();
+  const MAX_ROTATED_STAMP_CACHE = 512;
+  const rotatedShapeCache = new Map();
+  const MAX_ROTATED_SHAPE_CACHE = 512;
+
+  function getRotatedStampCanvas(sourceCanvas, targetW, targetH, angle, pivotX = 0.5, pivotY = 0.5, color = null, stampObj = null) {
+    if (!sourceCanvas || !sourceCanvas.width || !sourceCanvas.height) return null;
+    let normAngle = angle % (Math.PI * 2);
+    if (normAngle > Math.PI) normAngle -= Math.PI * 2;
+    if (normAngle < -Math.PI) normAngle += Math.PI * 2;
+
+    const roundW = Math.max(1, Math.round(targetW));
+    const roundH = Math.max(1, Math.round(targetH));
+    if (Math.abs(normAngle) < 0.0008) {
+      return {
+        canvas: sourceCanvas,
+        w: roundW,
+        h: roundH,
+        pivotOffsetX: Math.round(roundW * pivotX),
+        pivotOffsetY: Math.round(roundH * pivotY)
+      };
+    }
+
+    if (!sourceCanvas._stampId) {
+      if (!window._nextStampId) window._nextStampId = 1;
+      sourceCanvas._stampId = window._nextStampId++;
+    }
+
+    const algo = rotationAlgorithm || 'rotsprite';
+    const isPP = !!pixelPerfect;
+    const angleDegHalf = Math.round((normAngle * 180 / Math.PI) * 2) / 2;
+    const cacheKey = `${sourceCanvas._stampId}_${roundW}_${roundH}_${angleDegHalf}_${color || ''}_${isPP ? 1 : 0}_${algo}_${Math.round(pivotX * 100)}_${Math.round(pivotY * 100)}`;
+
+    if (rotatedStampCache.has(cacheKey)) {
+      const cached = rotatedStampCache.get(cacheKey);
+      rotatedStampCache.delete(cacheKey);
+      rotatedStampCache.set(cacheKey, cached);
+      return cached;
+    }
+
+    const cos = Math.cos(normAngle), sin = Math.sin(normAngle);
+    const invCos = Math.cos(-normAngle), invSin = Math.sin(-normAngle);
+    const x0 = -roundW * pivotX, x1 = roundW * (1 - pivotX);
+    const y0 = -roundH * pivotY, y1 = roundH * (1 - pivotY);
+    const corners = [
+      { x: x0 * cos - y0 * sin, y: x0 * sin + y0 * cos },
+      { x: x1 * cos - y0 * sin, y: x1 * sin + y0 * cos },
+      { x: x1 * cos - y1 * sin, y: x1 * sin + y1 * cos },
+      { x: x0 * cos - y1 * sin, y: x0 * sin + y1 * cos }
+    ];
+    const minX = Math.min(...corners.map(c => c.x));
+    const maxX = Math.max(...corners.map(c => c.x));
+    const minY = Math.min(...corners.map(c => c.y));
+    const maxY = Math.max(...corners.map(c => c.y));
+
+    const outW = Math.max(1, Math.ceil(maxX) - Math.floor(minX) + 2);
+    const outH = Math.max(1, Math.ceil(maxY) - Math.floor(minY) + 2);
+    const outPivX = -Math.floor(minX) + 1;
+    const outPivY = -Math.floor(minY) + 1;
+
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = outW;
+    outCanvas.height = outH;
+    const outCtx = outCanvas.getContext('2d', { willReadFrequently: true });
+
+    if (!isPP && algo === 'smooth') {
+      outCtx.imageSmoothingEnabled = true;
+      outCtx.save();
+      outCtx.translate(outPivX, outPivY);
+      outCtx.rotate(normAngle);
+      outCtx.drawImage(sourceCanvas, 0, 0, sourceCanvas.width, sourceCanvas.height, -roundW * pivotX, -roundH * pivotY, roundW, roundH);
+      outCtx.restore();
+    } else if (algo === 'nearest') {
+      outCtx.imageSmoothingEnabled = false;
+      outCtx.save();
+      outCtx.translate(outPivX, outPivY);
+      outCtx.rotate(normAngle);
+      outCtx.drawImage(sourceCanvas, 0, 0, sourceCanvas.width, sourceCanvas.height, Math.round(-roundW * pivotX), Math.round(-roundH * pivotY), roundW, roundH);
+      outCtx.restore();
+      if (isPP) {
+        const imgData = outCtx.getImageData(0, 0, outW, outH);
+        const d32 = new Uint32Array(imgData.data.buffer);
+        for (let i = 0; i < d32.length; i++) {
+          if (((d32[i] >>> 24) & 0xFF) >= 128) d32[i] |= 0xFF000000;
+          else d32[i] = 0;
+        }
+        outCtx.putImageData(imgData, 0, 0);
+      }
+    } else {
+      // RotSprite / Area Sampling (Crisp, zero-distortion pixel-art rotation)
+      const src1xCanvas = document.createElement('canvas');
+      src1xCanvas.width = roundW;
+      src1xCanvas.height = roundH;
+      const s1xCtx = src1xCanvas.getContext('2d', { willReadFrequently: true });
+      s1xCtx.imageSmoothingEnabled = false;
+      s1xCtx.drawImage(sourceCanvas, 0, 0, sourceCanvas.width, sourceCanvas.height, 0, 0, roundW, roundH);
+      const src1xData = s1xCtx.getImageData(0, 0, roundW, roundH);
+
+      const s2x = scale2xImageData(src1xData, roundW, roundH);
+      const s4x = scale2xImageData({ data: { buffer: s2x.data32.buffer } }, s2x.w, s2x.h);
+      const s4Data32 = s4x.data32;
+      const s4W = s4x.w;
+      const s4H = s4x.h;
+
+      const outImgData = outCtx.createImageData(outW, outH);
+      const out32 = new Uint32Array(outImgData.data.buffer);
+      const cRgb = color ? hexToRgb(color) : null;
+      const srcPivotX_4 = roundW * pivotX * 4;
+      const srcPivotY_4 = roundH * pivotY * 4;
+      const thresholdSamples = (algo === 'areasample') ? 3 : 4; // >= 20% or >= 25% coverage
+
+      for (let oy = 0; oy < outH; oy++) {
+        for (let ox = 0; ox < outW; ox++) {
+          let hits = 0;
+          let dominantColor = 0;
+          let dominantAlpha = 0;
+
+          for (let sy_sub = 0; sy_sub < 4; sy_sub++) {
+            for (let sx_sub = 0; sx_sub < 4; sx_sub++) {
+              const subX = ox + (sx_sub + 0.5) * 0.25 - outPivX;
+              const subY = oy + (sy_sub + 0.5) * 0.25 - outPivY;
+
+              const srcX = (subX * invCos - subY * invSin) * 4 + srcPivotX_4;
+              const srcY = (subX * invSin + subY * invCos) * 4 + srcPivotY_4;
+
+              const isx = Math.floor(srcX);
+              const isy = Math.floor(srcY);
+
+              if (isx >= 0 && isx < s4W && isy >= 0 && isy < s4H) {
+                const pix = s4Data32[isy * s4W + isx];
+                const a = (pix >>> 24) & 0xFF;
+                if (a > 20) {
+                  hits++;
+                  if (a > dominantAlpha) {
+                    dominantAlpha = a;
+                    dominantColor = pix;
+                  }
+                }
+              }
+            }
+          }
+
+          if (hits >= thresholdSamples) {
+            let finalR, finalG, finalB, finalA;
+            if (cRgb) {
+              finalR = cRgb.r; finalG = cRgb.g; finalB = cRgb.b;
+            } else if (dominantColor) {
+              finalR = dominantColor & 0xFF;
+              finalG = (dominantColor >>> 8) & 0xFF;
+              finalB = (dominantColor >>> 16) & 0xFF;
+            } else {
+              finalR = 255; finalG = 255; finalB = 255;
+            }
+
+            if (isPP) {
+              finalA = 255;
+            } else {
+              finalA = Math.min(255, Math.round((hits / 16) * (dominantAlpha || 255)));
+            }
+
+            out32[oy * outW + ox] = (finalA << 24) | (finalB << 16) | (finalG << 8) | finalR;
+          }
+        }
+      }
+      outCtx.putImageData(outImgData, 0, 0);
+    }
+
+    const result = {
+      canvas: outCanvas,
+      w: outW,
+      h: outH,
+      pivotOffsetX: outPivX,
+      pivotOffsetY: outPivY
+    };
+
+    rotatedStampCache.set(cacheKey, result);
+    if (rotatedStampCache.size > MAX_ROTATED_STAMP_CACHE) {
+      const oldest = rotatedStampCache.keys().next().value;
+      rotatedStampCache.delete(oldest);
+    }
+    return result;
+  }
+
+  function getRotatedShapeCanvas(shape, w, h, angle, color = '#ffffff') {
+    const roundW = Math.max(1, Math.round(w));
+    const roundH = Math.max(1, Math.round(h));
+    let normAngle = angle % (Math.PI * 2);
+    if (normAngle > Math.PI) normAngle -= Math.PI * 2;
+    if (normAngle < -Math.PI) normAngle += Math.PI * 2;
+
+    const angleDegHalf = Math.round((normAngle * 180 / Math.PI) * 2) / 2;
+    const isPP = !!pixelPerfect;
+    const cacheKey = `${shape}_${roundW}_${roundH}_${angleDegHalf}_${color}_${isPP ? 1 : 0}`;
+
+    if (rotatedShapeCache.has(cacheKey)) {
+      const cached = rotatedShapeCache.get(cacheKey);
+      rotatedShapeCache.delete(cacheKey);
+      rotatedShapeCache.set(cacheKey, cached);
+      return cached;
+    }
+
+    const SS = 4;
+    const hiW = roundW * SS;
+    const hiH = roundH * SS;
+
+    const cos = Math.cos(normAngle), sin = Math.sin(normAngle);
+    const invCos = Math.cos(-normAngle), invSin = Math.sin(-normAngle);
+    const x0 = -roundW * 0.5, x1 = roundW * 0.5;
+    const y0 = -roundH * 0.5, y1 = roundH * 0.5;
+    const corners = [
+      { x: x0 * cos - y0 * sin, y: x0 * sin + y0 * cos },
+      { x: x1 * cos - y0 * sin, y: x1 * sin + y0 * cos },
+      { x: x1 * cos - y1 * sin, y: x1 * sin + y1 * cos },
+      { x: x0 * cos - y1 * sin, y: x0 * sin + y1 * cos }
+    ];
+    const minX = Math.min(...corners.map(c => c.x));
+    const maxX = Math.max(...corners.map(c => c.x));
+    const minY = Math.min(...corners.map(c => c.y));
+    const maxY = Math.max(...corners.map(c => c.y));
+
+    const outW = Math.max(1, Math.ceil(maxX) - Math.floor(minX) + 2);
+    const outH = Math.max(1, Math.ceil(maxY) - Math.floor(minY) + 2);
+    const outPivX = -Math.floor(minX) + 1;
+    const outPivY = -Math.floor(minY) + 1;
+
+    const hiCanvas = document.createElement('canvas');
+    hiCanvas.width = hiW;
+    hiCanvas.height = hiH;
+    const hiCtx = hiCanvas.getContext('2d', { willReadFrequently: true });
+    hiCtx.fillStyle = '#ffffff';
+    drawVectorPrimitivePath(hiCtx, shape, hiW / 2, hiH / 2, hiW, hiH);
+    const hiData = hiCtx.getImageData(0, 0, hiW, hiH);
+    const hi32 = new Uint32Array(hiData.data.buffer);
+
+    const outCanvas = document.createElement('canvas');
+    outCanvas.width = outW;
+    outCanvas.height = outH;
+    const outCtx = outCanvas.getContext('2d', { willReadFrequently: true });
+    const outImgData = outCtx.createImageData(outW, outH);
+    const out32 = new Uint32Array(outImgData.data.buffer);
+    const cRgb = hexToRgb(color) || { r: 255, g: 255, b: 255 };
+
+    const srcPivotX_4 = hiW * 0.5;
+    const srcPivotY_4 = hiH * 0.5;
+
+    for (let oy = 0; oy < outH; oy++) {
+      for (let ox = 0; ox < outW; ox++) {
+        let hits = 0;
+        for (let sy_sub = 0; sy_sub < 4; sy_sub++) {
+          for (let sx_sub = 0; sx_sub < 4; sx_sub++) {
+            const subX = ox + (sx_sub + 0.5) * 0.25 - outPivX;
+            const subY = oy + (sy_sub + 0.5) * 0.25 - outPivY;
+
+            const srcX = (subX * invCos - subY * invSin) * 4 + srcPivotX_4;
+            const srcY = (subX * invSin + subY * invCos) * 4 + srcPivotY_4;
+
+            const isx = Math.floor(srcX);
+            const isy = Math.floor(srcY);
+
+            if (isx >= 0 && isx < hiW && isy >= 0 && isy < hiH) {
+              if (((hi32[isy * hiW + isx] >>> 24) & 0xFF) >= 128) {
+                hits++;
+              }
+            }
+          }
+        }
+
+        if (hits >= 4) { // >= 25% area coverage preserves edges/corners
+          const finalA = isPP ? 255 : Math.min(255, Math.round((hits / 16) * 255));
+          out32[oy * outW + ox] = (finalA << 24) | (cRgb.b << 16) | (cRgb.g << 8) | cRgb.r;
+        }
+      }
+    }
+
+    outCtx.putImageData(outImgData, 0, 0);
+
+    const result = {
+      canvas: outCanvas,
+      w: outW,
+      h: outH,
+      pivotOffsetX: outPivX,
+      pivotOffsetY: outPivY
+    };
+
+    rotatedShapeCache.set(cacheKey, result);
+    if (rotatedShapeCache.size > MAX_ROTATED_SHAPE_CACHE) {
+      const oldest = rotatedShapeCache.keys().next().value;
+      rotatedShapeCache.delete(oldest);
+    }
+    return result;
   }
 
   function buildTintedStamp(maskCanvas, targetW, targetH, color){
@@ -7640,13 +8001,41 @@ void main(void)\r
     });
   }
 
-  function drawBuiltStamp(ctx, sourceCanvas, w, h, cx, cy, angle, pivotX = 0.5, pivotY = 0.5, srcW = undefined, srcH = undefined){
+  function drawBuiltStamp(ctx, sourceCanvas, w, h, cx, cy, angle, pivotX = 0.5, pivotY = 0.5, srcW = undefined, srcH = undefined, color = null, stampObj = null){
+    const normAngle = angle || 0;
+    if (Math.abs(normAngle) < 0.0008) {
+      ctx.save();
+      ctx.imageSmoothingEnabled = !pixelPerfect;
+      const finalCx = pixelPerfect ? Math.round(cx) : cx;
+      const finalCy = pixelPerfect ? Math.round(cy) : cy;
+      const destX = pixelPerfect ? Math.round(-w * pivotX) : (-w * pivotX);
+      const destY = pixelPerfect ? Math.round(-h * pivotY) : (-h * pivotY);
+      const sw = srcW || sourceCanvas.width;
+      const sh = srcH || sourceCanvas.height;
+      ctx.drawImage(sourceCanvas, 0, 0, sw, sh, finalCx + destX, finalCy + destY, w, h);
+      ctx.restore();
+      return;
+    }
+
+    if (pixelPerfect || rotationAlgorithm === 'rotsprite' || rotationAlgorithm === 'areasample') {
+      const rot = getRotatedStampCanvas(sourceCanvas, w, h, normAngle, pivotX, pivotY, color, stampObj);
+      if (rot) {
+        const finalCx = pixelPerfect ? Math.round(cx) : cx;
+        const finalCy = pixelPerfect ? Math.round(cy) : cy;
+        ctx.save();
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(rot.canvas, 0, 0, rot.w, rot.h, finalCx - rot.pivotOffsetX, finalCy - rot.pivotOffsetY, rot.w, rot.h);
+        ctx.restore();
+        return;
+      }
+    }
+
     ctx.save();
     ctx.imageSmoothingEnabled = !pixelPerfect;
     const finalCx = pixelPerfect ? Math.round(cx) : cx;
     const finalCy = pixelPerfect ? Math.round(cy) : cy;
     ctx.translate(finalCx, finalCy);
-    if(angle) ctx.rotate(angle);
+    ctx.rotate(normAngle);
     const destX = pixelPerfect ? Math.round(-w * pivotX) : (-w * pivotX);
     const destY = pixelPerfect ? Math.round(-h * pivotY) : (-h * pivotY);
     const sw = srcW || sourceCanvas.width;
@@ -7679,7 +8068,7 @@ void main(void)\r
     }
     const built = buildTintedStamp(maskCanvas, finalW, finalH, finalColor);
     if(built){
-      drawBuiltStamp(ctx, built.canvas, built.w, built.h, cx, cy, finalAngle, finalPivotX, finalPivotY, built.srcW, built.srcH);
+      drawBuiltStamp(ctx, built.canvas, built.w, built.h, cx, cy, finalAngle, finalPivotX, finalPivotY, built.srcW, built.srcH, finalColor);
     }
   }
 
@@ -9447,9 +9836,10 @@ void main(void)\r
   }
   function sprayDabsInterpolated(x, y){
     if(!sprayInterpolate || sprayAnchorX === null){
-      if ((gradientOrdered || (paintTaperEnabled && isPathTool())) && sprayAnchorX !== null) {
+      if (sprayAnchorX !== null) {
         const dx = x - sprayAnchorX, dy = y - sprayAnchorY;
-        strokeDistance += Math.sqrt(dx*dx + dy*dy);
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        strokeDistance += dist;
       }
       sprayDabs(x, y);
       sprayAnchorX = x; sprayAnchorY = y;
@@ -9457,15 +9847,25 @@ void main(void)\r
     }
     const dx = x - sprayAnchorX, dy = y - sprayAnchorY;
     const dist = Math.sqrt(dx*dx + dy*dy);
+    if(dist <= 0){
+      // Stationary pointer during continuous spray timer: spray in place without advancing stroke distance
+      sprayDabs(x, y);
+      return;
+    }
     const spacing = Math.max(1, brushSize * 0.3); // matches Brush's own interpolation convention
     const steps = Math.max(1, Math.round(dist / spacing));
+    const startStrokeDist = strokeDistance;
     for(let i=1; i<=steps; i++){
       const t = i/steps;
-      if (gradientOrdered || (paintTaperEnabled && isPathTool())) {
-        strokeDistance += spacing;
+      const subDist = startStrokeDist + dist * t;
+      let progressVal = null;
+      if (sourceKind === 'gradient' && gradientOrdered && gradientSequentialStepMode === 'distance') {
+        const cycleL = Math.max(10, gradientCycleLength);
+        progressVal = (subDist % cycleL) / cycleL;
       }
-      sprayDabs(sprayAnchorX + dx*t, sprayAnchorY + dy*t);
+      sprayDabs(sprayAnchorX + dx*t, sprayAnchorY + dy*t, null, null, 1.0, progressVal);
     }
+    strokeDistance += dist;
     sprayAnchorX = x; sprayAnchorY = y;
   }
   function sprayLoop(now){
@@ -9561,28 +9961,14 @@ void main(void)\r
         sctx.save();
         sctx.globalAlpha = opacity/100;
         sctx.fillStyle = leafColor;
-        if(pixelPerfect){
-          sctx.imageSmoothingEnabled = false;
-          const finalCx = Math.round(lx);
-          const finalCy = Math.round(ly);
-          const l = sz * 0.65, w = sz * 0.5;
-          const sboxW = Math.min(STAMP_SCRATCH_MAX, Math.max(4, Math.ceil((l + w) * 2)));
-          const sboxH = sboxW;
-          shapeScratchCtx.clearRect(0, 0, sboxW, sboxH);
-          shapeScratchCtx.fillStyle = leafColor;
-          shapeScratchCtx.save();
-          shapeScratchCtx.translate(sboxW/2, sboxH/2);
-          shapeScratchCtx.beginPath();
-          shapeScratchCtx.moveTo(l, 0);
-          shapeScratchCtx.quadraticCurveTo(l*0.3, w, -l*0.6, 0);
-          shapeScratchCtx.quadraticCurveTo(l*0.3, -w, l, 0);
-          shapeScratchCtx.closePath();
-          shapeScratchCtx.fill();
-          shapeScratchCtx.restore();
-
-          sctx.translate(finalCx, finalCy);
-          sctx.rotate(angle);
-          sctx.drawImage(shapeScratch, 0, 0, sboxW, sboxH, -sboxW/2, -sboxH/2, sboxW, sboxH);
+        if(pixelPerfect || rotationAlgorithm === 'rotsprite' || rotationAlgorithm === 'areasample'){
+          const rot = getRotatedShapeCanvas('leaf', sz, sz, angle, leafColor);
+          if (rot) {
+            sctx.imageSmoothingEnabled = false;
+            const finalCx = Math.round(lx);
+            const finalCy = Math.round(ly);
+            sctx.drawImage(rot.canvas, 0, 0, rot.w, rot.h, finalCx - rot.pivotOffsetX, finalCy - rot.pivotOffsetY, rot.w, rot.h);
+          }
         } else {
           sctx.translate(lx, ly);
           sctx.rotate(angle);
@@ -9752,7 +10138,13 @@ void main(void)\r
         drawX = newX;
         drawY = newY;
       }
-      drawVineNode(drawX, drawY, stemWidth);
+      let vineProgress = null;
+      if (sourceKind === 'gradient' && gradientOrdered && gradientSequentialStepMode === 'distance') {
+        const cycleL = Math.max(10, gradientCycleLength);
+        vineProgress = (strokeDistance % cycleL) / cycleL;
+      }
+      drawVineNode(drawX, drawY, stemWidth, null, 1.0, vineProgress);
+      strokeDistance += step;
       vineTipX = newX; vineTipY = newY;
 
       // Spawn offshoot organically
@@ -9943,7 +10335,13 @@ void main(void)\r
 
           const localDist = t * sd.length;
           const distAlongPath = sd.startLengthOffset + localDist;
-          const progress = totalLength > 0 ? (distAlongPath / totalLength) : 0;
+          let progress;
+          if (sourceKind === 'gradient' && gradientOrdered && gradientSequentialStepMode === 'distance') {
+            const cycleL = Math.max(10, gradientCycleLength);
+            progress = (distAlongPath % cycleL) / cycleL;
+          } else {
+            progress = totalLength > 0 ? (distAlongPath / totalLength) : 0;
+          }
 
           // Taper multipliers
           let factorStart = 1;
@@ -10562,6 +10960,20 @@ void main(void)\r
       c.ellipse(cx, cy, Math.max(0.5, w/2), Math.max(0.5, h/2), 0, 0, Math.PI*2);
       c.ellipse(cx, cy, Math.max(0.2, w/4), Math.max(0.2, h/4), 0, 0, Math.PI*2, true);
       c.fill();
+    } else if(shp === 'heart'){
+      const rx = w/2, ry = h/2;
+      c.moveTo(cx, cy + ry*0.6);
+      c.bezierCurveTo(cx - rx*1.2, cy - ry*0.2, cx - rx*0.8, cy - ry*0.9, cx, cy - ry*0.3);
+      c.bezierCurveTo(cx + rx*0.8, cy - ry*0.9, cx + rx*1.2, cy - ry*0.2, cx, cy + ry*0.6);
+      c.closePath();
+      c.fill();
+    } else if(shp === 'leaf'){
+      const l = w * 0.65, lw = h * 0.5;
+      c.moveTo(cx + l, cy);
+      c.quadraticCurveTo(cx + l*0.3, cy + lw, cx - l*0.6, cy);
+      c.quadraticCurveTo(cx + l*0.3, cy - lw, cx + l, cy);
+      c.closePath();
+      c.fill();
     } else if(shp === 'line'){
       const th = Math.max(1, h/4);
       c.rect(cx - w/2, cy - th/2, w, th);
@@ -10623,6 +11035,8 @@ void main(void)\r
     const finalPy = pixelPerfect ? Math.round(py) : py;
     const finalDW = pixelPerfect ? Math.max(1, Math.round(dW)) : dW;
     const finalDH = pixelPerfect ? Math.max(1, Math.round(dH)) : dH;
+    const normRot = rotAngle || 0;
+    const hasRot = Math.abs(normRot) >= 0.0008;
 
     if(dabShape === 'stamp' && selectedStampIndex !== null && stamps[selectedStampIndex]){
       const st = stamps[selectedStampIndex];
@@ -10644,13 +11058,21 @@ void main(void)\r
           }
         }
       }
-      drawStampDab(ctx, getActiveStampMask(st), finalPx, finalPy, targetW, targetH, color, rotAngle, pX, pY);
-    } else if(dabShape === 'square' && pixelPerfect && rotAngle === 0){
+      drawStampDab(ctx, getActiveStampMask(st), finalPx, finalPy, targetW, targetH, color, normRot, pX, pY);
+    } else if(dabShape === 'square' && pixelPerfect && !hasRot){
       const rx = Math.round(finalPx - finalDW/2);
       const ry = Math.round(finalPy - finalDH/2);
       ctx.fillRect(rx, ry, finalDW, finalDH);
-    } else {
-      if(pixelPerfect){
+    } else if(pixelPerfect || rotationAlgorithm === 'rotsprite' || rotationAlgorithm === 'areasample'){
+      if (hasRot) {
+        const rot = getRotatedShapeCanvas(dabShape, finalDW, finalDH, normRot, color);
+        if (rot) {
+          ctx.save();
+          ctx.imageSmoothingEnabled = false;
+          ctx.drawImage(rot.canvas, 0, 0, rot.w, rot.h, finalPx - rot.pivotOffsetX, finalPy - rot.pivotOffsetY, rot.w, rot.h);
+          ctx.restore();
+        }
+      } else {
         const sw = Math.min(STAMP_SCRATCH_MAX, Math.max(1, Math.round(finalDW)));
         const sh = Math.min(STAMP_SCRATCH_MAX, Math.max(1, Math.round(finalDH)));
         const mask = getPixelShapeMask(dabShape, sw, sh);
@@ -10658,22 +11080,16 @@ void main(void)\r
 
         ctx.save();
         ctx.imageSmoothingEnabled = false;
-        if(rotAngle !== 0){
-          ctx.translate(finalPx, finalPy);
-          ctx.rotate(rotAngle);
-          ctx.drawImage(built.canvas, 0, 0, built.srcW, built.srcH, Math.round(-sw/2), Math.round(-sh/2), sw, sh);
-        } else {
-          ctx.drawImage(built.canvas, 0, 0, built.srcW, built.srcH, Math.round(finalPx - sw/2), Math.round(finalPy - sh/2), sw, sh);
-        }
-        ctx.restore();
-      } else {
-        ctx.save();
-        ctx.translate(px, py);
-        ctx.rotate(rotAngle);
-        ctx.fillStyle = color;
-        drawVectorPrimitivePath(ctx, dabShape, 0, 0, dW, dH);
+        ctx.drawImage(built.canvas, 0, 0, built.srcW, built.srcH, Math.round(finalPx - sw/2), Math.round(finalPy - sh/2), sw, sh);
         ctx.restore();
       }
+    } else {
+      ctx.save();
+      ctx.translate(px, py);
+      if (hasRot) ctx.rotate(normRot);
+      ctx.fillStyle = color;
+      drawVectorPrimitivePath(ctx, dabShape, 0, 0, dW, dH);
+      ctx.restore();
     }
     ctx.imageSmoothingEnabled = prevSmoothing;
   }
@@ -10735,7 +11151,7 @@ void main(void)\r
     const maxDabScale = (Math.max(sizeJitterMin, sizeJitterMax) / 100) * (Math.max(dabWidthJitterMin, dabWidthJitterMax, dabHeightJitterMin, dabHeightJitterMax) / 100);
     const maxDabDim = currentDabMax * maxDabScale;
 
-    const applyDabToCanvas = (targetCtx, cw, ch, px, py, dabColor, rotAngle, dW, dH, opMul, isMarginCall = false) => {
+    const applyDabToCanvas = (targetCtx, cw, ch, px, py, dabColor, rotAngle, dW, dH, opMul, isMarginCall = false, clearCellRect = null) => {
       const dabAlpha = Math.max(0, Math.min(1, opMul));
       
       let targetW = dW;
@@ -10764,6 +11180,9 @@ void main(void)\r
       }
 
       if (isMarginCall) {
+        if(clearCellRect){
+          targetCtx.clearRect(clearCellRect.x, clearCellRect.y, clearCellRect.w, clearCellRect.h);
+        }
         const bounds = getRotatedRectBounds(px, py, targetW, targetH, rotAngle, pX, pY);
         const drawDabFn = (sctx) => {
           sctx.globalAlpha = (opacity/100) * dabAlpha;
@@ -10800,6 +11219,9 @@ void main(void)\r
       const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
       const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
 
+      const normCellX = (clearCellRect && seamlessModeEnabled) ? (((clearCellRect.x % W) + W) % W) : (clearCellRect ? clearCellRect.x : 0);
+      const normCellY = (clearCellRect && seamlessModeEnabled) ? (((clearCellRect.y % H) + H) % H) : (clearCellRect ? clearCellRect.y : 0);
+
       const offsets = seamlessModeEnabled ?
         [
           [0,0], [-W,0], [W,0],
@@ -10810,6 +11232,12 @@ void main(void)\r
       for (let offset of offsets) {
         const tx = normPx + offset[0];
         const ty = normPy + offset[1];
+
+        if(clearCellRect){
+          const cx_ = normCellX + offset[0];
+          const cy_ = normCellY + offset[1];
+          targetCtx.clearRect(cx_, cy_, clearCellRect.w, clearCellRect.h);
+        }
 
         const bounds = getRotatedRectBounds(tx, ty, targetW, targetH, rotAngle, pX, pY);
         if (bounds.x >= W || bounds.y >= H || bounds.x + bounds.w <= 0 || bounds.y + bounds.h <= 0) continue;
@@ -10844,7 +11272,13 @@ void main(void)\r
       const nearOrInMargin = dabRawX < maxDabDim || dabRawX > effW - maxDabDim || dabRawY < maxDabDim || dabRawY > effH - maxDabDim;
       if(nearOrInMargin){
         marginHasContent = true;
-        applyDabToCanvas(mfCtx, effW + MARGIN_PX*2, effH + MARGIN_PX*2, dabRawX + MARGIN_PX, dabRawY + MARGIN_PX, dabColor, rotAngle, dW, dH, opMul, true);
+        const marginClearCell = clearCellRect ? {
+          x: (seamlessModeEnabled ? (clearCellRect.x + W) : clearCellRect.x) + MARGIN_PX,
+          y: (seamlessModeEnabled ? (clearCellRect.y + H) : clearCellRect.y) + MARGIN_PX,
+          w: clearCellRect.w,
+          h: clearCellRect.h
+        } : null;
+        applyDabToCanvas(mfCtx, effW + MARGIN_PX*2, effH + MARGIN_PX*2, dabRawX + MARGIN_PX, dabRawY + MARGIN_PX, dabColor, rotAngle, dW, dH, opMul, true, marginClearCell);
       }
     };
 
@@ -10867,6 +11301,7 @@ void main(void)\r
         let py = y + Math.sin(ang)*dist;
 
         // Snap dabs to grid if enabled
+        let snappedGridCell = null;
         if(spraySnapToGrid){
           let gw = 16, gh = 16, ox = 0, oy = 0;
           if(grids && grids.length > 0){
@@ -10880,8 +11315,13 @@ void main(void)\r
           }
           const normOx = ((ox % gw) + gw) % gw;
           const normOy = ((oy % gh) + gh) % gh;
-          px = Math.floor((px - normOx) / gw) * gw + normOx + gw/2;
-          py = Math.floor((py - normOy) / gh) * gh + normOy + gh/2;
+          const cellX = Math.floor((px - normOx) / gw) * gw + normOx;
+          const cellY = Math.floor((py - normOy) / gh) * gh + normOy;
+          px = cellX + gw/2;
+          py = cellY + gh/2;
+          if(spraySnapClearCell){
+            snappedGridCell = { x: cellX, y: cellY, w: gw, h: gh };
+          }
         }
 
         let color;
@@ -10908,12 +11348,28 @@ void main(void)\r
         const dW = Math.max(1, dabWidth * scaleBaseW * scaleWJitter * scaleOverride);
         const dH = Math.max(1, dabHeight * scaleBaseH * scaleHJitter * scaleOverride);
 
-        // Rotation Calculation based on Mode
+        // Rotation Calculation based on Mode & Multiple Ranges
         let rotAngle = 0;
-        let minDeg = rotationMinAngle;
-        let maxDeg = rotationMaxAngle;
-        if(minDeg > maxDeg){ const tmp = minDeg; minDeg = maxDeg; maxDeg = tmp; }
-        const rangeRad = (minDeg + getRandom() * (maxDeg - minDeg)) * Math.PI / 180;
+        let minDeg = 0;
+        let maxDeg = 0;
+        if(rotationRanges && rotationRanges.length > 0){
+          const chosenRange = rotationRanges[Math.floor(getRandom() * rotationRanges.length)];
+          minDeg = (chosenRange && typeof chosenRange.min === 'number') ? chosenRange.min : rotationMinAngle;
+          maxDeg = (chosenRange && typeof chosenRange.max === 'number') ? chosenRange.max : rotationMaxAngle;
+        } else {
+          minDeg = rotationMinAngle;
+          maxDeg = rotationMaxAngle;
+        }
+
+        let rangeDeg;
+        if(minDeg <= maxDeg){
+          rangeDeg = minDeg + getRandom() * (maxDeg - minDeg);
+        } else {
+          const span = (maxDeg + 360 - minDeg);
+          rangeDeg = minDeg + getRandom() * span;
+          if(rangeDeg > 180) rangeDeg -= 360;
+        }
+        const rangeRad = rangeDeg * Math.PI / 180;
 
         if(rotationMode === 'toward' && sprayTargetAnchorX !== null && sprayTargetAnchorY !== null){
           const baseAngle = Math.atan2(sprayTargetAnchorY - py, sprayTargetAnchorX - px) + Math.PI/2;
@@ -10925,7 +11381,7 @@ void main(void)\r
           rotAngle = rangeRad;
         }
 
-        applyDabToCanvas(ctx, W, H, px, py, color, rotAngle, dW, dH, opMul);
+        applyDabToCanvas(ctx, W, H, px, py, color, rotAngle, dW, dH, opMul, false, snappedGridCell);
       }
     };
 
@@ -11072,6 +11528,7 @@ void main(void)\r
     const dist = Math.sqrt(dx*dx + dy*dy);
     const spacing = Math.max(1, brushSize * 0.25);
     const steps = Math.max(1, Math.round(dist / spacing));
+    const startStrokeDist = strokeDistance;
     for(let i=0; i<=steps; i++){
       const t = (steps === 0) ? 0 : i/steps;
 
@@ -11103,11 +11560,13 @@ void main(void)\r
       let progressVal = null;
       if (sourceKind === 'gradient' && gradientOrdered && gradientSequentialStepMode === 'distance') {
         const cycleL = Math.max(10, gradientCycleLength);
+        const currentDist = startStrokeDist + (dist * t);
         progressVal = (currentDist % cycleL) / cycleL;
       }
 
       sprayDabs(x1 + dx*t, y1 + dy*t, overrideSize, overrideSpread, opacityTaperFactor, progressVal);
     }
+    strokeDistance += dist;
   }
   function pointerDown(e){
     e.preventDefault();
@@ -11906,86 +12365,217 @@ void main(void)\r
     }
   }
 
+  const ROT_RANGE_PALETTE = [
+    { fill: 'rgba(99, 102, 241, 0.35)', stroke: '#6366f1', min: '#38bdf8', max: '#a855f7', name: 'R1' },
+    { fill: 'rgba(16, 185, 129, 0.35)', stroke: '#10b981', min: '#34d399', max: '#059669', name: 'R2' },
+    { fill: 'rgba(245, 158, 11, 0.35)', stroke: '#f59e0b', min: '#fbbf24', max: '#d97706', name: 'R3' },
+    { fill: 'rgba(244, 63, 94, 0.35)', stroke: '#f43f5e', min: '#fb7185', max: '#e11d48', name: 'R4' },
+    { fill: 'rgba(168, 85, 247, 0.35)', stroke: '#c084fc', min: '#e879f9', max: '#9333ea', name: 'R5' },
+    { fill: 'rgba(6, 182, 212, 0.35)', stroke: '#06b6d4', min: '#67e8f9', max: '#0891b2', name: 'R6' },
+    { fill: 'rgba(234, 179, 8, 0.35)', stroke: '#eab308', min: '#fde047', max: '#ca8a04', name: 'R7' },
+    { fill: 'rgba(236, 72, 153, 0.35)', stroke: '#ec4899', min: '#f472b6', max: '#db2777', name: 'R8' }
+  ];
+
+  function updateRotationUIElements(){
+    const rangeText = document.getElementById('rotationRangeVal');
+    const activeRange = (rotationRanges && rotationRanges[activeRotationRangeIndex]) || { min: rotationMinAngle, max: rotationMaxAngle };
+    if(rangeText){
+      if(rotationRanges && rotationRanges.length > 1){
+        rangeText.textContent = `${rotationRanges.length} Ranges (R${activeRotationRangeIndex+1}: ${activeRange.min}° to ${activeRange.max}°)`;
+      } else {
+        rangeText.textContent = `${activeRange.min}° to ${activeRange.max}°`;
+      }
+    }
+
+    const minInp = document.getElementById('rotationMinValInput');
+    const maxInp = document.getElementById('rotationMaxValInput');
+    if(minInp && document.activeElement !== minInp) minInp.value = activeRange.min;
+    if(maxInp && document.activeElement !== maxInp) maxInp.value = activeRange.max;
+
+    const removeBtn = document.getElementById('removeRotationRangeBtn');
+    if(removeBtn) removeBtn.style.display = (rotationRanges && rotationRanges.length > 1) ? 'inline-block' : 'none';
+
+    // Build chips list
+    const listEl = document.getElementById('rotationRangesList');
+    if(listEl && Array.isArray(rotationRanges)){
+      listEl.innerHTML = '';
+      rotationRanges.forEach((r, idx) => {
+        const pal = ROT_RANGE_PALETTE[idx % ROT_RANGE_PALETTE.length];
+        const isActive = (idx === activeRotationRangeIndex);
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'btn small' + (isActive ? ' active' : '');
+        chip.style.cssText = `padding:2px 6px;font-size:10px;display:inline-flex;align-items:center;gap:4px;margin:2px;border:1px solid ${isActive ? pal.stroke : 'var(--line)'};background:${isActive ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.2)'};color:var(--text);border-radius:4px;cursor:pointer;`;
+        chip.innerHTML = `<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${pal.stroke};"></span>` +
+          `<span>R${idx+1}: ${r.min}°..${r.max}°</span>` +
+          (rotationRanges.length > 1 ? `<span class="del-range-btn" title="Delete range" style="margin-left:3px;opacity:0.6;font-size:11px;font-weight:bold;line-height:1;">×</span>` : '');
+        
+        chip.addEventListener('click', (e)=>{
+          const target = e.target;
+          if(target && target.classList && target.classList.contains('del-range-btn')){
+            e.stopPropagation();
+            if(rotationRanges.length > 1){
+              rotationRanges.splice(idx, 1);
+              if(activeRotationRangeIndex >= rotationRanges.length){
+                activeRotationRangeIndex = rotationRanges.length - 1;
+              }
+              drawRotationDial();
+              syncActivePresetSettings();
+            }
+            return;
+          }
+          activeRotationRangeIndex = idx;
+          drawRotationDial();
+          syncActivePresetSettings();
+        });
+        listEl.appendChild(chip);
+      });
+    }
+  }
+
   function drawRotationDial(){
     const canvas = document.getElementById('rotationDialCanvas');
     if(!canvas) return;
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const w = canvas.width, h = canvas.height;
     const cx = w/2, cy = h/2;
-    const radius = 50;
+    const radius = 54;
 
     ctx.clearRect(0, 0, w, h);
 
+    // Make sure rotationRanges is valid
+    if(!Array.isArray(rotationRanges) || rotationRanges.length === 0){
+      rotationRanges = [{ min: rotationMinAngle, max: rotationMaxAngle }];
+    }
+    if(activeRotationRangeIndex < 0 || activeRotationRangeIndex >= rotationRanges.length){
+      activeRotationRangeIndex = 0;
+    }
+    rotationMinAngle = rotationRanges[activeRotationRangeIndex].min;
+    rotationMaxAngle = rotationRanges[activeRotationRangeIndex].max;
+
     // Outer boundary
-    ctx.fillStyle = '#141420';
+    ctx.fillStyle = '#12121e';
     ctx.beginPath(); ctx.arc(cx, cy, radius, 0, Math.PI*2); ctx.fill();
 
+    // Concentric guide ring
+    ctx.strokeStyle = '#1d1d2c';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(cx, cy, radius * 0.55, 0, Math.PI*2); ctx.stroke();
+
     // Cross lines
-    ctx.strokeStyle = '#28283a';
+    ctx.strokeStyle = '#28283c';
     ctx.lineWidth = 1;
     ctx.beginPath(); ctx.moveTo(cx - radius, cy); ctx.lineTo(cx + radius, cy); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(cx, cy - radius); ctx.lineTo(cx, cy + radius); ctx.stroke();
 
-    // Ticks every 30 deg
-    ctx.strokeStyle = '#44445c';
-    for(let a=0; a<360; a+=30){
+    // Cardinal direction markings (N, E, S, W)
+    ctx.font = '8px sans-serif';
+    ctx.fillStyle = '#636688';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('N', cx, cy - radius + 11);
+    ctx.fillText('S', cx, cy + radius - 11);
+    ctx.fillText('E', cx + radius - 11, cy);
+    ctx.fillText('W', cx - radius + 11, cy);
+
+    // Ticks every 30 deg and 15 deg
+    ctx.strokeStyle = '#3e3e56';
+    for(let a=0; a<360; a+=15){
       const rad = (a - 90) * Math.PI / 180;
-      const inner = (a % 90 === 0) ? radius - 8 : radius - 4;
+      const isMajor = (a % 90 === 0);
+      const isMedium = (a % 30 === 0);
+      const inner = isMajor ? (radius - 7) : (isMedium ? (radius - 5) : (radius - 3));
       ctx.beginPath();
       ctx.moveTo(cx + Math.cos(rad)*inner, cy + Math.sin(rad)*inner);
       ctx.lineTo(cx + Math.cos(rad)*radius, cy + Math.sin(rad)*radius);
       ctx.stroke();
     }
 
-    let minDeg = rotationMinAngle;
-    let maxDeg = rotationMaxAngle;
-    if(minDeg > maxDeg){ const tmp = minDeg; minDeg = maxDeg; maxDeg = tmp; }
+    // Helper to draw a single rotation range
+    const renderRange = (r, idx, isActive) => {
+      const pal = ROT_RANGE_PALETTE[idx % ROT_RANGE_PALETTE.length];
+      const minDeg = r.min;
+      const maxDeg = r.max;
+      const isFull = Math.abs(maxDeg - minDeg) >= 360 || (minDeg === -180 && maxDeg === 180);
 
-    const radStart = (minDeg - 90) * Math.PI / 180;
-    const radEnd = (maxDeg - 90) * Math.PI / 180;
+      const radStart = (minDeg - 90) * Math.PI / 180;
+      const radEnd = (maxDeg - 90) * Math.PI / 180;
 
-    // Range arc
-    ctx.fillStyle = 'rgba(99, 102, 241, 0.25)';
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, radius, radStart, radEnd, false);
-    ctx.closePath();
-    ctx.fill();
+      // Arc wedge
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      if(isFull){
+        ctx.arc(cx, cy, radius, 0, Math.PI*2, false);
+      } else {
+        ctx.arc(cx, cy, radius, radStart, radEnd, false);
+      }
+      ctx.closePath();
+      ctx.fillStyle = isActive ? pal.fill : pal.fill.replace('0.35', '0.18');
+      ctx.fill();
 
-    ctx.strokeStyle = 'rgba(99, 102, 241, 0.6)';
-    ctx.lineWidth = 2;
-    ctx.stroke();
+      // Arc outline
+      ctx.beginPath();
+      if(isFull){
+        ctx.arc(cx, cy, radius, 0, Math.PI*2, false);
+      } else {
+        ctx.arc(cx, cy, radius, radStart, radEnd, false);
+      }
+      ctx.strokeStyle = isActive ? pal.stroke : pal.stroke + '88';
+      ctx.lineWidth = isActive ? 2.5 : 1.5;
+      ctx.stroke();
 
-    // Min Hand
-    const x1 = cx + Math.cos(radStart) * radius;
-    const y1 = cy + Math.sin(radStart) * radius;
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x1, y1); ctx.stroke();
-    ctx.fillStyle = '#38bdf8';
-    ctx.beginPath(); ctx.arc(x1, y1, 5, 0, Math.PI*2); ctx.fill();
+      // Min Hand
+      const x1 = cx + Math.cos(radStart) * radius;
+      const y1 = cy + Math.sin(radStart) * radius;
+      ctx.strokeStyle = pal.min;
+      ctx.lineWidth = isActive ? 2 : 1;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x1, y1); ctx.stroke();
+      ctx.fillStyle = pal.min;
+      ctx.beginPath(); ctx.arc(x1, y1, isActive ? 5 : 3.5, 0, Math.PI*2); ctx.fill();
+      if(isActive){
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(x1, y1, 2, 0, Math.PI*2); ctx.fill();
+      }
 
-    // Max Hand
-    const x2 = cx + Math.cos(radEnd) * radius;
-    const y2 = cy + Math.sin(radEnd) * radius;
-    ctx.strokeStyle = '#a855f7';
-    ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x2, y2); ctx.stroke();
-    ctx.fillStyle = '#a855f7';
-    ctx.beginPath(); ctx.arc(x2, y2, 5, 0, Math.PI*2); ctx.fill();
+      // Max Hand
+      const x2 = cx + Math.cos(radEnd) * radius;
+      const y2 = cy + Math.sin(radEnd) * radius;
+      ctx.strokeStyle = pal.max;
+      ctx.lineWidth = isActive ? 2 : 1;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(x2, y2); ctx.stroke();
+      ctx.fillStyle = pal.max;
+      ctx.beginPath(); ctx.arc(x2, y2, isActive ? 5 : 3.5, 0, Math.PI*2); ctx.fill();
+      if(isActive){
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath(); ctx.arc(x2, y2, 2, 0, Math.PI*2); ctx.fill();
+      }
+    };
+
+    // Draw inactive ranges first, active range on top
+    rotationRanges.forEach((r, idx) => {
+      if(idx !== activeRotationRangeIndex) renderRange(r, idx, false);
+    });
+    if(rotationRanges[activeRotationRangeIndex]){
+      renderRange(rotationRanges[activeRotationRangeIndex], activeRotationRangeIndex, true);
+    }
 
     // Center dot
     ctx.fillStyle = '#ffffff';
     ctx.beginPath(); ctx.arc(cx, cy, 3, 0, Math.PI*2); ctx.fill();
 
-    const rangeText = document.getElementById('rotationRangeVal');
-    if(rangeText) rangeText.textContent = rotationMinAngle + '° to ' + rotationMaxAngle + '°';
+    // Update text and chips list UI
+    updateRotationUIElements();
   }
 
   let draggingDialHand = null;
   function initRotationDialEvents(){
     const canvas = document.getElementById('rotationDialCanvas');
     if(!canvas) return;
+
+    const angularDist = (a, b) => {
+      let diff = Math.abs(a - b) % 360;
+      return diff > 180 ? 360 - diff : diff;
+    };
 
     const handlePointer = (e) => {
       const rect = canvas.getBoundingClientRect();
@@ -11995,20 +12585,42 @@ void main(void)\r
       if(deg > 180) deg -= 360;
 
       if(!draggingDialHand){
-        const dMin = Math.abs(deg - rotationMinAngle);
-        const dMax = Math.abs(deg - rotationMaxAngle);
-        draggingDialHand = (dMin < dMax) ? 'min' : 'max';
+        let bestDist = Infinity;
+        let bestRangeIdx = activeRotationRangeIndex;
+        let bestHand = 'min';
+
+        if(Array.isArray(rotationRanges)){
+          rotationRanges.forEach((r, idx) => {
+            const dMin = angularDist(deg, r.min);
+            const dMax = angularDist(deg, r.max);
+            if(dMin < bestDist){
+              bestDist = dMin;
+              bestRangeIdx = idx;
+              bestHand = 'min';
+            }
+            if(dMax < bestDist){
+              bestDist = dMax;
+              bestRangeIdx = idx;
+              bestHand = 'max';
+            }
+          });
+        }
+
+        activeRotationRangeIndex = bestRangeIdx;
+        draggingDialHand = bestHand;
+      }
+
+      if(!rotationRanges[activeRotationRangeIndex]){
+        rotationRanges[activeRotationRangeIndex] = { min: 0, max: 0 };
       }
 
       if(draggingDialHand === 'min'){
-        rotationMinAngle = deg;
-        const input = document.getElementById('rotationMinValInput');
-        if(input) input.value = rotationMinAngle;
+        rotationRanges[activeRotationRangeIndex].min = deg;
       } else {
-        rotationMaxAngle = deg;
-        const input = document.getElementById('rotationMaxValInput');
-        if(input) input.value = rotationMaxAngle;
+        rotationRanges[activeRotationRangeIndex].max = deg;
       }
+      rotationMinAngle = rotationRanges[activeRotationRangeIndex].min;
+      rotationMaxAngle = rotationRanges[activeRotationRangeIndex].max;
 
       drawRotationDial();
       syncActivePresetSettings();
@@ -12392,47 +13004,120 @@ void main(void)\r
       syncActivePresetSettings();
     });
 
-    document.getElementById('rotationMinValInput').addEventListener('change', e=>{
-      rotationMinAngle = +e.target.value;
-      drawRotationDial();
-      syncActivePresetSettings();
+    const rotAlgoSelect = document.getElementById('rotationAlgorithmSelect');
+    if(rotAlgoSelect){
+      rotAlgoSelect.addEventListener('change', e=>{
+        rotationAlgorithm = e.target.value;
+        if(rotatedStampCache) rotatedStampCache.clear();
+        if(rotatedShapeCache) rotatedShapeCache.clear();
+        syncActivePresetSettings();
+      });
+    }
+
+    document.getElementById('rotationMinValInput').addEventListener('input', e=>{
+      const val = +e.target.value;
+      if(!isNaN(val)){
+        if(!rotationRanges[activeRotationRangeIndex]) rotationRanges[activeRotationRangeIndex] = { min: 0, max: 0 };
+        rotationRanges[activeRotationRangeIndex].min = val;
+        rotationMinAngle = val;
+        drawRotationDial();
+        syncActivePresetSettings();
+      }
     });
-    document.getElementById('rotationMaxValInput').addEventListener('change', e=>{
-      rotationMaxAngle = +e.target.value;
-      drawRotationDial();
-      syncActivePresetSettings();
+    document.getElementById('rotationMaxValInput').addEventListener('input', e=>{
+      const val = +e.target.value;
+      if(!isNaN(val)){
+        if(!rotationRanges[activeRotationRangeIndex]) rotationRanges[activeRotationRangeIndex] = { min: 0, max: 0 };
+        rotationRanges[activeRotationRangeIndex].max = val;
+        rotationMaxAngle = val;
+        drawRotationDial();
+        syncActivePresetSettings();
+      }
     });
 
+    const addRotRangeBtn = document.getElementById('addRotationRangeBtn');
+    if(addRotRangeBtn){
+      addRotRangeBtn.addEventListener('click', ()=>{
+        if(!Array.isArray(rotationRanges)) rotationRanges = [{ min: 0, max: 0 }];
+        const last = rotationRanges[rotationRanges.length - 1] || { min: 0, max: 0 };
+        let nextMin = last.min + 90;
+        let nextMax = last.max + 90;
+        if(nextMin > 180) nextMin -= 360;
+        if(nextMax > 180) nextMax -= 360;
+        rotationRanges.push({ min: nextMin, max: nextMax });
+        activeRotationRangeIndex = rotationRanges.length - 1;
+        drawRotationDial();
+        syncActivePresetSettings();
+      });
+    }
+
+    const remRotRangeBtn = document.getElementById('removeRotationRangeBtn');
+    if(remRotRangeBtn){
+      remRotRangeBtn.addEventListener('click', ()=>{
+        if(rotationRanges.length > 1){
+          rotationRanges.splice(activeRotationRangeIndex, 1);
+          activeRotationRangeIndex = Math.max(0, activeRotationRangeIndex - 1);
+          drawRotationDial();
+          syncActivePresetSettings();
+        }
+      });
+    }
+
+    const setRotRanges = (ranges) => {
+      rotationRanges = JSON.parse(JSON.stringify(ranges));
+      activeRotationRangeIndex = 0;
+      rotationMinAngle = rotationRanges[0].min;
+      rotationMaxAngle = rotationRanges[0].max;
+      drawRotationDial();
+      syncActivePresetSettings();
+    };
+
     document.getElementById('rotPreset0').addEventListener('click', ()=>{
-      rotationMinAngle = 0; rotationMaxAngle = 0;
-      document.getElementById('rotationMinValInput').value = 0;
-      document.getElementById('rotationMaxValInput').value = 0;
-      drawRotationDial(); syncActivePresetSettings();
+      setRotRanges([{ min: 0, max: 0 }]);
     });
     document.getElementById('rotPreset15').addEventListener('click', ()=>{
-      rotationMinAngle = -15; rotationMaxAngle = 15;
-      document.getElementById('rotationMinValInput').value = -15;
-      document.getElementById('rotationMaxValInput').value = 15;
-      drawRotationDial(); syncActivePresetSettings();
+      setRotRanges([{ min: -15, max: 15 }]);
     });
     document.getElementById('rotPreset45').addEventListener('click', ()=>{
-      rotationMinAngle = -45; rotationMaxAngle = 45;
-      document.getElementById('rotationMinValInput').value = -45;
-      document.getElementById('rotationMaxValInput').value = 45;
-      drawRotationDial(); syncActivePresetSettings();
+      setRotRanges([{ min: -45, max: 45 }]);
     });
     document.getElementById('rotPreset90').addEventListener('click', ()=>{
-      rotationMinAngle = 90; rotationMaxAngle = 90;
-      document.getElementById('rotationMinValInput').value = 90;
-      document.getElementById('rotationMaxValInput').value = 90;
-      drawRotationDial(); syncActivePresetSettings();
+      setRotRanges([{ min: 90, max: 90 }]);
     });
     document.getElementById('rotPresetFull').addEventListener('click', ()=>{
-      rotationMinAngle = -180; rotationMaxAngle = 180;
-      document.getElementById('rotationMinValInput').value = -180;
-      document.getElementById('rotationMaxValInput').value = 180;
-      drawRotationDial(); syncActivePresetSettings();
+      setRotRanges([{ min: -180, max: 180 }]);
     });
+    const rotCardinalBtn = document.getElementById('rotPresetCardinal');
+    if(rotCardinalBtn){
+      rotCardinalBtn.addEventListener('click', ()=>{
+        setRotRanges([
+          { min: -15, max: 15 },   // North
+          { min: 75, max: 105 },   // East
+          { min: 165, max: -165 }, // South (165° to 195° / -165°)
+          { min: -105, max: -75 }  // West
+        ]);
+      });
+    }
+    const rotDiagBtn = document.getElementById('rotPresetDiagonal');
+    if(rotDiagBtn){
+      rotDiagBtn.addEventListener('click', ()=>{
+        setRotRanges([
+          { min: 30, max: 60 },     // NE
+          { min: 120, max: 150 },   // SE
+          { min: -150, max: -120 }, // SW
+          { min: -60, max: -30 }    // NW
+        ]);
+      });
+    }
+    const rotHVBtn = document.getElementById('rotPresetHV');
+    if(rotHVBtn){
+      rotHVBtn.addEventListener('click', ()=>{
+        setRotRanges([
+          { min: -15, max: 15 },  // Vertical (North/South)
+          { min: 75, max: 105 }   // Horizontal (East/West)
+        ]);
+      });
+    }
 
     document.getElementById('setSprayAnchorBtn').addEventListener('click', ()=>{
       settingSprayAnchorMode = true;
@@ -12446,8 +13131,23 @@ void main(void)\r
       render();
     });
 
+    function updateSpraySnapGridUI(){
+      const ssgEl = document.getElementById('spraySnapGridCheckbox');
+      const ssccEl = document.getElementById('spraySnapClearCellCheckbox');
+      const ssccRow = document.getElementById('spraySnapClearCellRow');
+      if(ssgEl) ssgEl.checked = !!spraySnapToGrid;
+      if(ssccEl) ssccEl.checked = !!spraySnapClearCell;
+      if(ssccRow) ssccRow.style.opacity = spraySnapToGrid ? '1' : '0.5';
+    }
+
     document.getElementById('spraySnapGridCheckbox').addEventListener('change', e=>{
       spraySnapToGrid = e.target.checked;
+      updateSpraySnapGridUI();
+      syncActivePresetSettings();
+    });
+
+    document.getElementById('spraySnapClearCellCheckbox').addEventListener('change', e=>{
+      spraySnapClearCell = e.target.checked;
       syncActivePresetSettings();
     });
 
@@ -12505,14 +13205,18 @@ void main(void)\r
       opacityJitterMin,
       opacityJitterMax,
       rotationMode,
+      rotationAlgorithm,
       rotationMinAngle,
       rotationMaxAngle,
+      rotationRanges: Array.isArray(rotationRanges) ? JSON.parse(JSON.stringify(rotationRanges)) : [{ min: rotationMinAngle, max: rotationMaxAngle }],
+      activeRotationRangeIndex,
       dabShape,
       pixelPerfect,
       opacity,
       sprayCombineSameColor,
       sprayInterpolate,
       spraySnapToGrid,
+      spraySnapClearCell,
       sprayTargetAnchorX,
       sprayTargetAnchorY,
       vineDensity,
@@ -12637,17 +13341,32 @@ void main(void)\r
       rotationMode = s.rotationMode;
       const el = document.getElementById('rotationModeSelect'); if(el) el.value = rotationMode;
     }
-    if(s.rotationMinAngle !== undefined) rotationMinAngle = s.rotationMinAngle;
-    if(s.rotationMaxAngle !== undefined) rotationMaxAngle = s.rotationMaxAngle;
-    if(s.rotationMinAngle !== undefined || s.rotationMaxAngle !== undefined){
-      const elMin = document.getElementById('rotationMinValInput'); if(elMin) elMin.value = rotationMinAngle;
-      const elMax = document.getElementById('rotationMaxValInput'); if(elMax) elMax.value = rotationMaxAngle;
+    if(s.rotationAlgorithm !== undefined){
+      rotationAlgorithm = s.rotationAlgorithm;
+      const el = document.getElementById('rotationAlgorithmSelect'); if(el) el.value = rotationAlgorithm;
+    }
+    if(s.rotationRanges && Array.isArray(s.rotationRanges) && s.rotationRanges.length > 0){
+      rotationRanges = JSON.parse(JSON.stringify(s.rotationRanges));
+      activeRotationRangeIndex = Math.max(0, Math.min(rotationRanges.length - 1, s.activeRotationRangeIndex ?? 0));
+      rotationMinAngle = rotationRanges[activeRotationRangeIndex].min;
+      rotationMaxAngle = rotationRanges[activeRotationRangeIndex].max;
+      drawRotationDial();
+    } else if(s.rotationMinAngle !== undefined || s.rotationMaxAngle !== undefined){
+      rotationMinAngle = s.rotationMinAngle ?? 0;
+      rotationMaxAngle = s.rotationMaxAngle ?? 0;
+      rotationRanges = [{ min: rotationMinAngle, max: rotationMaxAngle }];
+      activeRotationRangeIndex = 0;
       drawRotationDial();
     }
     if(s.spraySnapToGrid !== undefined){
       spraySnapToGrid = s.spraySnapToGrid;
       const el = document.getElementById('spraySnapGridCheckbox'); if(el) el.checked = spraySnapToGrid;
     }
+    if(s.spraySnapClearCell !== undefined){
+      spraySnapClearCell = s.spraySnapClearCell;
+      const el = document.getElementById('spraySnapClearCellCheckbox'); if(el) el.checked = spraySnapClearCell;
+    }
+    if(typeof updateSpraySnapGridUI === 'function') updateSpraySnapGridUI();
     if(s.sprayTargetAnchorX !== undefined) sprayTargetAnchorX = s.sprayTargetAnchorX;
     if(s.sprayTargetAnchorY !== undefined) sprayTargetAnchorY = s.sprayTargetAnchorY;
     updateSprayAnchorUI();
@@ -16845,9 +17564,15 @@ void main(void)\r
     dabWidthJitterMin = 100; dabWidthJitterMax = 100;
     dabHeightJitterMin = 100; dabHeightJitterMax = 100;
     opacityJitterAmt = 0; opacityJitterMin = 100; opacityJitterMax = 100;
-    rotationJitterAmt = 0; rotationMode = 'range'; rotationMinAngle = 0; rotationMaxAngle = 0;
+    rotationJitterAmt = 0; rotationMode = 'range'; rotationAlgorithm = 'rotsprite'; rotationMinAngle = 0; rotationMaxAngle = 0;
+    rotationRanges = [{ min: 0, max: 0 }];
+    activeRotationRangeIndex = 0;
     sprayTargetAnchorX = null; sprayTargetAnchorY = null;
+    spraySnapToGrid = false;
+    spraySnapClearCell = false;
+    if(typeof updateSpraySnapGridUI === 'function') updateSpraySnapGridUI();
     const rmEl = document.getElementById('rotationModeSelect'); if(rmEl) rmEl.value = 'range';
+    const raEl = document.getElementById('rotationAlgorithmSelect'); if(raEl) raEl.value = 'rotsprite';
     const rminEl = document.getElementById('rotationMinValInput'); if(rminEl) rminEl.value = 0;
     const rmaxEl = document.getElementById('rotationMaxValInput'); if(rmaxEl) rmaxEl.value = 0;
     if(typeof drawRotationDial === 'function') drawRotationDial();
@@ -17374,7 +18099,10 @@ void main(void)\r
         tool, brushSize, opacity, sourceKind, selectedGradientIndex, selectedStampIndex,
         dabShape, brushShape, brushMode, sprayMode, softenType, softenHardness, density, dabSize, dabWidth, dabHeight, dabLockAspect,
         sizeJitterAmt, sizeJitterMin, sizeJitterMax, dabWidthJitterMin, dabWidthJitterMax, dabHeightJitterMin, dabHeightJitterMax, opacityJitterAmt, opacityJitterMin, opacityJitterMax,
-        rotationJitterAmt, rotationMode, rotationMinAngle, rotationMaxAngle, sprayTargetAnchorX, sprayTargetAnchorY, spraySnapToGrid,
+        rotationJitterAmt, rotationMode, rotationAlgorithm, rotationMinAngle, rotationMaxAngle,
+        rotationRanges: Array.isArray(rotationRanges) ? JSON.parse(JSON.stringify(rotationRanges)) : [{ min: rotationMinAngle, max: rotationMaxAngle }],
+        activeRotationRangeIndex,
+        sprayTargetAnchorX, sprayTargetAnchorY, spraySnapToGrid, spraySnapClearCell,
         falloff, flow, pixelPerfect, brushPixelPerfect, colorizeTargetHex, sprayCombineSameColor, sprayInterpolate,
         heightPaintEnabled, heightSourceLayerIndex, heightMode, heightMin, heightMax, heightSoftness
       }
@@ -18216,11 +18944,20 @@ void main(void)\r
       opacityJitterMax = t.opacityJitterMax ?? opacityJitterMax;
       rotationJitterAmt = t.rotationJitterAmt ?? rotationJitterAmt;
       rotationMode = t.rotationMode ?? rotationMode;
+      rotationAlgorithm = t.rotationAlgorithm || 'rotsprite';
       rotationMinAngle = t.rotationMinAngle ?? rotationMinAngle;
       rotationMaxAngle = t.rotationMaxAngle ?? rotationMaxAngle;
+      if(t.rotationRanges && Array.isArray(t.rotationRanges) && t.rotationRanges.length > 0){
+        rotationRanges = JSON.parse(JSON.stringify(t.rotationRanges));
+        activeRotationRangeIndex = Math.max(0, Math.min(rotationRanges.length - 1, t.activeRotationRangeIndex ?? 0));
+      } else {
+        rotationRanges = [{ min: rotationMinAngle, max: rotationMaxAngle }];
+        activeRotationRangeIndex = 0;
+      }
       sprayTargetAnchorX = t.sprayTargetAnchorX ?? null;
       sprayTargetAnchorY = t.sprayTargetAnchorY ?? null;
       spraySnapToGrid = !!t.spraySnapToGrid;
+      spraySnapClearCell = !!t.spraySnapClearCell;
       falloff = t.falloff ?? falloff;
       flow = t.flow ?? flow;
       pixelPerfect = !!t.pixelPerfect;
@@ -18268,11 +19005,14 @@ void main(void)\r
       updateDualRangeFill(ojminEl, ojmaxEl, document.getElementById('opacityJitterFill'));
 
       const rmEl = document.getElementById('rotationModeSelect'); if(rmEl) rmEl.value = rotationMode;
+      const raEl = document.getElementById('rotationAlgorithmSelect'); if(raEl) raEl.value = rotationAlgorithm;
       const rminEl = document.getElementById('rotationMinValInput'); if(rminEl) rminEl.value = rotationMinAngle;
       const rmaxEl = document.getElementById('rotationMaxValInput'); if(rmaxEl) rmaxEl.value = rotationMaxAngle;
       drawRotationDial();
 
       const ssgEl = document.getElementById('spraySnapGridCheckbox'); if(ssgEl) ssgEl.checked = spraySnapToGrid;
+      const ssccEl = document.getElementById('spraySnapClearCellCheckbox'); if(ssccEl) ssccEl.checked = spraySnapClearCell;
+      if(typeof updateSpraySnapGridUI === 'function') updateSpraySnapGridUI();
       updateSprayAnchorUI();
       drawStampPivotCanvas();
       const sjEl = document.getElementById('sizeJitterSlider'); if(sjEl) sjEl.value = sizeJitterAmt;
