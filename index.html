@@ -1646,6 +1646,9 @@
           <label class="field" data-tooltip="Decoration size: Sets the scale of leaf or stamp decorations">Decoration size <span class="field-value" id="vineDecorSizeVal">14</span></label>
           <input type="range" id="vineDecorSizeSlider" min="1" max="150" value="14" data-tooltip="Decoration size: Sets the scale of leaf or stamp decorations">
 
+          <label class="field" data-tooltip="Decoration stamp: Choose custom stamp mask for path decorations, or basic shapes/leaf">Decoration stamp</label>
+          <select id="vineStampSourceSelect" style="margin-bottom: 12px;" data-tooltip="Decoration stamp: Choose custom stamp mask for path decorations, or basic shapes/leaf"></select>
+
           <label class="field" data-tooltip="Rotation jitter: Adds random angle variation to decorations">Rotation jitter <span class="field-value" id="vineRotationJitterVal">30%</span></label>
           <input type="range" id="vineRotationJitterSlider" min="0" max="100" value="30" data-tooltip="Rotation jitter: Adds random angle variation to decorations">
 
@@ -1658,29 +1661,59 @@
           <label class="field" data-tooltip="Offshoot length: Maximum pixel length for side offshoot branches">Offshoot length <span class="field-value" id="vineOffshootLengthVal">40</span></label>
           <input type="range" id="vineOffshootLengthSlider" min="5" max="200" value="40" data-tooltip="Offshoot length: Maximum pixel length for side offshoot branches">
 
-          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px; border-radius: 6px; margin: 8px 0;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;" data-tooltip="Tapers main vine stem thickness gradually at the start of the path">
-              <input type="checkbox" id="vineTaperStartCheckbox" style="cursor: pointer; width: auto; height: auto;">
-              <label for="vineTaperStartCheckbox" style="font-size: 0.85rem; cursor: pointer; user-select: none; font-weight: 500;">Taper main vine start</label>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;" data-tooltip="Tapers main vine stem thickness gradually at the end of the path">
-              <input type="checkbox" id="vineTaperFinishCheckbox" style="cursor: pointer; width: auto; height: auto;">
-              <label for="vineTaperFinishCheckbox" style="font-size: 0.85rem; cursor: pointer; user-select: none; font-weight: 500;">Taper main vine finish</label>
-            </div>
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;" data-tooltip="Tapers offshoot branch thickness toward their tips">
-              <input type="checkbox" id="vineTaperOffshootsCheckbox" style="cursor: pointer; width: auto; height: auto;">
-              <label for="vineTaperOffshootsCheckbox" style="font-size: 0.85rem; cursor: pointer; user-select: none; font-weight: 500;">Taper offshoot end</label>
-            </div>
+          <label class="field" data-tooltip="Offshoot size: Offshoot branch thickness relative to main stem">Offshoot size <span class="field-value" id="vineOffshootSizeVal">45%</span></label>
+          <input type="range" id="vineOffshootSizeSlider" min="5" max="150" value="45" data-tooltip="Offshoot size: Offshoot branch thickness relative to main stem">
 
-            <label class="field" style="margin-top: 4px;" data-tooltip="Taper length: Length in pixels over which main vine thickness tapers">Taper length <span class="field-value" id="vineTaperLengthVal">50</span></label>
-            <input type="range" id="vineTaperLengthSlider" min="5" max="300" value="50" data-tooltip="Taper length: Length in pixels over which main vine thickness tapers">
+          <label class="field" style="margin-top: 10px;" data-tooltip="Size jitter: Random size variation along the main vine and offshoots">Size jitter <span class="field-value" id="vineSizeJitterVal">0%</span></label>
+          <input type="range" id="vineSizeJitterSlider" min="0" max="100" value="0" data-tooltip="Size jitter: Random size variation along the main vine and offshoots">
 
-            <label class="field" style="margin-top: 8px;" data-tooltip="Size jitter: Random size variation along the main vine and offshoots">Size jitter <span class="field-value" id="vineSizeJitterVal">0%</span></label>
-            <input type="range" id="vineSizeJitterSlider" min="0" max="100" value="0" data-tooltip="Size jitter: Random size variation along the main vine and offshoots">
+          <!-- Freehand Path Feature -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px; border-radius: 6px; margin: 10px 0 5px 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;" data-tooltip="Draw paths continuously by dragging the mouse freehand, instead of clicking segment-by-segment">
+              <input type="checkbox" id="vineFreehandCheckbox" style="cursor: pointer; width: auto; height: auto;">
+              <label for="vineFreehandCheckbox" style="font-size: 0.85rem; cursor: pointer; user-select: none; font-weight: 600; color: #ffca28;">Freehand path drawing</label>
+            </div>
+            <div id="vineFreehandDetailGroup" style="display: none; margin-top: 6px;">
+              <label class="field" data-tooltip="Detail: Distance in pixels between placed path nodes during freehand drawing. Smaller values give more detail but denser segments.">Freehand path detail <span class="field-value" id="vineFreehandDetailVal">30px</span></label>
+              <input type="range" id="vineFreehandDetailSlider" min="5" max="250" value="30" data-tooltip="Detail: Distance in pixels between placed path nodes during freehand drawing">
+            </div>
           </div>
 
-          <label class="field" data-tooltip="Decoration stamp: Choose custom stamp mask for path decorations, or 'No stamp' for procedural leaf">Decoration stamp</label>
-          <select id="vineStampSourceSelect" data-tooltip="Decoration stamp: Choose custom stamp mask for path decorations, or 'No stamp' for procedural leaf"></select>
+          <!-- Paint Taper Features (Moved inside Path Mode) -->
+          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px; border-radius: 6px; margin: 10px 0;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;" data-tooltip="Enables gradual tapering of stroke thickness, spread, or opacity">
+              <input type="checkbox" id="paintTaperEnabledCheckbox" style="cursor: pointer; width: auto; height: auto;">
+              <label for="paintTaperEnabledCheckbox" style="font-size: 0.85rem; cursor: pointer; user-select: none; font-weight: 600; color: #ffca28;">Enable path taper</label>
+            </div>
+            <div id="paintTaperSettingsGroup" style="display: none; margin-top: 6px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;" data-tooltip="Tapers stroke thickness and/or spread gradually at the start of a stroke, path, or line">
+                <input type="checkbox" id="paintTaperStartCheckbox" checked style="cursor: pointer; width: auto; height: auto;">
+                <label for="paintTaperStartCheckbox" style="font-size: 0.85rem; cursor: pointer; user-select: none; font-weight: 500;">Taper start</label>
+              </div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;" data-tooltip="Tapers stroke thickness and/or spread gradually at the end of a freehand stroke, straight line, or path">
+                <input type="checkbox" id="paintTaperFinishCheckbox" style="cursor: pointer; width: auto; height: auto;">
+                <label for="paintTaperFinishCheckbox" style="font-size: 0.85rem; cursor: pointer; user-select: none; font-weight: 500;">Taper finish</label>
+              </div>
+
+              <label class="field" style="margin-top: 6px;" data-tooltip="Taper length: Number of dabs over which the stroke tapers">Taper length <span class="field-value" id="paintTaperLengthVal">16 dabs</span></label>
+              <input type="range" id="paintTaperLengthSlider" min="1" max="200" value="16" data-tooltip="Taper length: Number of dabs over which the stroke tapers">
+
+              <div id="paintTaperSizeGroup" style="margin-top: 6px; margin-bottom: 6px;">
+                <label class="field" style="font-size:0.75rem;" data-tooltip="Taper size target: Target thickness at the end of the taper (100% means no change, 0% means shrink to point, >100% means grow)">Taper size target <span class="field-value" id="paintTaperSizeVal">100%</span></label>
+                <input type="range" id="paintTaperSizeSlider" min="0" max="200" value="100" step="5" data-tooltip="Taper size target: Target thickness at the end of the taper">
+              </div>
+
+              <div id="paintTaperSpreadGroup" style="margin-top: 6px; margin-bottom: 6px;">
+                <label class="field" style="font-size:0.75rem;" data-tooltip="Taper spread target: Target spray spread at the end of the taper (100% means no change, 0% means shrink, >100% means grow)">Taper spread target <span class="field-value" id="paintTaperSpreadVal">100%</span></label>
+                <input type="range" id="paintTaperSpreadSlider" min="0" max="200" value="100" step="5" data-tooltip="Taper spread target: Target spray spread at the end of the taper">
+              </div>
+
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px; margin-bottom: 4px;" data-tooltip="Fades opacity gradually along the taper">
+                <input type="checkbox" id="paintTaperOpacityFadeCheckbox" style="cursor: pointer; width: auto; height: auto;">
+                <label for="paintTaperOpacityFadeCheckbox" style="font-size: 0.85rem; cursor: pointer; user-select: none; font-weight: 500;">Taper opacity fade</label>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Shapes Buttons -->
@@ -1705,6 +1738,29 @@
           <option value="gradient">Gradient</option>
         </select>
         <select id="gradientSourceSelect" style="margin-top:6px;display:none;" data-tooltip="Select active gradient source"></select>
+        
+        <div id="gradientOrderedOptions" style="display:none; margin-top:8px; padding:6px; background:rgba(255, 255, 255, 0.03); border:1px solid rgba(255, 255, 255, 0.08); border-radius:6px;">
+          <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;" data-tooltip="Paint colors sequentially in order from start to end of the gradient instead of choosing randomly">
+            <input type="checkbox" id="gradientOrderedCheckbox" style="cursor:pointer; width:auto; height:auto;">
+            <label for="gradientOrderedCheckbox" style="font-size:0.8rem; cursor:pointer; user-select:none; font-weight:600;">Sequential gradient colors</label>
+          </div>
+          <div id="gradientOrderedConfig" style="display:none; margin-top:6px;">
+            <label class="field" style="font-size: 0.8rem;">Sequential step behavior</label>
+            <select id="gradientSequentialStepSelect" style="width: 100%; font-size: 11px; padding: 4px; margin-bottom: 6px; background: var(--panel-2); color: var(--text); border: 1px solid var(--line); border-radius: 4px;" data-tooltip="Choose whether the gradient transitions by distance drawn, or switches to the next color after a set number of dabs">
+              <option value="distance">Cycle by distance (pixels)</option>
+              <option value="dabs">Switch by dabs (count)</option>
+            </select>
+            <div id="gradientCycleOptions" style="display:none;">
+              <label class="field" style="margin-top:4px; font-size:0.75rem;" data-tooltip="Cycle length: Distance in pixels to complete one full cycle of the gradient colors">Cycle length (px) <span class="field-value" id="gradientCycleLengthVal">200</span></label>
+              <input type="range" id="gradientCycleLengthSlider" min="10" max="1000" value="200" step="5" data-tooltip="Cycle length: Distance in pixels to complete one full cycle of the gradient colors">
+            </div>
+            <div id="gradientDabsOptions" style="display:none;">
+              <label class="field" style="margin-top:4px; font-size:0.75rem;" data-tooltip="Dabs to paint: Number of dabs to paint of each gradient color stop before switching to the next stop in order">Dabs to paint <span class="field-value" id="gradientDabsPerColorVal">1</span></label>
+              <input type="range" id="gradientDabsPerColorSlider" min="1" max="100" value="1" step="1" data-tooltip="Dabs to paint: Number of dabs to paint of each gradient color stop before switching to the next stop in order">
+            </div>
+          </div>
+        </div>
+
         <div id="spraySourceHint" style="display:none;"></div>
 
         <!-- Checkboxes -->
@@ -3321,7 +3377,173 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.275'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.291'; // bump this on every deploy — shown only in the About popup
+
+  // Override window.alert to be iframe-safe and style-consistent
+  window.alert = function(message) {
+    const modal = document.createElement('div');
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.width = '100vw';
+    modal.style.height = '100vh';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.6)';
+    modal.style.display = 'flex';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.zIndex = '999999';
+    modal.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+    
+    const box = document.createElement('div');
+    box.style.background = '#1e1e24';
+    box.style.border = '1px solid #ffca28';
+    box.style.padding = '20px';
+    box.style.borderRadius = '8px';
+    box.style.width = '320px';
+    box.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
+    box.style.color = '#fff';
+    
+    const titleEl = document.createElement('div');
+    titleEl.style.fontWeight = '500';
+    titleEl.style.fontSize = '0.95rem';
+    titleEl.style.marginBottom = '16px';
+    titleEl.style.color = '#fff';
+    titleEl.style.lineHeight = '1.4';
+    titleEl.textContent = message;
+    box.appendChild(titleEl);
+    
+    const btnRow = document.createElement('div');
+    btnRow.style.display = 'flex';
+    btnRow.style.justifyContent = 'flex-end';
+    
+    const okBtn = document.createElement('button');
+    okBtn.textContent = 'OK';
+    okBtn.style.padding = '6px 18px';
+    okBtn.style.background = '#ffca28';
+    okBtn.style.border = 'none';
+    okBtn.style.borderRadius = '4px';
+    okBtn.style.color = '#1e1e24';
+    okBtn.style.cursor = 'pointer';
+    okBtn.style.fontWeight = '600';
+    okBtn.style.fontSize = '0.85rem';
+    
+    const close = () => {
+      if (document.body.contains(modal)) {
+        document.body.removeChild(modal);
+      }
+    };
+    
+    okBtn.addEventListener('click', close);
+    btnRow.appendChild(okBtn);
+    box.appendChild(btnRow);
+    modal.appendChild(box);
+    document.body.appendChild(modal);
+    
+    setTimeout(() => okBtn.focus(), 50);
+  };
+
+  // Safe custom prompt dialog returning a Promise
+  function showCustomPrompt(message, defaultValue = '') {
+    return new Promise((resolve) => {
+      const modal = document.createElement('div');
+      modal.style.position = 'fixed';
+      modal.style.top = '0';
+      modal.style.left = '0';
+      modal.style.width = '100vw';
+      modal.style.height = '100vh';
+      modal.style.backgroundColor = 'rgba(0,0,0,0.6)';
+      modal.style.display = 'flex';
+      modal.style.alignItems = 'center';
+      modal.style.justifyContent = 'center';
+      modal.style.zIndex = '999999';
+      modal.style.fontFamily = 'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+      
+      const box = document.createElement('div');
+      box.style.background = '#1e1e24';
+      box.style.border = '1px solid #ffca28';
+      box.style.padding = '20px';
+      box.style.borderRadius = '8px';
+      box.style.width = '320px';
+      box.style.boxShadow = '0 10px 25px rgba(0,0,0,0.5)';
+      box.style.color = '#fff';
+      
+      const titleEl = document.createElement('div');
+      titleEl.style.fontWeight = '600';
+      titleEl.style.fontSize = '1rem';
+      titleEl.style.marginBottom = '12px';
+      titleEl.style.color = '#ffca28';
+      titleEl.textContent = message;
+      box.appendChild(titleEl);
+      
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.value = defaultValue;
+      input.style.width = '100%';
+      input.style.padding = '8px 10px';
+      input.style.borderRadius = '4px';
+      input.style.border = '1px solid rgba(255,255,255,0.2)';
+      input.style.background = 'rgba(0,0,0,0.3)';
+      input.style.color = '#fff';
+      input.style.fontSize = '0.9rem';
+      input.style.outline = 'none';
+      input.style.boxSizing = 'border-box';
+      input.style.marginBottom = '16px';
+      box.appendChild(input);
+      
+      const btnRow = document.createElement('div');
+      btnRow.style.display = 'flex';
+      btnRow.style.justifyContent = 'flex-end';
+      btnRow.style.gap = '10px';
+      
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = 'Cancel';
+      cancelBtn.style.padding = '6px 14px';
+      cancelBtn.style.background = 'rgba(255,255,255,0.1)';
+      cancelBtn.style.border = 'none';
+      cancelBtn.style.borderRadius = '4px';
+      cancelBtn.style.color = '#ccc';
+      cancelBtn.style.cursor = 'pointer';
+      cancelBtn.style.fontSize = '0.85rem';
+      cancelBtn.addEventListener('click', () => {
+        document.body.removeChild(modal);
+        resolve(null);
+      });
+      btnRow.appendChild(cancelBtn);
+      
+      const okBtn = document.createElement('button');
+      okBtn.textContent = 'OK';
+      okBtn.style.padding = '6px 14px';
+      okBtn.style.background = '#ffca28';
+      okBtn.style.border = 'none';
+      okBtn.style.borderRadius = '4px';
+      okBtn.style.color = '#1e1e24';
+      okBtn.style.cursor = 'pointer';
+      okBtn.style.fontWeight = '600';
+      okBtn.style.fontSize = '0.85rem';
+      
+      const submit = () => {
+        const val = input.value.trim();
+        document.body.removeChild(modal);
+        resolve(val || null);
+      };
+      
+      okBtn.addEventListener('click', submit);
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') submit();
+        if (e.key === 'Escape') {
+          document.body.removeChild(modal);
+          resolve(null);
+        }
+      });
+      
+      btnRow.appendChild(okBtn);
+      box.appendChild(btnRow);
+      modal.appendChild(box);
+      document.body.appendChild(modal);
+      
+      setTimeout(() => input.focus(), 50);
+    });
+  }
 
   let appSettings = { tooltipDelay: 1.0 };
   try {
@@ -3964,13 +4186,25 @@ void main(void)\r
   let pathUndoSnapshot = null;
   let pathPoints = []; // [{x, y}]
   let pathState = 'idle'; // 'idle' | 'start_placed' | 'end_placed'
-  let vineTaperStart = false;
-  let vineTaperFinish = false;
-  let vineTaperOffshoots = false;
-  let vineTaperLength = 50;
   let vineSizeJitter = 0;
   let vineRightAnglesOnly = false;
   let vineEnableDecorations = true;
+  let vineDecorationType = 'shape-leaf';
+  let vineOffshootSizeSliderVal = 45;
+  let paintTaperEnabled = false;
+  let paintTaperStart = true;
+  let paintTaperFinish = false;
+  let paintTaperLength = 16;
+  let paintTaperOpacityFade = false;
+  let paintTaperSizePct = 100;
+  let paintTaperSpreadPct = 100;
+  let freehandPathModeEnabled = false;
+  let freehandPathDetail = 30;
+  let gradientDabsPerColor = 1;
+  let gradientSequentialStepMode = 'distance'; // 'distance' | 'dabs'
+  let paintDabCounter = 0;
+  let gradientOrdered = false;
+  let gradientCycleLength = 200;
   let vinePresetIdCounter = 1;
   let activeVinePresetId = 'builtin-vine-classic';
   const DEFAULT_BUILTIN_VINE_PRESETS = [
@@ -6787,7 +7021,7 @@ void main(void)\r
   document.getElementById('clearSelectionBtn').addEventListener('click', clearSelection);
   document.getElementById('copySelectionBtn').addEventListener('click', copySelectionToClipboard);
   document.getElementById('pasteClipboardBtn').addEventListener('click', pasteFromClipboard);
-  document.getElementById('stampFromSelectionBtn').addEventListener('click', ()=>{
+  document.getElementById('stampFromSelectionBtn').addEventListener('click', async ()=>{
     if(!selection || selection.w < 1 || selection.h < 1) return;
     const selCanvas = getSelectionCanvas();
     if(!selCanvas) return;
@@ -6796,7 +7030,7 @@ void main(void)\r
     let defaultName = 'Stamp ' + (stamps.length + 1);
     let name = defaultName;
     try {
-      const userEntered = window.prompt('Stamp name:', defaultName);
+      const userEntered = await showCustomPrompt('Stamp name:', defaultName);
       if(userEntered !== null && userEntered.trim() !== ''){
         name = userEntered.trim();
       }
@@ -6824,12 +7058,29 @@ void main(void)\r
 
   // ---------- Color helpers ----------
   function hexToRgb(hex){
-    const h = hex.replace('#','');
-    return {
-      r: parseInt(h.substring(0,2),16),
-      g: parseInt(h.substring(2,4),16),
-      b: parseInt(h.substring(4,6),16)
-    };
+    if (!hex) return { r: 0, g: 0, b: 0 };
+    if (typeof hex === 'object' && typeof hex.r === 'number') return hex;
+    const str = String(hex).trim();
+    if (str.startsWith('rgb')) {
+      const parts = str.match(/\d+/g);
+      if (parts && parts.length >= 3) {
+        return {
+          r: parseInt(parts[0], 10),
+          g: parseInt(parts[1], 10),
+          b: parseInt(parts[2], 10)
+        };
+      }
+    }
+    let h = str.replace('#','');
+    if (h.length === 3) {
+      h = h[0] + h[0] + h[1] + h[1] + h[2] + h[2];
+    }
+    if (h.length < 6) return { r: 0, g: 0, b: 0 };
+    const r = parseInt(h.substring(0,2),16);
+    const g = parseInt(h.substring(2,4),16);
+    const b = parseInt(h.substring(4,6),16);
+    if (isNaN(r) || isNaN(g) || isNaN(b)) return { r: 0, g: 0, b: 0 };
+    return { r, g, b };
   }
   function rgbToHsl(r,g,b){
     r/=255; g/=255; b/=255;
@@ -6971,13 +7222,15 @@ void main(void)\r
   }
   function lerp(a,b,t){ return a + (b-a)*t; }
   function blendColors(colors,t){
-    if(colors.length === 0) return fgColor;
+    if(!colors || colors.length === 0) return fgColor;
     if(colors.length === 1) return colors[0];
-    const scaled = t * (colors.length - 1);
+    const clampedT = Math.max(0, Math.min(1, t));
+    const scaled = clampedT * (colors.length - 1);
     const i = Math.floor(scaled);
     const frac = scaled - i;
     const c1 = hexToRgb(colors[Math.min(i, colors.length-1)]);
     const c2 = hexToRgb(colors[Math.min(i+1, colors.length-1)]);
+    if (!c1 || !c2) return fgColor;
     const r = Math.round(lerp(c1.r,c2.r,frac));
     const g = Math.round(lerp(c1.g,c2.g,frac));
     const b = Math.round(lerp(c1.b,c2.b,frac));
@@ -6994,6 +7247,41 @@ void main(void)\r
     if(selectedColors.size === 0) return allColors();
     return allColors().filter(hex => selectedColors.has(hex));
   }
+  function updateGradientOrderedVisibility() {
+    const orderedOpts = document.getElementById('gradientOrderedOptions');
+    if (orderedOpts) {
+      orderedOpts.style.display = (sourceKind === 'gradient' && gradients.length > 0) ? 'block' : 'none';
+    }
+    const configGroup = document.getElementById('gradientOrderedConfig');
+    if (configGroup) {
+      configGroup.style.display = (sourceKind === 'gradient' && gradients.length > 0 && gradientOrdered) ? 'block' : 'none';
+    }
+    const cycleOpts = document.getElementById('gradientCycleOptions');
+    if (cycleOpts) {
+      cycleOpts.style.display = (sourceKind === 'gradient' && gradients.length > 0 && gradientOrdered && gradientSequentialStepMode === 'distance') ? 'block' : 'none';
+    }
+    const dabsOpts = document.getElementById('gradientDabsOptions');
+    if (dabsOpts) {
+      dabsOpts.style.display = (sourceKind === 'gradient' && gradients.length > 0 && gradientOrdered && gradientSequentialStepMode === 'dabs') ? 'block' : 'none';
+    }
+  }
+  function updatePaintTaperUI() {
+    const group = document.getElementById('paintTaperSettingsGroup');
+    if (group) {
+      group.style.display = paintTaperEnabled ? 'block' : 'none';
+    }
+  }
+  function updateVineFreehandUI() {
+    const isFreehand = freehandPathModeEnabled;
+    const el = document.getElementById('vineFreehandCheckbox');
+    if (el) el.checked = isFreehand;
+    const grp = document.getElementById('vineFreehandDetailGroup');
+    if (grp) grp.style.display = isFreehand ? 'block' : 'none';
+    const slider = document.getElementById('vineFreehandDetailSlider');
+    if (slider) slider.value = freehandPathDetail;
+    const val = document.getElementById('vineFreehandDetailVal');
+    if (val) val.textContent = freehandPathDetail + 'px';
+  }
   function updateSpraySourceHint(){
     const hint = document.getElementById('spraySourceHint');
     if(sourceKind === 'gradient'){
@@ -7007,6 +7295,7 @@ void main(void)\r
     } else {
       hint.textContent = 'Using: full palette';
     }
+    updateGradientOrderedVisibility();
   }
   function populateGradientSourceDropdown(){
     const sel = document.getElementById('gradientSourceSelect');
@@ -7158,7 +7447,7 @@ void main(void)\r
     return stamp.invertedMask || stamp.mask || null;
   }
   const tintedStampCache = new Map();
-  const MAX_TINTED_CACHE_SIZE = 1000;
+  const MAX_TINTED_CACHE_SIZE = 256;
 
   function getRotatedRectBounds(cx, cy, w, h, angle, pivotX = 0.5, pivotY = 0.5) {
     const x0 = -w * pivotX, x1 = w * (1 - pivotX);
@@ -7235,10 +7524,20 @@ void main(void)\r
     ctx.globalCompositeOperation = 'source-over';
 
     if (isPP) {
+      const cRgb = hexToRgb(finalColor);
       const imgData = ctx.getImageData(0, 0, w, h);
       const d = imgData.data;
-      for (let i = 3; i < d.length; i += 4) {
-        d[i] = d[i] >= 128 ? 255 : 0;
+      for (let i = 0; i < d.length; i += 4) {
+        if (d[i + 3] >= 128) {
+          if (cRgb) {
+            d[i]     = cRgb.r;
+            d[i + 1] = cRgb.g;
+            d[i + 2] = cRgb.b;
+          }
+          d[i + 3] = 255;
+        } else {
+          d[i + 3] = 0;
+        }
       }
       ctx.putImageData(imgData, 0, 0);
     }
@@ -7400,7 +7699,13 @@ void main(void)\r
 
       const s1 = document.getElementById('stampSourceSelect'); if(s1) s1.value = selectedStampIndex;
       const s2 = document.getElementById('brushStampSourceSelect'); if(s2) s2.value = selectedStampIndex;
-      const vss = document.getElementById('vineStampSourceSelect'); if(vss) vss.value = selectedStampIndex;
+      const vss = document.getElementById('vineStampSourceSelect');
+      if (vss) {
+        if (vineDecorationType && vineDecorationType.startsWith('stamp-') && selectedStampIndex !== null) {
+          vss.value = 'stamp-' + selectedStampIndex;
+          vineDecorationType = vss.value;
+        }
+      }
 
       const pivotContainer = document.getElementById('stampLibPivotContainer');
       if(pivotContainer){
@@ -7427,7 +7732,13 @@ void main(void)\r
     selectedStampIndex = idx;
     const s1 = document.getElementById('stampSourceSelect'); if(s1) s1.value = idx ?? '';
     const s2 = document.getElementById('brushStampSourceSelect'); if(s2) s2.value = idx ?? '';
-    const vss = document.getElementById('vineStampSourceSelect'); if(vss) vss.value = idx ?? '';
+    const vss = document.getElementById('vineStampSourceSelect');
+    if (vss) {
+      if (vineDecorationType && vineDecorationType.startsWith('stamp-') && idx !== null) {
+        vss.value = 'stamp-' + idx;
+        vineDecorationType = vss.value;
+      }
+    }
     refreshStampList();
     drawStampPivotCanvas();
   });
@@ -7467,15 +7778,37 @@ void main(void)\r
     });
     const vineSel = document.getElementById('vineStampSourceSelect');
     if(vineSel){
+      const prevVal = vineSel.value || vineDecorationType || 'shape-leaf';
       vineSel.innerHTML = '';
-      const noneOpt = document.createElement('option');
-      noneOpt.value = ''; noneOpt.textContent = 'No stamp (use leaf)';
-      vineSel.appendChild(noneOpt);
-      stamps.forEach((s, idx)=>{
+      
+      // Basic Leaf Shape
+      const leafOpt = document.createElement('option');
+      leafOpt.value = 'shape-leaf'; leafOpt.textContent = 'Leaf';
+      vineSel.appendChild(leafOpt);
+
+      // Basic Shapes too
+      const shapes = ['circle', 'square', 'triangle', 'diamond', 'star', 'hexagon', 'ring', 'line'];
+      shapes.forEach(sh => {
         const opt = document.createElement('option');
-        opt.value = idx; opt.textContent = s.name;
+        opt.value = 'shape-' + sh;
+        opt.textContent = sh.charAt(0).toUpperCase() + sh.slice(1);
         vineSel.appendChild(opt);
       });
+
+      // Stamps
+      stamps.forEach((s, idx)=>{
+        const opt = document.createElement('option');
+        opt.value = 'stamp-' + idx; opt.textContent = 'Stamp: ' + s.name;
+        vineSel.appendChild(opt);
+      });
+
+      // Restore previous value if possible, else default to shape-leaf
+      if ([...vineSel.options].some(o => o.value === prevVal)) {
+        vineSel.value = prevVal;
+      } else {
+        vineSel.value = 'shape-leaf';
+      }
+      vineDecorationType = vineSel.value;
     }
     if(stamps.length === 0){
       selectedStampIndex = null;
@@ -7486,7 +7819,6 @@ void main(void)\r
       const s2 = document.getElementById('brushStampSourceSelect');
       if(s2) s2.value = selectedStampIndex;
     }
-    if(vineSel) vineSel.value = selectedStampIndex ?? '';
     updateStampShapeAvailability();
     drawStampPivotCanvas();
   }
@@ -7734,7 +8066,12 @@ void main(void)\r
     const bss = document.getElementById('brushStampSourceSelect');
     if(bss) bss.value = selectedStampIndex ?? '';
     const vss = document.getElementById('vineStampSourceSelect');
-    if(vss) vss.value = selectedStampIndex ?? '';
+    if (vss) {
+      if (vineDecorationType && vineDecorationType.startsWith('stamp-') && selectedStampIndex !== null) {
+        vss.value = 'stamp-' + selectedStampIndex;
+        vineDecorationType = vss.value;
+      }
+    }
     refreshStampList();
     drawStampPivotCanvas();
   });
@@ -7745,7 +8082,12 @@ void main(void)\r
       const ss = document.getElementById('stampSourceSelect');
       if(ss) ss.value = selectedStampIndex ?? '';
       const vss = document.getElementById('vineStampSourceSelect');
-      if(vss) vss.value = selectedStampIndex ?? '';
+      if (vss) {
+        if (vineDecorationType && vineDecorationType.startsWith('stamp-') && selectedStampIndex !== null) {
+          vss.value = 'stamp-' + selectedStampIndex;
+          vineDecorationType = vss.value;
+        }
+      }
       refreshStampList();
       drawStampPivotCanvas();
     });
@@ -8152,30 +8494,45 @@ void main(void)\r
     const sx0 = rx0 - bx, sy0 = ry0 - by;
     const scratchImg = noBlendScratchCtx.getImageData(sx0, sy0, rw, rh);
     const scratchData = scratchImg.data;
-    const sRgb = hexToRgb(colorHex);
 
+    const cRgb = colorHex ? hexToRgb(colorHex) : null;
     let modified = false;
     for(let i = 0; i < scratchData.length; i += 4){
       const sA = scratchData[i + 3];
       if(sA > 0){
+        const sR = cRgb ? cRgb.r : scratchData[i];
+        const sG = cRgb ? cRgb.g : scratchData[i + 1];
+        const sB = cRgb ? cRgb.b : scratchData[i + 2];
         const tA = realData[i + 3];
-        const maxDev = tA > 0 ? (Math.ceil(128 / tA) + 2) : 0;
-        const isSameColor = (tA === 0) || (
-          Math.abs(realData[i] - sRgb.r) <= maxDev &&
-          Math.abs(realData[i+1] - sRgb.g) <= maxDev &&
-          Math.abs(realData[i+2] - sRgb.b) <= maxDev
-        );
-        if(isSameColor){
-          const finalA = Math.min(255, sA + tA * (1 - sA / 255));
-          realData[i]     = sRgb.r;
-          realData[i + 1] = sRgb.g;
-          realData[i + 2] = sRgb.b;
-          realData[i + 3] = Math.round(finalA);
-        } else {
-          realData[i]     = sRgb.r;
-          realData[i + 1] = sRgb.g;
-          realData[i + 2] = sRgb.b;
+
+        if (tA === 0) {
+          realData[i]     = sR;
+          realData[i + 1] = sG;
+          realData[i + 2] = sB;
           realData[i + 3] = sA;
+        } else {
+          // Determine if target pixel is effectively the same color as the incoming dab.
+          // Due to 8-bit premultiplied alpha quantization in canvas 2D, low-alpha pixels (low tA)
+          // can deviate substantially when read back via getImageData.
+          const maxDev = Math.max(32, Math.ceil(255 * 1.5 / tA) + 16);
+          const isSameColor = (
+            Math.abs(realData[i] - sR) <= maxDev &&
+            Math.abs(realData[i + 1] - sG) <= maxDev &&
+            Math.abs(realData[i + 2] - sB) <= maxDev
+          );
+          if (isSameColor) {
+            const finalA = Math.min(255, sA + tA * (1 - sA / 255));
+            realData[i]     = sR;
+            realData[i + 1] = sG;
+            realData[i + 2] = sB;
+            realData[i + 3] = Math.round(finalA);
+          } else {
+            // Replacing pixels outright when painting over a different color
+            realData[i]     = sR;
+            realData[i + 1] = sG;
+            realData[i + 2] = sB;
+            realData[i + 3] = sA;
+          }
         }
         modified = true;
       }
@@ -9024,6 +9381,7 @@ void main(void)\r
   }
 
   let sprayAnchorX = null, sprayAnchorY = null;
+  let strokeDistance = 0;
   function dabsPerTick(effSize = brushSize){
     const maxDabs = Math.min(500, Math.max(4, Math.round((effSize*effSize)/12)));
     const cappedMax = (sprayMode === 'blur') ? Math.min(maxDabs, 16) : maxDabs;
@@ -9034,6 +9392,10 @@ void main(void)\r
   }
   function sprayDabsInterpolated(x, y){
     if(!sprayInterpolate || sprayAnchorX === null){
+      if ((gradientOrdered || (paintTaperEnabled && isPathTool())) && sprayAnchorX !== null) {
+        const dx = x - sprayAnchorX, dy = y - sprayAnchorY;
+        strokeDistance += Math.sqrt(dx*dx + dy*dy);
+      }
       sprayDabs(x, y);
       sprayAnchorX = x; sprayAnchorY = y;
       return;
@@ -9044,6 +9406,9 @@ void main(void)\r
     const steps = Math.max(1, Math.round(dist / spacing));
     for(let i=1; i<=steps; i++){
       const t = i/steps;
+      if (gradientOrdered || (paintTaperEnabled && isPathTool())) {
+        strokeDistance += spacing;
+      }
       sprayDabs(sprayAnchorX + dx*t, sprayAnchorY + dy*t);
     }
     sprayAnchorX = x; sprayAnchorY = y;
@@ -9073,10 +9438,10 @@ void main(void)\r
     sprayRAF = requestAnimationFrame(sprayLoop);
   }
 
-  function drawVineNode(cx, cy, diameter){
+  function drawVineNode(cx, cy, diameter, spread = null, opacityFadeMul = 1.0, progress = null){
     if(!layers[activeLayer]) return;
     if(sprayMode === 'path' || isPathTool()){
-      sprayDabs(cx, cy, diameter);
+      sprayDabs(cx, cy, diameter, spread, opacityFadeMul, progress);
     } else {
       const rawX = seamlessModeEnabled ? (cx + W) : cx;
       const rawY = seamlessModeEnabled ? (cy + H) : cy;
@@ -9135,7 +9500,7 @@ void main(void)\r
       }
     }
   }
-  function drawVineLeaf(cx, cy, size, angle){
+  function drawVineLeaf(cx, cy, size, angle, customColor = null){
     if(!layers[activeLayer]) return;
 
     const rawX = seamlessModeEnabled ? (cx + W) : cx;
@@ -9143,6 +9508,8 @@ void main(void)\r
     const effW = getEffectiveCanvasW();
     const effH = getEffectiveCanvasH();
     const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
+
+    const leafColor = customColor || fgColor;
 
     const drawLeafToCtx = (targetCtx, cw, ch, lx, ly) => {
       const sz = Math.max(2, Math.round(size));
@@ -9153,7 +9520,7 @@ void main(void)\r
       paintNoBlend(targetCtx, cw, ch, bx, by, boxW, boxH, (sctx) => {
         sctx.save();
         sctx.globalAlpha = opacity/100;
-        sctx.fillStyle = fgColor;
+        sctx.fillStyle = leafColor;
         if(pixelPerfect){
           sctx.imageSmoothingEnabled = false;
           const finalCx = Math.round(lx);
@@ -9162,7 +9529,7 @@ void main(void)\r
           const sboxW = Math.min(STAMP_SCRATCH_MAX, Math.max(4, Math.ceil((l + w) * 2)));
           const sboxH = sboxW;
           shapeScratchCtx.clearRect(0, 0, sboxW, sboxH);
-          shapeScratchCtx.fillStyle = fgColor;
+          shapeScratchCtx.fillStyle = leafColor;
           shapeScratchCtx.save();
           shapeScratchCtx.translate(sboxW/2, sboxH/2);
           shapeScratchCtx.beginPath();
@@ -9188,7 +9555,7 @@ void main(void)\r
           sctx.fill();
         }
         sctx.restore();
-      }, fgColor);
+      }, leafColor);
     };
 
     if(isCore){
@@ -9476,6 +9843,11 @@ void main(void)\r
         return Math.max(8, base * (0.7 + seededRandom()*0.6));
       }
 
+      let totalSteps = 0;
+      for (const sd of segmentData) {
+        totalSteps += Math.ceil(sd.length / step);
+      }
+
       // Initialize state
       const firstPt = segmentData[0].startPt;
       vineTipX = firstPt.x;
@@ -9488,11 +9860,32 @@ void main(void)\r
       // Draw first node with taper/jitter
       const firstJitter = 1 + (seededRandom() - 0.5) * (vineSizeJitter / 100);
       let firstTaper = 1;
-      if (vineTaperStart) {
-        firstTaper = Math.min(1, 0 / vineTaperLength);
+      if (paintTaperEnabled) {
+        const fStart = paintTaperStart ? 0 : 1;
+        const fFinish = paintTaperFinish ? (totalSteps / paintTaperLength) : 1;
+        firstTaper = Math.min(1, fStart, fFinish);
       }
-      drawVineNode(vineTipX, vineTipY, Math.max(1, baseStemWidth * 0.4 * firstTaper * firstJitter));
+      let firstSizeTaper = 1;
+      if (paintTaperEnabled) {
+        firstSizeTaper = (paintTaperSizePct / 100) + (1 - paintTaperSizePct / 100) * firstTaper;
+      }
 
+      let firstSpreadTaper = 1;
+      if (paintTaperEnabled) {
+        firstSpreadTaper = (paintTaperSpreadPct / 100) + (1 - paintTaperSpreadPct / 100) * firstTaper;
+      }
+      const firstOpacityTaper = (paintTaperEnabled && paintTaperOpacityFade) ? firstTaper : 1.0;
+
+      drawVineNode(
+        vineTipX,
+        vineTipY,
+        Math.max(1, baseStemWidth * 0.4 * firstSizeTaper * firstJitter),
+        Math.max(1, baseStemWidth * 0.4 * firstSpreadTaper),
+        firstOpacityTaper,
+        0.0
+      );
+
+      let currentStepIndex = 0;
       for (const sd of segmentData) {
         const numSteps = Math.ceil(sd.length / step);
         for (let i = 1; i <= numSteps; i++) {
@@ -9509,24 +9902,50 @@ void main(void)\r
 
           const localDist = t * sd.length;
           const distAlongPath = sd.startLengthOffset + localDist;
+          const progress = totalLength > 0 ? (distAlongPath / totalLength) : 0;
 
           // Taper multipliers
           let factorStart = 1;
-          if (vineTaperStart) {
-            factorStart = Math.min(1, distAlongPath / vineTaperLength);
+          if (paintTaperEnabled && paintTaperStart) {
+            factorStart = Math.min(1, currentStepIndex / paintTaperLength);
           }
           let factorFinish = 1;
-          if (vineTaperFinish) {
-            factorFinish = Math.min(1, (totalLength - distAlongPath) / vineTaperLength);
+          if (paintTaperEnabled && paintTaperFinish) {
+            factorFinish = Math.min(1, (totalSteps - 1 - currentStepIndex) / paintTaperLength);
           }
           const taperFactor = Math.min(factorStart, factorFinish);
+
+          currentStepIndex++;
+
+          let sizeTaperFactor = 1;
+          if (paintTaperEnabled) {
+            sizeTaperFactor = (paintTaperSizePct / 100) + (1 - paintTaperSizePct / 100) * taperFactor;
+          }
+
+          let spreadTaperFactor = 1;
+          if (paintTaperEnabled) {
+            spreadTaperFactor = (paintTaperSpreadPct / 100) + (1 - paintTaperSpreadPct / 100) * taperFactor;
+          }
+          const opacityTaperFactor = (paintTaperEnabled && paintTaperOpacityFade) ? taperFactor : 1.0;
 
           // Size jitter factor
           const jitterFactor = 1 + (seededRandom() - 0.5) * (vineSizeJitter / 100);
 
-          const currentStemWidth = baseStemWidth * taperFactor * jitterFactor;
+          const currentStemWidth = Math.max(1, baseStemWidth * sizeTaperFactor * jitterFactor);
+          const currentSpread = baseStemWidth * spreadTaperFactor;
 
-          customVineGrowTo(tx, ty, currentStemWidth, taperFactor, jitterFactor, seededVineNextDecorationDistance);
+          customVineGrowTo(
+            tx, ty,
+            currentStemWidth,
+            currentSpread,
+            sizeTaperFactor,
+            spreadTaperFactor,
+            opacityTaperFactor,
+            taperFactor,
+            jitterFactor,
+            seededVineNextDecorationDistance,
+            progress
+          );
         }
       }
     } finally {
@@ -9534,7 +9953,7 @@ void main(void)\r
     }
   }
 
-  function customVineGrowTo(targetX, targetY, stemWidth, taperFactor, jitterFactor, seededDistFn) {
+  function customVineGrowTo(targetX, targetY, stemWidth, spread, sizeTaperFactor, spreadTaperFactor, opacityTaperFactor, rawTaperFactor, jitterFactor, seededDistFn, progress = null) {
     const step = Math.max(1, stemWidth * 0.3);
     const totalDx = targetX - vineTipX, totalDy = targetY - vineTipY;
     const totalDist = Math.sqrt(totalDx*totalDx + totalDy*totalDy);
@@ -9580,7 +9999,7 @@ void main(void)\r
         drawX = newX;
         drawY = newY;
       }
-      drawVineNode(drawX, drawY, stemWidth);
+      drawVineNode(drawX, drawY, stemWidth, spread, opacityTaperFactor, progress);
       vineTipX = newX; vineTipY = newY;
 
       // Spawn offshoot organically
@@ -9597,7 +10016,8 @@ void main(void)\r
           let offX = vineTipX, offY = vineTipY;
           let offDirX = Math.cos(branchAngle), offDirY = Math.sin(branchAngle);
           
-          const offStemWidth = stemWidth * 0.45;
+          const offshootSizePct = (+document.getElementById('vineOffshootSizeSlider')?.value || 45) / 100;
+          const offStemWidth = Math.max(1, stemWidth * offshootSizePct);
           const offStep = Math.max(1, offStemWidth * 0.4);
           const offSteps = Math.ceil(branchLen / offStep);
           
@@ -9617,11 +10037,31 @@ void main(void)\r
             const nextOffY = offY + offDirY * offStep;
             
             let offTaperFactor = 1;
-            if (vineTaperOffshoots) {
+            if (paintTaperEnabled) {
               offTaperFactor = 1 - (j / offSteps);
             }
+            let offSizeTaper = 1;
+            if (paintTaperEnabled) {
+              offSizeTaper = (paintTaperSizePct / 100) + (1 - paintTaperSizePct / 100) * offTaperFactor;
+            }
+
+            let offSpreadTaper = 1;
+            if (paintTaperEnabled) {
+              offSpreadTaper = (paintTaperSpreadPct / 100) + (1 - paintTaperSpreadPct / 100) * offTaperFactor;
+            }
+            const offOpacityTaper = (paintTaperEnabled && paintTaperOpacityFade) ? offTaperFactor : 1.0;
             
-            drawVineNode((offX + nextOffX) / 2, (offY + nextOffY) / 2, offStemWidth * offTaperFactor);
+            const currentOffWidth = Math.max(1, offStemWidth * offSizeTaper);
+            const currentOffSpread = offStemWidth * offSpreadTaper;
+
+            drawVineNode(
+              (offX + nextOffX) / 2,
+              (offY + nextOffY) / 2,
+              currentOffWidth,
+              currentOffSpread,
+              opacityTaperFactor * offOpacityTaper,
+              progress
+            );
             offX = nextOffX;
             offY = nextOffY;
             
@@ -9630,7 +10070,13 @@ void main(void)\r
               const origTipX = vineTipX, origTipY = vineTipY;
               vineTipX = offX; vineTipY = offY;
               
-              customPlaceVineDecoration(offDirX, offDirY, offStemWidth * offTaperFactor, taperFactor * offTaperFactor * jitterFactor);
+              customPlaceVineDecoration(
+                offDirX,
+                offDirY,
+                currentOffWidth,
+                rawTaperFactor * offSizeTaper * jitterFactor,
+                progress
+              );
               vineTipX = origTipX; vineTipY = origTipY;
               
               offDistSinceDecoration = 0;
@@ -9643,14 +10089,27 @@ void main(void)\r
 
       vineDistSinceDecoration += step;
       if(vineEnableDecorations && vineDistSinceDecoration >= vineNextDecorationAt){
-        customPlaceVineDecoration(vineDirX, vineDirY, stemWidth, taperFactor * jitterFactor);
+        customPlaceVineDecoration(vineDirX, vineDirY, stemWidth, rawTaperFactor * jitterFactor, progress);
         vineDistSinceDecoration = 0;
         vineNextDecorationAt = seededDistFn();
       }
     }
   }
 
-  function customPlaceVineDecoration(dirX, dirY, stemWidth, sizeScaleFactor){
+  function resolveDecorationColor(progress) {
+    const sprayColors = getSprayColors();
+    if (sourceKind === 'gradient') {
+      const t = (progress !== null && progress !== undefined) ? progress : (gradientOrdered ? 0.0 : Math.random());
+      return blendColors(sprayColors, t);
+    } else {
+      if (progress !== null && progress !== undefined && sprayColors.length > 0) {
+        return sprayColors[Math.min(sprayColors.length - 1, Math.floor(progress * sprayColors.length))];
+      }
+      return fgColor;
+    }
+  }
+
+  function customPlaceVineDecoration(dirX, dirY, stemWidth, sizeScaleFactor, progress = null){
     const decorSize = Math.max(1, vineDecorSize * sizeScaleFactor);
     const angleJitter = (vineRotationJitter/100) * Math.PI;
     const baseAngle = Math.atan2(dirY, dirX) + Math.PI/2;
@@ -9658,48 +10117,84 @@ void main(void)\r
     vineNextLeafSide *= -1;
     const angle = sideAngle + (seededRandom()*2-1)*angleJitter;
 
-    const usingStamp = selectedStampIndex !== null && stamps[selectedStampIndex];
+    const decorColor = resolveDecorationColor(progress);
+
+    const usingStamp = vineDecorationType.startsWith('stamp-');
+    const isBasicShape = vineDecorationType.startsWith('shape-') && vineDecorationType !== 'shape-leaf';
+
     // Offset far enough that the decoration sits at the stem's edge rather than overlapping
-    const offsetDist = usingStamp
+    const offsetDist = (usingStamp || isBasicShape)
       ? stemWidth/2 + decorSize*0.35
       : stemWidth/2 + decorSize*0.65*0.6;
     const px = vineTipX + Math.cos(angle)*offsetDist;
     const py = vineTipY + Math.sin(angle)*offsetDist;
 
     if(!layers[activeLayer]) return;
+
     if(usingStamp){
-      const st = stamps[selectedStampIndex];
-      const mask = getActiveStampMask(st);
-      const built = mask ? buildTintedStamp(mask, decorSize, fgColor) : null;
-      if(built){
-        const pX = (st && st.pivotX !== undefined) ? st.pivotX : 0.5;
-        const pY = (st && st.pivotY !== undefined) ? st.pivotY : 0.5;
-        const rawX = seamlessModeEnabled ? (px + W) : px;
-        const rawY = seamlessModeEnabled ? (py + H) : py;
-        const effW = getEffectiveCanvasW();
-        const effH = getEffectiveCanvasH();
-        const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
-        if(isCore){
-          const normX = seamlessModeEnabled ? (((px % W) + W) % W) : px;
-          const normY = seamlessModeEnabled ? (((py % H) + H) % H) : py;
-          const offsets = seamlessModeEnabled ? [
-            [0,0], [-W,0], [W,0],
-            [0,-H], [-W,-H], [W,-H],
-            [0,H], [-W,H], [W,H]
-          ] : [[0,0]];
-          for (let offset of offsets) {
-            const tx = normX + offset[0];
-            const ty = normY + offset[1];
-            const ctx = layers[activeLayer].ctx;
-            ctx.save();
-            ctx.globalAlpha = opacity/100;
-            drawBuiltStamp(ctx, built.canvas, built.w, built.h, tx, ty, angle, pX, pY);
-            ctx.restore();
+      const stampIdx = parseInt(vineDecorationType.substring(6));
+      const st = stamps[stampIdx];
+      if (st) {
+        const mask = getActiveStampMask(st);
+        const built = mask ? buildTintedStamp(mask, decorSize, decorColor) : null;
+        if(built){
+          const pX = (st && st.pivotX !== undefined) ? st.pivotX : 0.5;
+          const pY = (st && st.pivotY !== undefined) ? st.pivotY : 0.5;
+          const rawX = seamlessModeEnabled ? (px + W) : px;
+          const rawY = seamlessModeEnabled ? (py + H) : py;
+          const effW = getEffectiveCanvasW();
+          const effH = getEffectiveCanvasH();
+          const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
+          if(isCore){
+            const normX = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+            const normY = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+            const offsets = seamlessModeEnabled ? [
+              [0,0], [-W,0], [W,0],
+              [0,-H], [-W,-H], [W,-H],
+              [0,H], [-W,H], [W,H]
+            ] : [[0,0]];
+            for (let offset of offsets) {
+              const tx = normX + offset[0];
+              const ty = normY + offset[1];
+              const ctx = layers[activeLayer].ctx;
+              ctx.save();
+              ctx.globalAlpha = opacity/100;
+              drawBuiltStamp(ctx, built.canvas, built.w, built.h, tx, ty, angle, pX, pY);
+              ctx.restore();
+            }
           }
         }
       }
+    } else if(isBasicShape){
+      const shapeName = vineDecorationType.substring(6);
+      const rawX = seamlessModeEnabled ? (px + W) : px;
+      const rawY = seamlessModeEnabled ? (py + H) : py;
+      const effW = getEffectiveCanvasW();
+      const effH = getEffectiveCanvasH();
+      const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
+      if(isCore){
+        const normX = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+        const normY = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+        const offsets = seamlessModeEnabled ? [
+          [0,0], [-W,0], [W,0],
+          [0,-H], [-W,-H], [W,-H],
+          [0,H], [-W,H], [W,H]
+        ] : [[0,0]];
+        for (let offset of offsets) {
+          const tx = normX + offset[0];
+          const ty = normY + offset[1];
+          const ctx = layers[activeLayer].ctx;
+          ctx.save();
+          ctx.globalAlpha = opacity/100;
+          ctx.translate(tx, ty);
+          ctx.rotate(angle);
+          ctx.fillStyle = decorColor;
+          drawVectorPrimitivePath(ctx, shapeName, 0, 0, decorSize, decorSize);
+          ctx.restore();
+        }
+      }
     } else {
-      drawVineLeaf(px, py, decorSize, angle);
+      drawVineLeaf(px, py, decorSize, angle, decorColor);
     }
   }
 
@@ -9787,6 +10282,72 @@ void main(void)\r
       toolbar.style.left = '';
       toolbar.style.top = '';
     }
+  }
+
+  function drawFreehandPathPreview(mx, my, rawX = undefined, rawY = undefined) {
+    if (!pctx) return;
+    hideOverlayLabel();
+    clearPreviewCanvas();
+
+    const lw = 2 / zoom;
+    const dotR = 4 / zoom;
+
+    pctx.save();
+    pctx.translate(MARGIN_PX, MARGIN_PX);
+    
+    pctx.fillStyle = 'var(--accent, #4f46e5)';
+    pctx.strokeStyle = '#ffffff';
+    pctx.lineWidth = 1.5 / zoom;
+
+    const toDispX = (xVal) => seamlessModeEnabled ? (xVal + W) : xVal;
+    const toDispY = (yVal) => seamlessModeEnabled ? (yVal + H) : yVal;
+
+    const curDispX = (seamlessModeEnabled && rawX !== undefined) ? rawX : toDispX(mx);
+    const curDispY = (seamlessModeEnabled && rawY !== undefined) ? rawY : toDispY(my);
+
+    // Draw lines between accumulated points
+    if (pathPoints.length > 0) {
+      pctx.strokeStyle = 'var(--accent, #4f46e5)';
+      pctx.lineWidth = lw;
+      pctx.beginPath();
+      pctx.moveTo(toDispX(pathPoints[0].x), toDispY(pathPoints[0].y));
+      for (let i = 1; i < pathPoints.length; i++) {
+        pctx.lineTo(toDispX(pathPoints[i].x), toDispY(pathPoints[i].y));
+      }
+      // Also draw line to current cursor
+      if (mx !== undefined && my !== undefined) {
+        pctx.lineTo(curDispX, curDispY);
+      }
+      pctx.stroke();
+
+      // Draw dashed white overlay line for high visibility
+      pctx.strokeStyle = '#ffffff';
+      pctx.setLineDash([4/zoom, 4/zoom]);
+      pctx.beginPath();
+      pctx.moveTo(toDispX(pathPoints[0].x), toDispY(pathPoints[0].y));
+      for (let i = 1; i < pathPoints.length; i++) {
+        pctx.lineTo(toDispX(pathPoints[i].x), toDispY(pathPoints[i].y));
+      }
+      if (mx !== undefined && my !== undefined) {
+        pctx.lineTo(curDispX, curDispY);
+      }
+      pctx.stroke();
+    }
+
+    // Draw dots at accumulated nodes
+    pctx.fillStyle = '#ffca28';
+    pctx.strokeStyle = '#ffffff';
+    pctx.lineWidth = 1 / zoom;
+    pathPoints.forEach((pt) => {
+      const px = toDispX(pt.x);
+      const py = toDispY(pt.y);
+      pctx.beginPath();
+      pctx.arc(px, py, dotR, 0, Math.PI * 2);
+      pctx.fill();
+      pctx.stroke();
+    });
+
+    pctx.restore();
   }
 
   function drawPathPreview(mx, my, rawX = undefined, rawY = undefined) {
@@ -9966,11 +10527,45 @@ void main(void)\r
     }
   }
 
+  const pixelShapeMaskCache = new Map();
+  const MAX_SHAPE_MASK_CACHE = 256;
+
+  function getPixelShapeMask(shape, sw, sh) {
+    const key = `${shape}_${sw}_${sh}`;
+    let maskCanvas = pixelShapeMaskCache.get(key);
+    if (!maskCanvas) {
+      maskCanvas = document.createElement('canvas');
+      maskCanvas.width = sw;
+      maskCanvas.height = sh;
+      const sctx = maskCanvas.getContext('2d', { willReadFrequently: true });
+      sctx.fillStyle = '#ffffff';
+      drawVectorPrimitivePath(sctx, shape, sw/2, sh/2, sw, sh);
+
+      const imgData = sctx.getImageData(0, 0, sw, sh);
+      const d = imgData.data;
+      for(let i = 0; i < d.length; i += 4){
+        if(d[i+3] >= 128){
+          d[i] = 255; d[i+1] = 255; d[i+2] = 255; d[i+3] = 255;
+        } else {
+          d[i+3] = 0;
+        }
+      }
+      sctx.putImageData(imgData, 0, 0);
+
+      pixelShapeMaskCache.set(key, maskCanvas);
+      if (pixelShapeMaskCache.size > MAX_SHAPE_MASK_CACHE) {
+        const oldestKey = pixelShapeMaskCache.keys().next().value;
+        pixelShapeMaskCache.delete(oldestKey);
+      }
+    }
+    return maskCanvas;
+  }
+
   function drawDabShape(ctx, px, py, dW, dH, color, rotAngle, alpha){
     ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
     ctx.fillStyle = color;
-    if(dW <= 1 && dH <= 1){
-      ctx.fillRect(Math.floor(px), Math.floor(py), 1, 1);
+    if(dW <= 1.5 && dH <= 1.5){
+      ctx.fillRect(Math.round(px - 0.5), Math.round(py - 0.5), 1, 1);
       return;
     }
     const prevSmoothing = ctx.imageSmoothingEnabled;
@@ -10010,34 +10605,17 @@ void main(void)\r
       if(pixelPerfect){
         const sw = Math.min(STAMP_SCRATCH_MAX, Math.max(1, Math.round(finalDW)));
         const sh = Math.min(STAMP_SCRATCH_MAX, Math.max(1, Math.round(finalDH)));
-        shapeScratchCtx.clearRect(0, 0, sw, sh);
-        shapeScratchCtx.fillStyle = color;
-        drawVectorPrimitivePath(shapeScratchCtx, dabShape, sw/2, sh/2, sw, sh);
-
-        // Clean thresholding for pixel-perfect mode: ensure inside pixels are pure solid color RGB
-        const cRgb = hexToRgb(color) || { r: 128, g: 0, b: 128 };
-        const imgData = shapeScratchCtx.getImageData(0, 0, sw, sh);
-        const d = imgData.data;
-        for(let i=0; i<d.length; i+=4){
-          if(d[i+3] >= 128){
-            d[i]   = cRgb.r;
-            d[i+1] = cRgb.g;
-            d[i+2] = cRgb.b;
-            d[i+3] = 255;
-          } else {
-            d[i+3] = 0;
-          }
-        }
-        shapeScratchCtx.putImageData(imgData, 0, 0);
+        const mask = getPixelShapeMask(dabShape, sw, sh);
+        const built = buildTintedStamp(mask, sw, sh, color);
 
         ctx.save();
         ctx.imageSmoothingEnabled = false;
         if(rotAngle !== 0){
           ctx.translate(finalPx, finalPy);
           ctx.rotate(rotAngle);
-          ctx.drawImage(shapeScratch, 0, 0, sw, sh, Math.round(-sw/2), Math.round(-sh/2), sw, sh);
+          ctx.drawImage(built.canvas, built.srcX, built.srcY, built.srcW, built.srcH, Math.round(-sw/2), Math.round(-sh/2), sw, sh);
         } else {
-          ctx.drawImage(shapeScratch, 0, 0, sw, sh, Math.round(finalPx - sw/2), Math.round(finalPy - sh/2), sw, sh);
+          ctx.drawImage(built.canvas, built.srcX, built.srcY, built.srcW, built.srcH, Math.round(finalPx - sw/2), Math.round(finalPy - sh/2), sw, sh);
         }
         ctx.restore();
       } else {
@@ -10052,20 +10630,43 @@ void main(void)\r
     ctx.imageSmoothingEnabled = prevSmoothing;
   }
 
-  function sprayDabs(x, y, overrideSize = null){
+
+
+  function sprayDabs(x, y, overrideSize = null, overrideSpread = null, overrideOpacityMul = 1.0, progress = null){
     if(!layers[activeLayer]) return;
     const ctx = layers[activeLayer].ctx;
 
-    const effBrushSize = (overrideSize !== null) ? overrideSize : brushSize;
+    let taperFactor = 1;
+    if (paintTaperEnabled && isPathTool() && overrideSize === null) {
+      if (paintTaperStart) {
+        const estimatedDabs = strokeDistance / Math.max(1, brushSize * 0.3);
+        taperFactor = Math.min(1, estimatedDabs / paintTaperLength);
+      }
+    }
+
+    let sizeTaperFactor = 1;
+    if (paintTaperEnabled && isPathTool() && overrideSize === null) {
+      sizeTaperFactor = (paintTaperSizePct / 100) + (1 - paintTaperSizePct / 100) * taperFactor;
+    }
+
+    let spreadTaperFactor = 1;
+    if (paintTaperEnabled && isPathTool() && overrideSize === null) {
+      spreadTaperFactor = (paintTaperSpreadPct / 100) + (1 - paintTaperSpreadPct / 100) * taperFactor;
+    }
+
+    const opacityTaperFactor = (paintTaperEnabled && isPathTool() && overrideSize === null && paintTaperOpacityFade) ? taperFactor : 1.0;
+
+    const effBrushSize = (overrideSize !== null) ? overrideSize : (brushSize * sizeTaperFactor);
+    const effSpread = (overrideSpread !== null) ? overrideSpread : (brushSize * spreadTaperFactor);
     const currentDabMax = Math.max(dabWidth, dabHeight);
 
     const getRandom = () => (typeof isDrawingPathSegments !== 'undefined' && isDrawingPathSegments) ? seededRandom() : Math.random();
 
     if(sprayMode === 'blur'){
-      const radius = effBrushSize/2;
+      const radius = effSpread/2;
       const f = falloff/100;
       const power = 0.5 + f*6;
-      const n = dabsPerTick(effBrushSize);
+      const n = dabsPerTick(brushSize);
       const TWO_PI = Math.PI * 2;
       withHeightMask(x-radius-currentDabMax, y-radius-currentDabMax, (radius+currentDabMax)*2, (radius+currentDabMax)*2, ()=>{
         for(let i=0;i<n;i++){
@@ -10077,11 +10678,11 @@ void main(void)\r
       return;
     }
 
-    const radius = effBrushSize/2;
+    const radius = effSpread/2;
     const sprayColors = getSprayColors();
     const f = falloff/100;
     const power = 0.5 + f*6;
-    const n = dabsPerTick(effBrushSize);
+    const n = dabsPerTick(brushSize);
 
     const maxDabScale = (Math.max(sizeJitterMin, sizeJitterMax) / 100) * (Math.max(dabWidthJitterMin, dabWidthJitterMax, dabHeightJitterMin, dabHeightJitterMax) / 100);
     const maxDabDim = currentDabMax * maxDabScale;
@@ -10205,7 +10806,16 @@ void main(void)\r
     const TWO_PI = Math.PI * 2;
     const executeDabs = () => {
       for(let i=0; i<n; i++){
-        const t = getRandom();
+        let t = getRandom();
+        if (sourceKind === 'gradient' && gradientOrdered) {
+          if (progress !== null && progress !== undefined) {
+            t = progress;
+          } else {
+            const cycleL = Math.max(10, gradientCycleLength);
+            t = (strokeDistance % cycleL) / cycleL;
+          }
+        }
+
         const ang = getRandom()*TWO_PI;
         const dist = (radius < 1) ? 0 : Math.pow(getRandom(), power) * radius;
         let px = x + Math.cos(ang)*dist;
@@ -10229,10 +10839,17 @@ void main(void)\r
           py = Math.floor((py - normOy) / gh) * gh + normOy + gh/2;
         }
 
-        const color = (sourceKind === 'gradient') ? blendColors(sprayColors, t) : randomFromColors(sprayColors);
+        let color;
+        if (sourceKind === 'gradient' && gradientOrdered && gradientSequentialStepMode === 'dabs' && progress === null) {
+          const stopIndex = Math.floor(paintDabCounter / gradientDabsPerColor) % sprayColors.length;
+          color = sprayColors[stopIndex];
+          paintDabCounter++;
+        } else {
+          color = (sourceKind === 'gradient') ? blendColors(sprayColors, t) : randomFromColors(sprayColors);
+        }
 
         // Opacity Jitter Range
-        const opMul = (opacityJitterMin + getRandom() * (opacityJitterMax - opacityJitterMin)) / 100;
+        const opMul = ((opacityJitterMin + getRandom() * (opacityJitterMax - opacityJitterMin)) / 100) * overrideOpacityMul * opacityTaperFactor;
 
         // Size Jitter (Overall) Range
         const scaleBaseW = (sizeJitterMin + getRandom() * (sizeJitterMax - sizeJitterMin)) / 100;
@@ -10242,8 +10859,9 @@ void main(void)\r
         const scaleWJitter = (dabWidthJitterMin + getRandom() * (dabWidthJitterMax - dabWidthJitterMin)) / 100;
         const scaleHJitter = dabLockAspect ? scaleWJitter : ((dabHeightJitterMin + getRandom() * (dabHeightJitterMax - dabHeightJitterMin)) / 100);
 
-        const dW = Math.max(1, dabWidth * scaleBaseW * scaleWJitter);
-        const dH = Math.max(1, dabHeight * scaleBaseH * scaleHJitter);
+        const scaleOverride = (overrideSize !== null) ? (overrideSize / brushSize) : 1;
+        const dW = Math.max(1, dabWidth * scaleBaseW * scaleWJitter * scaleOverride);
+        const dH = Math.max(1, dabHeight * scaleBaseH * scaleHJitter * scaleOverride);
 
         // Rotation Calculation based on Mode
         let rotAngle = 0;
@@ -10411,7 +11029,39 @@ void main(void)\r
     const steps = Math.max(1, Math.round(dist / spacing));
     for(let i=0; i<=steps; i++){
       const t = (steps === 0) ? 0 : i/steps;
-      sprayDabs(x1 + dx*t, y1 + dy*t);
+
+      let factorStart = 1;
+      if (paintTaperEnabled && isPathTool() && paintTaperStart) {
+        factorStart = Math.min(1, i / paintTaperLength);
+      }
+      let factorFinish = 1;
+      if (paintTaperEnabled && isPathTool() && paintTaperFinish) {
+        factorFinish = Math.min(1, (steps - i) / paintTaperLength);
+      }
+      const taperFactor = Math.min(factorStart, factorFinish);
+
+      let sizeTaperFactor = 1;
+      if (paintTaperEnabled && isPathTool()) {
+        sizeTaperFactor = (paintTaperSizePct / 100) + (1 - paintTaperSizePct / 100) * taperFactor;
+      }
+
+      let spreadTaperFactor = 1;
+      if (paintTaperEnabled && isPathTool()) {
+        spreadTaperFactor = (paintTaperSpreadPct / 100) + (1 - paintTaperSpreadPct / 100) * taperFactor;
+      }
+
+      const opacityTaperFactor = (paintTaperEnabled && isPathTool() && paintTaperOpacityFade) ? taperFactor : 1.0;
+
+      const overrideSize = Math.max(1, brushSize * sizeTaperFactor);
+      const overrideSpread = brushSize * spreadTaperFactor;
+
+      let progressVal = null;
+      if (sourceKind === 'gradient' && gradientOrdered && gradientSequentialStepMode === 'distance') {
+        const cycleL = Math.max(10, gradientCycleLength);
+        progressVal = (currentDist % cycleL) / cycleL;
+      }
+
+      sprayDabs(x1 + dx*t, y1 + dy*t, overrideSize, overrideSpread, opacityTaperFactor, progressVal);
     }
   }
   function pointerDown(e){
@@ -10436,6 +11086,29 @@ void main(void)\r
         const margin = MARGIN_PX;
         const isInsideMargin = (rawX >= -margin && rawX <= effW + margin && rawY >= -margin && rawY <= effH + margin);
         if (!isInsideMargin) return;
+
+        if (freehandPathModeEnabled) {
+          pathUndoSnapshot = snapshot();
+          pushHistory();
+
+          // Backup current active layer canvas state
+          if (!vineSessionBackupCanvas) {
+            vineSessionBackupCanvas = document.createElement('canvas');
+          }
+          vineSessionBackupCanvas.width = W;
+          vineSessionBackupCanvas.height = H;
+          const backupCtx = vineSessionBackupCanvas.getContext('2d');
+          backupCtx.clearRect(0, 0, W, H);
+          const layer = layers[activeLayer];
+          if (layer && layer.canvas) {
+            backupCtx.drawImage(layer.canvas, 0, 0);
+          }
+          pathSegments = [];
+          pathPoints = [{x, y}];
+          painting = true; // initiate drag painting
+          lastX = x; lastY = y;
+          return;
+        }
 
         if (pathState === 'idle') {
           pathUndoSnapshot = snapshot();
@@ -10609,6 +11282,8 @@ void main(void)\r
     pushHistory();
     invalidateColorBuffer(layers[activeLayer]);
     painting = true;
+    strokeDistance = 0;
+    paintDabCounter = 0;
     lastX = x; lastY = y;
     if(tool === 'spray') { sprayLineAnchorX = x; sprayLineAnchorY = y; }
 
@@ -10645,8 +11320,13 @@ void main(void)\r
       const isInsideMargin = (rawX >= -margin && rawX <= effW + margin && rawY >= -margin && rawY <= effH + margin);
       if(isInsideMargin){
         if(isPathTool()) {
-          if(pathState !== 'idle') drawPathPreview(x, y, rawX, rawY);
-          else drawVinePreview(x, y, rawX, rawY);
+          if (freehandPathModeEnabled && painting) {
+            // Drag preview drawing is done in the painting block to keep it synchronized!
+          } else if(pathState !== 'idle') {
+            drawPathPreview(x, y, rawX, rawY);
+          } else {
+            drawVinePreview(x, y, rawX, rawY);
+          }
         }
         else drawSprayPreview(x, y, e.shiftKey, rawX, rawY);
       } else {
@@ -10686,7 +11366,27 @@ void main(void)\r
     if(!painting) return;
     e.preventDefault();
     const {x,y} = canvasCoords(e);
-    if(tool === 'spray'){
+    if(isPathTool()){
+      if (freehandPathModeEnabled) {
+        const lastPt = pathPoints[pathPoints.length - 1];
+        if (lastPt) {
+          const dx = x - lastPt.x;
+          const dy = y - lastPt.y;
+          const dist = Math.sqrt(dx*dx + dy*dy);
+          if (dist >= freehandPathDetail) {
+            const newPt = {x, y};
+            pathSegments.push([lastPt, newPt]);
+            pathPoints.push(newPt);
+          }
+        }
+        const coords = canvasCoords(e);
+        drawFreehandPathPreview(x, y, coords.rawX, coords.rawY);
+      } else {
+        vineGrowTo(x, y);
+        lastX = x; lastY = y;
+        render();
+      }
+    } else if(tool === 'spray'){
       if(isPixelPerfectLineActive() && painting){
         bresenhamLine(Math.floor(lastX), Math.floor(lastY), Math.floor(x), Math.floor(y), (gx, gy)=>{
           ppFeedCell({ gx, gy });
@@ -10694,10 +11394,6 @@ void main(void)\r
         render();
       }
       lastX = x; lastY = y;
-    } else if(isPathTool()){
-      vineGrowTo(x, y);
-      lastX = x; lastY = y;
-      render();
     }
   }
   function pointerUp(){
@@ -10709,6 +11405,20 @@ void main(void)\r
     painting = false;
     panning = false;
     let layerContentChanged = wasPainting;
+
+    if (wasPainting && freehandPathModeEnabled && isPathTool()) {
+      if (pathSegments.length > 0) {
+        drawFullVineSegments(pathSegments);
+        render();
+      }
+      pathPoints = [];
+      pathSegments = [];
+      vineSessionBackupCanvas = null;
+      pathState = 'idle';
+      pathUndoSnapshot = null;
+      clearPreviewCanvas();
+      layerContentChanged = true;
+    }
     if(selecting){
       selecting = false;
       if(selection){
@@ -10796,6 +11506,9 @@ void main(void)\r
     const isPathMode = isPathTool();
     const vineOptionsEl = document.getElementById('vineOnlyOptions');
     if (vineOptionsEl) vineOptionsEl.style.display = isPathMode ? 'block' : 'none';
+    updatePaintTaperUI();
+    updateVineFreehandUI();
+    updateGradientOrderedVisibility();
   }
 
   function setTool(t){
@@ -10901,6 +11614,16 @@ void main(void)\r
     selectedGradientIndex = e.target.value === '' ? null : +e.target.value;
     updateSpraySourceHint();
   });
+  document.getElementById('gradientOrderedCheckbox').addEventListener('change', e=>{
+    gradientOrdered = e.target.checked;
+    updateGradientOrderedVisibility();
+    syncActivePresetSettings();
+  });
+  document.getElementById('gradientCycleLengthSlider').addEventListener('input', e=>{
+    gradientCycleLength = +e.target.value;
+    document.getElementById('gradientCycleLengthVal').textContent = gradientCycleLength;
+    syncActivePresetSettings();
+  });
   document.querySelectorAll('.shape-btn[data-shape]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
       if(btn.disabled) return;
@@ -10913,12 +11636,15 @@ void main(void)\r
     });
   });
   document.getElementById('vineStampSourceSelect').addEventListener('change', e=>{
-    selectedStampIndex = e.target.value === '' ? null : +e.target.value;
-    document.getElementById('stampSourceSelect').value = selectedStampIndex ?? '';
-    const bss = document.getElementById('brushStampSourceSelect');
-    if(bss) bss.value = selectedStampIndex ?? '';
-    refreshStampList();
-    drawStampPivotCanvas();
+    vineDecorationType = e.target.value;
+    if (vineDecorationType.startsWith('stamp-')) {
+      const idx = parseInt(vineDecorationType.substring(6));
+      selectedStampIndex = idx;
+      const s1 = document.getElementById('stampSourceSelect'); if(s1) s1.value = idx;
+      const bss = document.getElementById('brushStampSourceSelect'); if(bss) bss.value = idx;
+      refreshStampList();
+      drawStampPivotCanvas();
+    }
     syncActiveVinePresetSettings();
     if(pathState !== 'idle' && pathSegments.length > 0) {
       drawFullVineSegments(pathSegments);
@@ -10979,38 +11705,84 @@ void main(void)\r
       render();
     }
   });
-  document.getElementById('vineTaperStartCheckbox').addEventListener('change', e=>{
-    vineTaperStart = e.target.checked;
+  document.getElementById('vineOffshootSizeSlider').addEventListener('input', e=>{
+    vineOffshootSizeSliderVal = +e.target.value;
+    document.getElementById('vineOffshootSizeVal').textContent = vineOffshootSizeSliderVal + '%';
     syncActiveVinePresetSettings();
     if(pathState !== 'idle' && pathSegments.length > 0) {
       drawFullVineSegments(pathSegments);
       render();
     }
   });
-  document.getElementById('vineTaperFinishCheckbox').addEventListener('change', e=>{
-    vineTaperFinish = e.target.checked;
-    syncActiveVinePresetSettings();
+  document.getElementById('paintTaperEnabledCheckbox').addEventListener('change', e=>{
+    paintTaperEnabled = e.target.checked;
+    updatePaintTaperUI();
+    syncActivePresetSettings();
     if(pathState !== 'idle' && pathSegments.length > 0) {
       drawFullVineSegments(pathSegments);
       render();
     }
   });
-  document.getElementById('vineTaperOffshootsCheckbox').addEventListener('change', e=>{
-    vineTaperOffshoots = e.target.checked;
-    syncActiveVinePresetSettings();
+  document.getElementById('paintTaperStartCheckbox').addEventListener('change', e=>{
+    paintTaperStart = e.target.checked;
+    syncActivePresetSettings();
     if(pathState !== 'idle' && pathSegments.length > 0) {
       drawFullVineSegments(pathSegments);
       render();
     }
   });
-  document.getElementById('vineTaperLengthSlider').addEventListener('input', e=>{
-    vineTaperLength = +e.target.value;
-    document.getElementById('vineTaperLengthVal').textContent = vineTaperLength;
-    syncActiveVinePresetSettings();
+  document.getElementById('paintTaperFinishCheckbox').addEventListener('change', e=>{
+    paintTaperFinish = e.target.checked;
+    syncActivePresetSettings();
     if(pathState !== 'idle' && pathSegments.length > 0) {
       drawFullVineSegments(pathSegments);
       render();
     }
+  });
+  document.getElementById('paintTaperLengthSlider').addEventListener('input', e=>{
+    paintTaperLength = +e.target.value;
+    document.getElementById('paintTaperLengthVal').textContent = paintTaperLength + ' dabs';
+    syncActivePresetSettings();
+    if(pathState !== 'idle' && pathSegments.length > 0) {
+      drawFullVineSegments(pathSegments);
+      render();
+    }
+  });
+  document.getElementById('paintTaperSizeSlider').addEventListener('input', e=>{
+    paintTaperSizePct = +e.target.value;
+    document.getElementById('paintTaperSizeVal').textContent = paintTaperSizePct + '%';
+    syncActivePresetSettings();
+    if(pathState !== 'idle' && pathSegments.length > 0) {
+      drawFullVineSegments(pathSegments);
+      render();
+    }
+  });
+  document.getElementById('paintTaperSpreadSlider').addEventListener('input', e=>{
+    paintTaperSpreadPct = +e.target.value;
+    document.getElementById('paintTaperSpreadVal').textContent = paintTaperSpreadPct + '%';
+    syncActivePresetSettings();
+    if(pathState !== 'idle' && pathSegments.length > 0) {
+      drawFullVineSegments(pathSegments);
+      render();
+    }
+  });
+  document.getElementById('paintTaperOpacityFadeCheckbox').addEventListener('change', e=>{
+    paintTaperOpacityFade = e.target.checked;
+    syncActivePresetSettings();
+    if(pathState !== 'idle' && pathSegments.length > 0) {
+      drawFullVineSegments(pathSegments);
+      render();
+    }
+  });
+  document.getElementById('gradientSequentialStepSelect').addEventListener('change', e=>{
+    gradientSequentialStepMode = e.target.value;
+    updateGradientOrderedVisibility();
+    syncActivePresetSettings();
+  });
+  document.getElementById('gradientDabsPerColorSlider').addEventListener('input', e=>{
+    gradientDabsPerColor = +e.target.value;
+    document.getElementById('gradientDabsPerColorVal').textContent = gradientDabsPerColor;
+    syncActivePresetSettings();
   });
   document.getElementById('vineSizeJitterSlider').addEventListener('input', e=>{
     vineSizeJitter = +e.target.value;
@@ -11036,6 +11808,16 @@ void main(void)\r
       drawFullVineSegments(pathSegments);
       render();
     }
+  });
+  document.getElementById('vineFreehandCheckbox').addEventListener('change', e=>{
+    freehandPathModeEnabled = e.target.checked;
+    updateVineFreehandUI();
+    syncActiveVinePresetSettings();
+  });
+  document.getElementById('vineFreehandDetailSlider').addEventListener('input', e=>{
+    freehandPathDetail = +e.target.value;
+    document.getElementById('vineFreehandDetailVal').textContent = freehandPathDetail + 'px';
+    syncActiveVinePresetSettings();
   });
   document.querySelectorAll('.shape-btn[data-spray-mode]').forEach(btn=>{
     btn.addEventListener('click', ()=>{
@@ -11680,13 +12462,20 @@ void main(void)\r
       vineMaxTurnPct,
       vineOffshootDensity,
       vineOffshootLength,
-      vineTaperStart,
-      vineTaperFinish,
-      vineTaperOffshoots,
-      vineTaperLength,
       vineSizeJitter,
       vineRightAnglesOnly,
-      vineEnableDecorations
+      vineEnableDecorations,
+      gradientOrdered,
+      gradientCycleLength,
+      paintTaperEnabled,
+      paintTaperStart,
+      paintTaperFinish,
+      paintTaperLength,
+      paintTaperOpacityFade,
+      paintTaperSizePct,
+      paintTaperSpreadPct,
+      gradientDabsPerColor,
+      gradientSequentialStepMode
     };
   }
 
@@ -11860,23 +12649,6 @@ void main(void)\r
       const el = document.getElementById('vineOffshootLengthSlider'); if(el) el.value = vineOffshootLength;
       const vel = document.getElementById('vineOffshootLengthVal'); if(vel) vel.textContent = vineOffshootLength;
     }
-    if(s.vineTaperStart !== undefined){
-      vineTaperStart = s.vineTaperStart;
-      const chk = document.getElementById('vineTaperStartCheckbox'); if(chk) chk.checked = vineTaperStart;
-    }
-    if(s.vineTaperFinish !== undefined){
-      vineTaperFinish = s.vineTaperFinish;
-      const chk = document.getElementById('vineTaperFinishCheckbox'); if(chk) chk.checked = vineTaperFinish;
-    }
-    if(s.vineTaperOffshoots !== undefined){
-      vineTaperOffshoots = s.vineTaperOffshoots;
-      const chk = document.getElementById('vineTaperOffshootsCheckbox'); if(chk) chk.checked = vineTaperOffshoots;
-    }
-    if(s.vineTaperLength !== undefined){
-      vineTaperLength = s.vineTaperLength;
-      const el = document.getElementById('vineTaperLengthSlider'); if(el) el.value = vineTaperLength;
-      const vel = document.getElementById('vineTaperLengthVal'); if(vel) vel.textContent = vineTaperLength;
-    }
     if(s.vineSizeJitter !== undefined){
       vineSizeJitter = s.vineSizeJitter;
       const el = document.getElementById('vineSizeJitterSlider'); if(el) el.value = vineSizeJitter;
@@ -11890,8 +12662,59 @@ void main(void)\r
       vineEnableDecorations = s.vineEnableDecorations;
       const chk = document.getElementById('vineEnableDecorationsCheckbox'); if(chk) chk.checked = vineEnableDecorations;
     }
+    if(s.gradientOrdered !== undefined){
+      gradientOrdered = s.gradientOrdered;
+      const chk = document.getElementById('gradientOrderedCheckbox'); if(chk) chk.checked = gradientOrdered;
+    }
+    if(s.gradientCycleLength !== undefined){
+      gradientCycleLength = s.gradientCycleLength;
+      const el = document.getElementById('gradientCycleLengthSlider'); if(el) el.value = gradientCycleLength;
+      const vel = document.getElementById('gradientCycleLengthVal'); if(vel) vel.textContent = gradientCycleLength;
+    }
+    if(s.paintTaperEnabled !== undefined){
+      paintTaperEnabled = s.paintTaperEnabled;
+      const chk = document.getElementById('paintTaperEnabledCheckbox'); if(chk) chk.checked = paintTaperEnabled;
+    }
+    if(s.paintTaperStart !== undefined){
+      paintTaperStart = s.paintTaperStart;
+      const chk = document.getElementById('paintTaperStartCheckbox'); if(chk) chk.checked = paintTaperStart;
+    }
+    if(s.paintTaperFinish !== undefined){
+      paintTaperFinish = s.paintTaperFinish;
+      const chk = document.getElementById('paintTaperFinishCheckbox'); if(chk) chk.checked = paintTaperFinish;
+    }
+    if(s.paintTaperLength !== undefined){
+      paintTaperLength = s.paintTaperLength;
+      const el = document.getElementById('paintTaperLengthSlider'); if(el) el.value = paintTaperLength;
+      const vel = document.getElementById('paintTaperLengthVal'); if(vel) vel.textContent = paintTaperLength + ' dabs';
+    }
+    if(s.paintTaperSizePct !== undefined){
+      paintTaperSizePct = s.paintTaperSizePct;
+      const el = document.getElementById('paintTaperSizeSlider'); if(el) el.value = paintTaperSizePct;
+      const vel = document.getElementById('paintTaperSizeVal'); if(vel) vel.textContent = paintTaperSizePct + '%';
+    }
+    if(s.paintTaperSpreadPct !== undefined){
+      paintTaperSpreadPct = s.paintTaperSpreadPct;
+      const el = document.getElementById('paintTaperSpreadSlider'); if(el) el.value = paintTaperSpreadPct;
+      const vel = document.getElementById('paintTaperSpreadVal'); if(vel) vel.textContent = paintTaperSpreadPct + '%';
+    }
+    if(s.paintTaperOpacityFade !== undefined){
+      paintTaperOpacityFade = s.paintTaperOpacityFade;
+      const chk = document.getElementById('paintTaperOpacityFadeCheckbox'); if(chk) chk.checked = paintTaperOpacityFade;
+    }
+    if(s.gradientDabsPerColor !== undefined){
+      gradientDabsPerColor = s.gradientDabsPerColor;
+      const el = document.getElementById('gradientDabsPerColorSlider'); if(el) el.value = gradientDabsPerColor;
+      const vel = document.getElementById('gradientDabsPerColorVal'); if(vel) vel.textContent = gradientDabsPerColor;
+    }
+    if(s.gradientSequentialStepMode !== undefined){
+      gradientSequentialStepMode = s.gradientSequentialStepMode;
+      const el = document.getElementById('gradientSequentialStepSelect'); if(el) el.value = gradientSequentialStepMode;
+    }
 
     updateSprayModeUI();
+    updateGradientOrderedVisibility();
+    updatePaintTaperUI();
     refreshSprayPresetList();
   }
 
@@ -11911,7 +12734,14 @@ void main(void)\r
       vineTaperLength,
       vineSizeJitter,
       vineRightAnglesOnly,
-      vineEnableDecorations
+      vineEnableDecorations,
+      vineDecorationType,
+      vineOffshootSizeSliderVal,
+      vineTaperSizeBehavior,
+      vineTaperSpreadBehavior,
+      vineTaperOpacityFade,
+      freehandPathModeEnabled,
+      freehandPathDetail
     };
   }
 
@@ -11996,6 +12826,34 @@ void main(void)\r
       vineEnableDecorations = s.vineEnableDecorations;
       const el = document.getElementById('vineEnableDecorationsCheckbox'); if(el) el.checked = vineEnableDecorations;
     }
+    if (s.vineDecorationType !== undefined) {
+      vineDecorationType = s.vineDecorationType;
+      const el = document.getElementById('vineStampSourceSelect'); if(el) el.value = vineDecorationType;
+    }
+    if (s.vineOffshootSizeSliderVal !== undefined) {
+      vineOffshootSizeSliderVal = s.vineOffshootSizeSliderVal;
+      const el = document.getElementById('vineOffshootSizeSlider'); if(el) el.value = vineOffshootSizeSliderVal;
+      const vel = document.getElementById('vineOffshootSizeVal'); if(vel) vel.textContent = vineOffshootSizeSliderVal + '%';
+    }
+    if (s.vineTaperSizeBehavior !== undefined) {
+      vineTaperSizeBehavior = s.vineTaperSizeBehavior;
+      const el = document.getElementById('vineTaperSizeBehaviorSelect'); if(el) el.value = vineTaperSizeBehavior;
+    }
+    if (s.vineTaperSpreadBehavior !== undefined) {
+      vineTaperSpreadBehavior = s.vineTaperSpreadBehavior;
+      const el = document.getElementById('vineTaperSpreadBehaviorSelect'); if(el) el.value = vineTaperSpreadBehavior;
+    }
+    if (s.vineTaperOpacityFade !== undefined) {
+      vineTaperOpacityFade = s.vineTaperOpacityFade;
+      const el = document.getElementById('vineTaperOpacityFadeCheckbox'); if(el) el.checked = vineTaperOpacityFade;
+    }
+    if (s.freehandPathModeEnabled !== undefined) {
+      freehandPathModeEnabled = s.freehandPathModeEnabled;
+    }
+    if (s.freehandPathDetail !== undefined) {
+      freehandPathDetail = s.freehandPathDetail;
+    }
+    updateVineFreehandUI();
     refreshVinePresetList();
     if (pathState !== 'idle' && pathSegments.length > 0) {
       drawFullVineSegments(pathSegments);
@@ -12192,8 +13050,8 @@ void main(void)\r
     });
   }
 
-  document.getElementById('saveSprayPresetBtn').addEventListener('click', ()=>{
-    const name = prompt('Preset name:', 'My Preset');
+  document.getElementById('saveSprayPresetBtn').addEventListener('click', async ()=>{
+    const name = await showCustomPrompt('Preset name:', 'My Preset');
     if(name === null || name.trim() === '') return;
     const current = captureCurrentSpraySettings();
     const newId = 'preset-' + (sprayPresetIdCounter++);
@@ -12347,8 +13205,8 @@ void main(void)\r
       nameSpan.className = 'group-name';
       nameSpan.textContent = group.name;
       nameSpan.title = 'Click to rename';
-      nameSpan.addEventListener('click', ()=>{
-        const newName = prompt('Group name:', group.name);
+      nameSpan.addEventListener('click', async ()=>{
+        const newName = await showCustomPrompt('Group name:', group.name);
         if(newName !== null && newName.trim() !== ''){ group.name = newName.trim(); refreshGroups(); }
       });
 
@@ -12689,7 +13547,7 @@ void main(void)\r
     refreshGroups();
   }
 
-  document.getElementById('addToGroupBtn').addEventListener('click', ()=>{
+  document.getElementById('addToGroupBtn').addEventListener('click', async ()=>{
     if(selectedColors.size === 0){ alert('Select one or more colors first (Ctrl+click or Shift+click).'); return; }
     const refs = [];
     selectedColors.forEach(hex=>{
@@ -12697,7 +13555,7 @@ void main(void)\r
       if(entry) refs.push(entry.id);
     });
     if(refs.length === 0){ alert('Selected colors could not be matched to the Main Palette.'); return; }
-    const name = prompt('New group name:', 'Group ' + (groups.length+1));
+    const name = await showCustomPrompt('New group name:', 'Group ' + (groups.length+1));
     if(name === null) return;
     groups.unshift({ id: groupIdCounter++, name: name.trim() || ('Group ' + (groups.length+1)), isMain:false, colorRefs: refs, collapsed:false, columns:8 });
     refreshGroups();
@@ -14646,13 +15504,6 @@ void main(void)\r
 
   let activeThemeState = { type: 'preset', key: 'dark' };
 
-  function hexToRgb(hex) {
-    hex = (hex || '#000000').replace('#', '');
-    if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
-    const num = parseInt(hex, 16) || 0;
-    return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
-  }
-
   function rgbToHex(r, g, b) {
     const clamp = v => Math.max(0, Math.min(255, Math.round(v)));
     return '#' + [r, g, b].map(v => clamp(v).toString(16).padStart(2, '0')).join('');
@@ -15248,6 +16099,27 @@ void main(void)\r
     gradients.forEach((g, idx)=>{
       const row = document.createElement('div');
       row.className = 'lib-row';
+      if (selectedGradientIndex === idx) {
+        row.classList.add('active');
+      }
+      row.style.cursor = 'pointer';
+      row.addEventListener('click', () => {
+        selectedGradientIndex = idx;
+        sourceKind = 'gradient';
+        const skSel = document.getElementById('sourceKindSelect');
+        if(skSel) {
+          skSel.value = 'gradient';
+        }
+        const gSource = document.getElementById('gradientSourceSelect');
+        if(gSource) {
+          gSource.style.display = 'block';
+          gSource.value = idx;
+        }
+        updateSpraySourceHint();
+        refreshGradientList();
+        syncActivePresetSettings();
+      });
+
       const bar = document.createElement('div');
       bar.className = 'bar';
       bar.style.background = cssGradientFromStops(g.stops);
@@ -15257,7 +16129,8 @@ void main(void)\r
       const editBtn = document.createElement('button');
       editBtn.className = 'btn small';
       editBtn.textContent = 'Edit';
-      editBtn.addEventListener('click', ()=>{
+      editBtn.addEventListener('click', (ev)=>{
+        ev.stopPropagation();
         buildingStops = [...g.stops];
         editingGradientIndex = idx;
         document.getElementById('gradientBuilder').style.display = 'block';
@@ -15266,7 +16139,8 @@ void main(void)\r
       const delBtn = document.createElement('button');
       delBtn.className = 'btn small danger';
       delBtn.textContent = '×';
-      delBtn.addEventListener('click', ()=>{
+      delBtn.addEventListener('click', (ev)=>{
+        ev.stopPropagation();
         gradients.splice(idx,1);
         if(selectedGradientIndex !== null){
           if(selectedGradientIndex === idx) selectedGradientIndex = null;
@@ -15335,21 +16209,32 @@ void main(void)\r
       }
     });
   });
-  document.getElementById('saveGradientBtn').addEventListener('click', ()=>{
+  document.getElementById('saveGradientBtn').addEventListener('click', async ()=>{
     if(buildingStops.length===0){ alert('Add at least one color stop first.'); return; }
     const defaultName = editingGradientIndex !== null ? gradients[editingGradientIndex].name : ('Gradient ' + (gradients.length+1));
-    const name = prompt('Gradient name:', defaultName);
+    const name = await showCustomPrompt('Gradient name:', defaultName);
     if(name===null) return;
+    let targetIdx = 0;
     if(editingGradientIndex !== null){
       gradients[editingGradientIndex] = {name, stops:[...buildingStops]};
+      targetIdx = editingGradientIndex;
     } else {
       gradients.push({name, stops:[...buildingStops]});
+      targetIdx = gradients.length - 1;
     }
+    selectedGradientIndex = targetIdx;
     editingGradientIndex = null;
     document.getElementById('gradientBuilder').style.display='none';
     refreshGradientList();
     populateGradientSourceDropdown();
-        populatePalettizeGradientDropdown();
+    const gSource = document.getElementById('gradientSourceSelect');
+    if(gSource) {
+      gSource.value = targetIdx;
+    }
+    populatePalettizeGradientDropdown();
+    updateSourceKindAvailability();
+    updateSpraySourceHint();
+    syncActivePresetSettings();
   });
 
   // ---------- Layers panel ----------
@@ -18564,6 +19449,10 @@ void main(void)\r
   refreshStampList();
   populateStampDropdown();
   refreshVinePresetList();
+  if (activeVinePresetId) {
+    const defaultPreset = vinePresets.find(p => p.id === activeVinePresetId);
+    if (defaultPreset) applyVinePreset(defaultPreset);
+  }
   initMatrixTimeline();
   refreshGridPanel();
   drawGridOverlay();
