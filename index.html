@@ -1980,6 +1980,10 @@
             <label style="font-size:11px; color:var(--text); display:flex; align-items:center; gap:4px; cursor:pointer;" title="Show onion skinning for adjacent frames">
               <input type="checkbox" id="tlOnionSkinCheckbox" style="accent-color:var(--accent);"> Onion Skin
             </label>
+            <label id="tlOnionSkinOpacityWrap" style="font-size:11px; color:var(--text); display:inline-flex; align-items:center; gap:4px;" title="Onion skin opacity">
+              Opacity <input type="range" id="tlOnionSkinOpacitySlider" min="0" max="100" value="50" style="width:55px; vertical-align:middle; accent-color:var(--accent);">
+              <span id="tlOnionSkinOpacityVal" style="font-size:11px; color:var(--text-dim); min-width:28px;">50%</span>
+            </label>
             <div class="divider" style="height:16px;"></div>
             <button class="btn small" id="tlAddFrameBtn" title="Add new blank frame">+ Frame</button>
             <button class="btn small" id="tlDupFrameBtn" title="Duplicate active frame">Dup Frame</button>
@@ -3372,7 +3376,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.306'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.314'; // bump this on every deploy — shown only in the About popup
 
   // Override window.alert to be iframe-safe and style-consistent
   window.alert = function(message) {
@@ -3619,6 +3623,7 @@ void main(void)\r
   }
   let onionSkinEnabled = false;
   let onionSkinCount = 1;
+  let onionSkinOpacity = 50;
   let onionSkinCache = { prev: [], next: [] };
   let seamlessModeEnabled = false;
   let editingHeightMode = false;
@@ -4514,7 +4519,7 @@ void main(void)\r
       selectedColors: Array.from(selectedColors),
       fgColor: fgColor,
       layers: layers.map(l=>({
-        name:l.name, visible:l.visible, opacity:l.opacity,
+        name:l.name, visible:l.visible, locked:!!l.locked, opacity:l.opacity,
         colorData: l.colorCanvas.toDataURL(),
         heightData: l.heightCanvas ? l.heightCanvas.toDataURL() : null,
         roughnessData: l.roughnessCanvas ? l.roughnessCanvas.toDataURL() : null
@@ -4541,7 +4546,7 @@ void main(void)\r
           colorCanvas:c, colorCtx:ctx,
           heightCanvas:null, heightCtx:null,
           roughnessCanvas:null, roughnessCtx:null,
-          visible:ld.visible, opacity:ld.opacity
+          visible:ld.visible, locked:!!ld.locked, opacity:ld.opacity
         };
         const promises = [];
         if(ld.heightData){
@@ -4882,8 +4887,8 @@ void main(void)\r
     ctx.fillStyle = tintHex;
     ctx.fillRect(0, 0, W, H);
     ctx.globalCompositeOperation = 'source-over';
-    const alpha = Math.max(0.08, 0.35 - (distance-1)*0.12);
-    return { canvas: c, alpha };
+    const distFactor = Math.max(0.15, 1.0 - (distance-1)*0.3);
+    return { canvas: c, distFactor };
   }
   function rebuildOnionSkinCache(){
     onionSkinCache = { prev: [], next: [] };
@@ -4941,6 +4946,12 @@ void main(void)\r
     const onionCheck = document.getElementById('tlOnionSkinCheckbox');
     if(onionCheck){
       onionCheck.checked = onionSkinEnabled;
+    }
+    const osSlider = document.getElementById('tlOnionSkinOpacitySlider');
+    const osVal = document.getElementById('tlOnionSkinOpacityVal');
+    if(osSlider){
+      osSlider.value = onionSkinOpacity;
+      if(osVal) osVal.textContent = onionSkinOpacity + '%';
     }
 
     const opSlider = document.getElementById('tlLayerOpacitySlider');
@@ -5124,10 +5135,35 @@ void main(void)\r
       visCheck.style.accentColor = 'var(--accent)';
       visCheck.style.cursor = 'pointer';
       visCheck.title = 'Toggle visibility';
+      visCheck.addEventListener('pointerdown', (ev) => ev.stopPropagation());
       visCheck.addEventListener('change', (ev) => {
         ev.stopPropagation();
         pushHistory();
-        layerObj.visible = ev.target.checked;
+        const isVis = ev.target.checked;
+        frames.forEach(f => { if(f.layers && f.layers[lIdx]) f.layers[lIdx].visible = isVis; });
+        refreshLayerPanel();
+        refreshMatrixTimeline();
+        render();
+      });
+
+      const lockBtn = document.createElement('button');
+      lockBtn.type = 'button';
+      lockBtn.className = 'tl-layer-lock-btn' + (layerObj.locked ? ' active' : '');
+      lockBtn.innerHTML = layerObj.locked ? '🔒' : '🔓';
+      lockBtn.title = layerObj.locked ? 'Unlock layer' : 'Lock layer';
+      lockBtn.style.background = 'none';
+      lockBtn.style.border = 'none';
+      lockBtn.style.cursor = 'pointer';
+      lockBtn.style.fontSize = '12px';
+      lockBtn.style.padding = '0 2px';
+      lockBtn.style.lineHeight = '1';
+      lockBtn.style.opacity = layerObj.locked ? '1' : '0.4';
+      lockBtn.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+      lockBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        pushHistory();
+        const isLocked = !layerObj.locked;
+        frames.forEach(f => { if(f.layers && f.layers[lIdx]) f.layers[lIdx].locked = isLocked; });
         refreshLayerPanel();
         refreshMatrixTimeline();
         render();
@@ -5145,6 +5181,7 @@ void main(void)\r
       opacityBadge.textContent = layerObj.opacity + '%';
 
       layerTd.appendChild(visCheck);
+      layerTd.appendChild(lockBtn);
       layerTd.appendChild(layerName);
       layerTd.appendChild(opacityBadge);
 
@@ -5341,6 +5378,12 @@ void main(void)\r
       rebuildOnionSkinCache();
       render();
     });
+    document.getElementById('tlOnionSkinOpacitySlider')?.addEventListener('input', (e) => {
+      onionSkinOpacity = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+      const valEl = document.getElementById('tlOnionSkinOpacityVal');
+      if(valEl) valEl.textContent = onionSkinOpacity + '%';
+      render();
+    });
 
     document.getElementById('tlLayerOpacitySlider')?.addEventListener('input', (e) => {
       updateLayerOpacity(+e.target.value);
@@ -5460,7 +5503,7 @@ void main(void)\r
       colorCanvas: c, colorCtx: ctx,
       heightCanvas: null, heightCtx: null,
       roughnessCanvas: null, roughnessCtx: null,
-      visible: true, opacity: 100
+      visible: true, locked: false, opacity: 100
     };
   }
   function regenerateHeightFromColor(layer){
@@ -5994,9 +6037,20 @@ void main(void)\r
       docCompositeCtx.clearRect(0, 0, W, H);
     }
 
-    if(onionSkinEnabled){
-      onionSkinCache.prev.forEach(g=>{ targetCtx.globalAlpha = g.alpha; targetCtx.drawImage(g.canvas, 0, 0); });
-      onionSkinCache.next.forEach(g=>{ targetCtx.globalAlpha = g.alpha; targetCtx.drawImage(g.canvas, 0, 0); });
+    if(onionSkinEnabled && onionSkinCache){
+      const osAlphaMult = (typeof onionSkinOpacity === 'number') ? (onionSkinOpacity / 100) : 0.5;
+      if(osAlphaMult > 0){
+        onionSkinCache.prev.forEach(g=>{
+          const factor = (g.distFactor !== undefined) ? g.distFactor : (g.alpha !== undefined ? g.alpha : 1);
+          targetCtx.globalAlpha = Math.min(1, Math.max(0, factor * osAlphaMult));
+          targetCtx.drawImage(g.canvas, 0, 0);
+        });
+        onionSkinCache.next.forEach(g=>{
+          const factor = (g.distFactor !== undefined) ? g.distFactor : (g.alpha !== undefined ? g.alpha : 1);
+          targetCtx.globalAlpha = Math.min(1, Math.max(0, factor * osAlphaMult));
+          targetCtx.drawImage(g.canvas, 0, 0);
+        });
+      }
       targetCtx.globalAlpha = 1;
     }
     layers.forEach((l,idx)=>{
@@ -6877,6 +6931,10 @@ void main(void)\r
   function anchorFloatingSelection(){
     if(!floatingSelection) return;
     if(layers[activeLayer]){
+      if(layers[activeLayer].locked){
+        showToast('Active layer is locked');
+        return;
+      }
       layers[activeLayer].ctx.drawImage(floatingSelection.canvas, floatingSelection.x, floatingSelection.y);
       refreshLayerThumbOnly();
     }
@@ -6891,6 +6949,10 @@ void main(void)\r
   }
   function clearLayerOrSelection(){
     if(!layers[activeLayer]) return;
+    if(layers[activeLayer].locked){
+      showToast('Active layer is locked');
+      return;
+    }
     pushHistory();
     const ctx = layers[activeLayer].ctx;
     if(selection && selection.w > 0 && selection.h > 0){
@@ -8234,46 +8296,34 @@ void main(void)\r
     const rawY = seamlessModeEnabled ? (py + H) : py;
     const effW = getEffectiveCanvasW();
     const effH = getEffectiveCanvasH();
-    const isCoreTiles = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
 
-    if (isCoreTiles) {
-      const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
-      const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
-      const offsets = seamlessModeEnabled ?
-        [
-          [0,0], [-W,0], [W,0],
-          [0,-H], [-W,-H], [W,-H],
-          [0,H], [-W,H], [W,H]
-        ] : [[0,0]];
+    const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+    const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+    const offsets = seamlessModeEnabled ?
+      [
+        [0,0], [-W,0], [W,0],
+        [0,-H], [-W,-H], [W,-H],
+        [0,H], [-W,H], [W,H]
+      ] : [[0,0]];
 
-      for (let offset of offsets) {
-        const tx = normPx + offset[0];
-        const ty = normPy + offset[1];
-        const bounds = getRotatedRectBounds(tx, ty, built.w, built.h, 0, pX, pY);
-        if (bounds.x >= W || bounds.y >= H || bounds.x + bounds.w <= 0 || bounds.y + bounds.h <= 0) continue;
+    for (let offset of offsets) {
+      const tx = normPx + offset[0];
+      const ty = normPy + offset[1];
+      const bounds = getRotatedRectBounds(tx, ty, built.w, built.h, 0, pX, pY);
+      if (bounds.x >= W || bounds.y >= H || bounds.x + bounds.w <= 0 || bounds.y + bounds.h <= 0) continue;
 
-        paintNoBlend(ctx, W, H, bounds.x, bounds.y, bounds.w, bounds.h, (sctx)=>{
-          sctx.globalAlpha = opacity/100;
-          drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, 0, pX, pY, built.srcW, built.srcH);
-        });
-      }
+      paintNoBlend(ctx, W, H, bounds.x, bounds.y, bounds.w, bounds.h, (sctx)=>{
+        sctx.globalAlpha = opacity/100;
+        drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, 0, pX, pY, built.srcW, built.srcH);
+      });
+    }
 
-      const bounds = getRotatedRectBounds(rawX, rawY, built.w, built.h, 0, pX, pY);
-      const nearEdge = rawX < brushSize || rawX > effW - brushSize || rawY < brushSize || rawY > effH - brushSize;
-      if(nearEdge){
-        marginHasContent = true;
-        const mfW = effW + MARGIN_PX*2;
-        const mfH = effH + MARGIN_PX*2;
-        paintNoBlend(mfCtx, mfW, mfH, bounds.x+MARGIN_PX, bounds.y+MARGIN_PX, bounds.w, bounds.h, (sctx)=>{
-          sctx.globalAlpha = opacity/100;
-          drawBuiltStamp(sctx, built.canvas, built.w, built.h, rawX+MARGIN_PX, rawY+MARGIN_PX, 0, pX, pY, built.srcW, built.srcH);
-        });
-      }
-    } else {
+    const bounds = getRotatedRectBounds(rawX, rawY, built.w, built.h, 0, pX, pY);
+    const nearOrInMargin = rawX < built.w || rawX > effW - built.w || rawY < built.h || rawY > effH - built.h;
+    if(nearOrInMargin){
       marginHasContent = true;
       const mfW = effW + MARGIN_PX*2;
       const mfH = effH + MARGIN_PX*2;
-      const bounds = getRotatedRectBounds(rawX, rawY, built.w, built.h, 0, pX, pY);
       paintNoBlend(mfCtx, mfW, mfH, bounds.x+MARGIN_PX, bounds.y+MARGIN_PX, bounds.w, bounds.h, (sctx)=>{
         sctx.globalAlpha = opacity/100;
         drawBuiltStamp(sctx, built.canvas, built.w, built.h, rawX+MARGIN_PX, rawY+MARGIN_PX, 0, pX, pY, built.srcW, built.srcH);
@@ -8306,46 +8356,32 @@ void main(void)\r
     const rawY = seamlessModeEnabled ? (py + H) : py;
     const effW = getEffectiveCanvasW();
     const effH = getEffectiveCanvasH();
-    const isCoreTiles = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
 
-    if (isCoreTiles) {
-      const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
-      const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
-      const offsets = seamlessModeEnabled ?
-        [
-          [0,0], [-W,0], [W,0],
-          [0,-H], [-W,-H], [W,-H],
-          [0,H], [-W,H], [W,H]
-        ] : [[0,0]];
+    const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+    const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+    const offsets = seamlessModeEnabled ?
+      [
+        [0,0], [-W,0], [W,0],
+        [0,-H], [-W,-H], [W,-H],
+        [0,H], [-W,H], [W,H]
+      ] : [[0,0]];
 
-      for (let offset of offsets) {
-        const tx = normPx + offset[0];
-        const ty = normPy + offset[1];
-        if (tx < -r || ty < -r || tx > W + r || ty > H + r) continue;
+    for (let offset of offsets) {
+      const tx = normPx + offset[0];
+      const ty = normPy + offset[1];
+      if (tx < -r || ty < -r || tx > W + r || ty > H + r) continue;
 
-        paintNoBlend(ctx, W, H, tx-r, ty-r, r*2, r*2, (sctx)=>{
-          sctx.globalAlpha = opacity/100;
-          sctx.fillStyle = fgColor;
-          sctx.beginPath();
-          sctx.arc(tx, ty, r, 0, Math.PI*2);
-          sctx.fill();
-        }, fgColor);
-      }
+      paintNoBlend(ctx, W, H, tx-r, ty-r, r*2, r*2, (sctx)=>{
+        sctx.globalAlpha = opacity/100;
+        sctx.fillStyle = fgColor;
+        sctx.beginPath();
+        sctx.arc(tx, ty, r, 0, Math.PI*2);
+        sctx.fill();
+      }, fgColor);
+    }
 
-      const nearEdge = rawX < brushSize || rawX > effW - brushSize || rawY < brushSize || rawY > effH - brushSize;
-      if(nearEdge){
-        marginHasContent = true;
-        const mfW = effW + MARGIN_PX*2;
-        const mfH = effH + MARGIN_PX*2;
-        paintNoBlend(mfCtx, mfW, mfH, rawX+MARGIN_PX-r, rawY+MARGIN_PX-r, r*2, r*2, (sctx)=>{
-          sctx.globalAlpha = opacity/100;
-          sctx.fillStyle = fgColor;
-          sctx.beginPath();
-          sctx.arc(rawX+MARGIN_PX, rawY+MARGIN_PX, r, 0, Math.PI*2);
-          sctx.fill();
-        }, fgColor);
-      }
-    } else {
+    const nearOrInMargin = rawX < brushSize || rawX > effW - brushSize || rawY < brushSize || rawY > effH - brushSize;
+    if(nearOrInMargin){
       marginHasContent = true;
       const mfW = effW + MARGIN_PX*2;
       const mfH = effH + MARGIN_PX*2;
@@ -8735,28 +8771,26 @@ void main(void)\r
       targetCtx.restore();
     }
 
-    if (isCoreTiles) {
-      if(layers[activeLayer]){
-        const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
-        const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
-        const offsets = seamlessModeEnabled ?
-          [
-            [0,0], [-W,0], [W,0],
-            [0,-H], [-W,-H], [W,-H],
-            [0,H], [-W,H], [W,H]
-          ] : [[0,0]];
+    if(layers[activeLayer]){
+      const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+      const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+      const offsets = seamlessModeEnabled ?
+        [
+          [0,0], [-W,0], [W,0],
+          [0,-H], [-W,-H], [W,-H],
+          [0,H], [-W,H], [W,H]
+        ] : [[0,0]];
 
-        for (let offset of offsets) {
-          const tx = normPx + offset[0];
-          const ty = normPy + offset[1];
-          paintOnto(layers[activeLayer].ctx, 0, 0, tx, ty);
-        }
+      for (let offset of offsets) {
+        const tx = normPx + offset[0];
+        const ty = normPy + offset[1];
+        if (tx < -r || ty < -r || tx > W + r || ty > H + r) continue;
+        paintOnto(layers[activeLayer].ctx, 0, 0, tx, ty);
       }
-      const nearEdge = rawX < r || rawX > effW - r || rawY < r || rawY > effH - r;
-      if(nearEdge) {
-        paintOnto(mfCtx, 0, 0, rawX + MARGIN_PX, rawY + MARGIN_PX);
-      }
-    } else {
+    }
+    const nearOrInMargin = rawX < r || rawX > effW - r || rawY < r || rawY > effH - r;
+    if(nearOrInMargin) {
+      marginHasContent = true;
       paintOnto(mfCtx, 0, 0, rawX + MARGIN_PX, rawY + MARGIN_PX);
     }
   }
@@ -8848,87 +8882,52 @@ void main(void)\r
     const rawGy = seamlessModeEnabled ? (cell.gy + H) : cell.gy;
     const effW = getEffectiveCanvasW();
     const effH = getEffectiveCanvasH();
-    const isCoreTiles = (rawGx >= 0 && rawGx < effW && rawGy >= 0 && rawGy < effH);
+    const normGx = seamlessModeEnabled ? (((cell.gx % W) + W) % W) : cell.gx;
+    const normGy = seamlessModeEnabled ? (((cell.gy % H) + H) % H) : cell.gy;
 
-    if (isCoreTiles) {
-      const normGx = seamlessModeEnabled ? (((cell.gx % W) + W) % W) : cell.gx;
-      const normGy = seamlessModeEnabled ? (((cell.gy % H) + H) % H) : cell.gy;
+    const offsets = seamlessModeEnabled ?
+      [
+        [0,0], [-W,0], [W,0],
+        [0,-H], [-W,-H], [W,-H],
+        [0,H], [-W,H], [W,H]
+      ] : [[0,0]];
 
-      const offsets = seamlessModeEnabled ?
-        [
-          [0,0], [-W,0], [W,0],
-          [0,-H], [-W,-H], [W,-H],
-          [0,H], [-W,H], [W,H]
-        ] : [[0,0]];
+    for (let offset of offsets) {
+      const gx = normGx + offset[0];
+      const gy = normGy + offset[1];
+      const box = brushBox(gx, gy);
+      if (box.x >= W || box.y >= H || box.x + box.n <= 0 || box.y + box.n <= 0) continue;
 
-      for (let offset of offsets) {
-        const gx = normGx + offset[0];
-        const gy = normGy + offset[1];
-        const box = brushBox(gx, gy);
-        if (box.x >= W || box.y >= H || box.x + box.n <= 0 || box.y + box.n <= 0) continue;
-
-        if(effectiveMode === 'eraser'){
-          paintEraserDab(ctx, W, H, box.x, box.y, box.n, box.n, (sctx)=>{
-            sctx.fillStyle = '#ffffff';
-            sctx.fillRect(box.x, box.y, box.n, box.n);
-          });
-        } else if(effectiveMode === 'colorize'){
-          paintColorizeDab(ctx, W, H, box.x, box.y, box.n, box.n, fgColor, (sctx)=>{
-            sctx.globalAlpha = opacity/100;
-            sctx.fillStyle = fgColor;
-            sctx.fillRect(box.x, box.y, box.n, box.n);
-          });
-        } else if(sprayCombineSameColor){
-          paintCombineSameColor(ctx, W, H, box.x, box.y, box.n, box.n, fgColor, (sctx)=>{
-            sctx.globalAlpha = opacity/100;
-            sctx.fillStyle = fgColor;
-            sctx.fillRect(box.x, box.y, box.n, box.n);
-          });
-        } else {
-          paintNoBlend(ctx, W, H, box.x, box.y, box.n, box.n, (sctx)=>{
-            sctx.globalAlpha = opacity/100;
-            sctx.fillStyle = fgColor;
-            sctx.fillRect(box.x, box.y, box.n, box.n);
-          });
-        }
+      if(effectiveMode === 'eraser'){
+        paintEraserDab(ctx, W, H, box.x, box.y, box.n, box.n, (sctx)=>{
+          sctx.fillStyle = '#ffffff';
+          sctx.fillRect(box.x, box.y, box.n, box.n);
+        });
+      } else if(effectiveMode === 'colorize'){
+        paintColorizeDab(ctx, W, H, box.x, box.y, box.n, box.n, fgColor, (sctx)=>{
+          sctx.globalAlpha = opacity/100;
+          sctx.fillStyle = fgColor;
+          sctx.fillRect(box.x, box.y, box.n, box.n);
+        });
+      } else if(sprayCombineSameColor){
+        paintCombineSameColor(ctx, W, H, box.x, box.y, box.n, box.n, fgColor, (sctx)=>{
+          sctx.globalAlpha = opacity/100;
+          sctx.fillStyle = fgColor;
+          sctx.fillRect(box.x, box.y, box.n, box.n);
+        });
+      } else {
+        paintNoBlend(ctx, W, H, box.x, box.y, box.n, box.n, (sctx)=>{
+          sctx.globalAlpha = opacity/100;
+          sctx.fillStyle = fgColor;
+          sctx.fillRect(box.x, box.y, box.n, box.n);
+        });
       }
+    }
 
-      const box = brushBox(rawGx, rawGy);
-      const nearEdge = box.x < 0 || box.y < 0 || box.x + box.n > effW || box.y + box.n > effH;
-      if(nearEdge){
-        marginHasContent = true;
-        const mfBoxX = box.x + MARGIN_PX;
-        const mfBoxY = box.y + MARGIN_PX;
-        const mfW = effW + MARGIN_PX*2;
-        const mfH = effH + MARGIN_PX*2;
-        if(effectiveMode === 'eraser'){
-          paintEraserDab(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, (sctx)=>{
-            sctx.fillStyle = '#ffffff';
-            sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
-          });
-        } else if(effectiveMode === 'colorize'){
-          paintColorizeDab(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, fgColor, (sctx)=>{
-            sctx.globalAlpha = opacity/100;
-            sctx.fillStyle = fgColor;
-            sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
-          });
-        } else if(sprayCombineSameColor){
-          paintCombineSameColor(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, fgColor, (sctx)=>{
-            sctx.globalAlpha = opacity/100;
-            sctx.fillStyle = fgColor;
-            sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
-          });
-        } else {
-          paintNoBlend(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, (sctx)=>{
-            sctx.globalAlpha = opacity/100;
-            sctx.fillStyle = fgColor;
-            sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
-          });
-        }
-      }
-    } else {
+    const box = brushBox(rawGx, rawGy);
+    const nearOrInMargin = box.x < 0 || box.y < 0 || box.x + box.n > effW || box.y + box.n > effH;
+    if(nearOrInMargin){
       marginHasContent = true;
-      const box = brushBox(rawGx, rawGy);
       const mfBoxX = box.x + MARGIN_PX;
       const mfBoxY = box.y + MARGIN_PX;
       const mfW = effW + MARGIN_PX*2;
@@ -9436,7 +9435,12 @@ void main(void)\r
   function dabsPerTick(effSize = brushSize){
     const maxDabs = Math.min(500, Math.max(4, Math.round((effSize*effSize)/12)));
     const cappedMax = (sprayMode === 'blur') ? Math.min(maxDabs, 16) : maxDabs;
-    return Math.max(1, Math.round(cappedMax * (density/100)));
+    const densityFactor = Math.pow(density / 100, 2.2);
+    const rawDabs = cappedMax * densityFactor;
+    const integerPart = Math.floor(rawDabs);
+    const fractionalPart = rawDabs - integerPart;
+    const count = integerPart + (Math.random() < fractionalPart ? 1 : 0);
+    return Math.max(1, count);
   }
   function flowIntervalMs(){
     return Math.max(4, Math.round(150 - (135 * (flow/100))));
@@ -9498,46 +9502,32 @@ void main(void)\r
       const rawY = seamlessModeEnabled ? (cy + H) : cy;
       const effW = getEffectiveCanvasW();
       const effH = getEffectiveCanvasH();
-      const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
-
       const r = Math.max(0.5, diameter/2);
-      if(isCore){
-        const normX = seamlessModeEnabled ? (((cx % W) + W) % W) : cx;
-        const normY = seamlessModeEnabled ? (((cy % H) + H) % H) : cy;
-        const offsets = seamlessModeEnabled ?
-          [
-            [0,0], [-W,0], [W,0],
-            [0,-H], [-W,-H], [W,-H],
-            [0,H], [-W,H], [W,H]
-          ] : [[0,0]];
 
-        for (let offset of offsets) {
-          const tx = normX + offset[0];
-          const ty = normY + offset[1];
-          if (tx < -r || ty < -r || tx > W + r || ty > H + r) continue;
-          paintNoBlend(layers[activeLayer].ctx, W, H, tx-r, ty-r, r*2, r*2, (sctx)=>{
-            sctx.globalAlpha = opacity/100;
-            sctx.fillStyle = fgColor;
-            sctx.beginPath();
-            sctx.arc(tx, ty, r, 0, Math.PI*2);
-            sctx.fill();
-          }, fgColor);
-        }
+      const normX = seamlessModeEnabled ? (((cx % W) + W) % W) : cx;
+      const normY = seamlessModeEnabled ? (((cy % H) + H) % H) : cy;
+      const offsets = seamlessModeEnabled ?
+        [
+          [0,0], [-W,0], [W,0],
+          [0,-H], [-W,-H], [W,-H],
+          [0,H], [-W,H], [W,H]
+        ] : [[0,0]];
 
-        const nearEdge = rawX < diameter || rawX > effW - diameter || rawY < diameter || rawY > effH - diameter;
-        if(nearEdge){
-          marginHasContent = true;
-          const mfW = effW + MARGIN_PX*2;
-          const mfH = effH + MARGIN_PX*2;
-          paintNoBlend(mfCtx, mfW, mfH, rawX+MARGIN_PX-r, rawY+MARGIN_PX-r, r*2, r*2, (sctx)=>{
-            sctx.globalAlpha = opacity/100;
-            sctx.fillStyle = fgColor;
-            sctx.beginPath();
-            sctx.arc(rawX+MARGIN_PX, rawY+MARGIN_PX, r, 0, Math.PI*2);
-            sctx.fill();
-          }, fgColor);
-        }
-      } else {
+      for (let offset of offsets) {
+        const tx = normX + offset[0];
+        const ty = normY + offset[1];
+        if (tx < -r || ty < -r || tx > W + r || ty > H + r) continue;
+        paintNoBlend(layers[activeLayer].ctx, W, H, tx-r, ty-r, r*2, r*2, (sctx)=>{
+          sctx.globalAlpha = opacity/100;
+          sctx.fillStyle = fgColor;
+          sctx.beginPath();
+          sctx.arc(tx, ty, r, 0, Math.PI*2);
+          sctx.fill();
+        }, fgColor);
+      }
+
+      const nearOrInMargin = rawX < diameter || rawX > effW - diameter || rawY < diameter || rawY > effH - diameter;
+      if(nearOrInMargin){
         marginHasContent = true;
         const mfW = effW + MARGIN_PX*2;
         const mfH = effH + MARGIN_PX*2;
@@ -9558,7 +9548,6 @@ void main(void)\r
     const rawY = seamlessModeEnabled ? (cy + H) : cy;
     const effW = getEffectiveCanvasW();
     const effH = getEffectiveCanvasH();
-    const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
 
     const leafColor = customColor || fgColor;
 
@@ -9609,26 +9598,21 @@ void main(void)\r
       }, leafColor);
     };
 
-    if(isCore){
-      const normX = seamlessModeEnabled ? (((cx % W) + W) % W) : cx;
-      const normY = seamlessModeEnabled ? (((cy % H) + H) % H) : cy;
-      const offsets = seamlessModeEnabled ?
-        [
-          [0,0], [-W,0], [W,0],
-          [0,-H], [-W,-H], [W,-H],
-          [0,H], [-W,H], [W,H]
-        ] : [[0,0]];
+    const normX = seamlessModeEnabled ? (((cx % W) + W) % W) : cx;
+    const normY = seamlessModeEnabled ? (((cy % H) + H) % H) : cy;
+    const offsets = seamlessModeEnabled ?
+      [
+        [0,0], [-W,0], [W,0],
+        [0,-H], [-W,-H], [W,-H],
+        [0,H], [-W,H], [W,H]
+      ] : [[0,0]];
 
-      for (let offset of offsets) {
-        drawLeafToCtx(layers[activeLayer].ctx, W, H, normX + offset[0], normY + offset[1]);
-      }
+    for (let offset of offsets) {
+      drawLeafToCtx(layers[activeLayer].ctx, W, H, normX + offset[0], normY + offset[1]);
+    }
 
-      const nearEdge = rawX < size || rawX > effW - size || rawY < size || rawY > effH - size;
-      if(nearEdge){
-        marginHasContent = true;
-        drawLeafToCtx(mfCtx, effW + MARGIN_PX*2, effH + MARGIN_PX*2, rawX + MARGIN_PX, rawY + MARGIN_PX);
-      }
-    } else {
+    const nearOrInMargin = rawX < size || rawX > effW - size || rawY < size || rawY > effH - size;
+    if(nearOrInMargin){
       marginHasContent = true;
       drawLeafToCtx(mfCtx, effW + MARGIN_PX*2, effH + MARGIN_PX*2, rawX + MARGIN_PX, rawY + MARGIN_PX);
     }
@@ -9679,25 +9663,31 @@ void main(void)\r
         const rawY = seamlessModeEnabled ? (py + H) : py;
         const effW = getEffectiveCanvasW();
         const effH = getEffectiveCanvasH();
-        const isCore = (rawX >= 0 && rawX <= effW && rawY >= 0 && rawY <= effH);
-        if(isCore){
-          const normX = seamlessModeEnabled ? (((px % W) + W) % W) : px;
-          const normY = seamlessModeEnabled ? (((py % H) + H) % H) : py;
-          const offsets = seamlessModeEnabled ? [
-            [0,0], [-W,0], [W,0],
-            [0,-H], [-W,-H], [W,-H],
-            [0,H], [-W,H], [W,H]
-          ] : [[0,0]];
-          for (let offset of offsets) {
-            const tx = normX + offset[0];
-            const ty = normY + offset[1];
-            const bounds = getRotatedRectBounds(tx, ty, built.w, built.h, angle, pX, pY);
-            if (bounds.x >= W || bounds.y >= H || bounds.x + bounds.w <= 0 || bounds.y + bounds.h <= 0) continue;
-            paintNoBlend(layers[activeLayer].ctx, W, H, bounds.x, bounds.y, bounds.w, bounds.h, (sctx)=>{
-              sctx.globalAlpha = opacity/100;
-              drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, angle, pX, pY, built.srcW, built.srcH);
-            });
-          }
+        const normX = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+        const normY = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+        const offsets = seamlessModeEnabled ? [
+          [0,0], [-W,0], [W,0],
+          [0,-H], [-W,-H], [W,-H],
+          [0,H], [-W,H], [W,H]
+        ] : [[0,0]];
+        for (let offset of offsets) {
+          const tx = normX + offset[0];
+          const ty = normY + offset[1];
+          const bounds = getRotatedRectBounds(tx, ty, built.w, built.h, angle, pX, pY);
+          if (bounds.x >= W || bounds.y >= H || bounds.x + bounds.w <= 0 || bounds.y + bounds.h <= 0) continue;
+          paintNoBlend(layers[activeLayer].ctx, W, H, bounds.x, bounds.y, bounds.w, bounds.h, (sctx)=>{
+            sctx.globalAlpha = opacity/100;
+            drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, angle, pX, pY, built.srcW, built.srcH);
+          });
+        }
+        const nearOrInMargin = rawX < built.w || rawX > effW - built.w || rawY < built.h || rawY > effH - built.h;
+        if(nearOrInMargin){
+          marginHasContent = true;
+          const bounds = getRotatedRectBounds(rawX + MARGIN_PX, rawY + MARGIN_PX, built.w, built.h, angle, pX, pY);
+          paintNoBlend(mfCtx, effW + MARGIN_PX*2, effH + MARGIN_PX*2, bounds.x, bounds.y, bounds.w, bounds.h, (sctx)=>{
+            sctx.globalAlpha = opacity/100;
+            drawBuiltStamp(sctx, built.canvas, built.w, built.h, rawX + MARGIN_PX, rawY + MARGIN_PX, angle, pX, pY, built.srcW, built.srcH);
+          });
         }
       }
     } else {
@@ -10807,59 +10797,52 @@ void main(void)\r
       const effW = getEffectiveCanvasW();
       const effH = getEffectiveCanvasH();
 
-      const isCoreTiles = (dabRawX >= 0 && dabRawX <= effW && dabRawY >= 0 && dabRawY <= effH);
+      const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
+      const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
 
-      if (isCoreTiles) {
-        const normPx = seamlessModeEnabled ? (((px % W) + W) % W) : px;
-        const normPy = seamlessModeEnabled ? (((py % H) + H) % H) : py;
+      const offsets = seamlessModeEnabled ?
+        [
+          [0,0], [-W,0], [W,0],
+          [0,-H], [-W,-H], [W,-H],
+          [0,H], [-W,H], [W,H]
+        ] : [[0,0]];
 
-        const offsets = seamlessModeEnabled ?
-          [
-            [0,0], [-W,0], [W,0],
-            [0,-H], [-W,-H], [W,-H],
-            [0,H], [-W,H], [W,H]
-          ] : [[0,0]];
+      for (let offset of offsets) {
+        const tx = normPx + offset[0];
+        const ty = normPy + offset[1];
 
-        for (let offset of offsets) {
-          const tx = normPx + offset[0];
-          const ty = normPy + offset[1];
+        const bounds = getRotatedRectBounds(tx, ty, targetW, targetH, rotAngle, pX, pY);
+        if (bounds.x >= W || bounds.y >= H || bounds.x + bounds.w <= 0 || bounds.y + bounds.h <= 0) continue;
 
-          const bounds = getRotatedRectBounds(tx, ty, targetW, targetH, rotAngle, pX, pY);
-          if (bounds.x >= W || bounds.y >= H || bounds.x + bounds.w <= 0 || bounds.y + bounds.h <= 0) continue;
-
-          const drawDabFn = (sctx) => {
-            sctx.globalAlpha = (opacity/100) * dabAlpha;
-            if(Math.max(dW, dH) > 1 && dabShape === 'stamp' && selectedStampIndex !== null && stamps[selectedStampIndex]){
-              const st = stamps[selectedStampIndex];
-              const mask = getActiveStampMask(st);
-              const built = mask ? buildTintedStamp(mask, targetW, targetH, dabColor) : null;
-              if (built) {
-                drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, rotAngle, pX, pY, built.srcW, built.srcH);
-              } else {
-                drawDabShape(sctx, tx, ty, dW, dH, dabColor, rotAngle, 1);
-              }
+        const drawDabFn = (sctx) => {
+          sctx.globalAlpha = (opacity/100) * dabAlpha;
+          if(Math.max(dW, dH) > 1 && dabShape === 'stamp' && selectedStampIndex !== null && stamps[selectedStampIndex]){
+            const st = stamps[selectedStampIndex];
+            const mask = getActiveStampMask(st);
+            const built = mask ? buildTintedStamp(mask, targetW, targetH, dabColor) : null;
+            if (built) {
+              drawBuiltStamp(sctx, built.canvas, built.w, built.h, tx, ty, rotAngle, pX, pY, built.srcW, built.srcH);
             } else {
               drawDabShape(sctx, tx, ty, dW, dH, dabColor, rotAngle, 1);
             }
-          };
-
-          if(sprayMode === 'eraser'){
-            paintEraserDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn);
-          } else if(sprayMode === 'colorize'){
-            paintColorizeDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, drawDabFn);
-          } else if(sprayCombineSameColor){
-            paintCombineSameColor(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, drawDabFn);
           } else {
-            paintNoBlend(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn, dabColor);
+            drawDabShape(sctx, tx, ty, dW, dH, dabColor, rotAngle, 1);
           }
-        }
+        };
 
-        const nearEdge = dabRawX < maxDabDim || dabRawX > effW - maxDabDim || dabRawY < maxDabDim || dabRawY > effH - maxDabDim;
-        if(nearEdge){
-          marginHasContent = true;
-          applyDabToCanvas(mfCtx, effW + MARGIN_PX*2, effH + MARGIN_PX*2, dabRawX + MARGIN_PX, dabRawY + MARGIN_PX, dabColor, rotAngle, dW, dH, opMul, true);
+        if(sprayMode === 'eraser'){
+          paintEraserDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn);
+        } else if(sprayMode === 'colorize'){
+          paintColorizeDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, drawDabFn);
+        } else if(sprayCombineSameColor){
+          paintCombineSameColor(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, drawDabFn);
+        } else {
+          paintNoBlend(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn, dabColor);
         }
-      } else {
+      }
+
+      const nearOrInMargin = dabRawX < maxDabDim || dabRawX > effW - maxDabDim || dabRawY < maxDabDim || dabRawY > effH - maxDabDim;
+      if(nearOrInMargin){
         marginHasContent = true;
         applyDabToCanvas(mfCtx, effW + MARGIN_PX*2, effH + MARGIN_PX*2, dabRawX + MARGIN_PX, dabRawY + MARGIN_PX, dabColor, rotAngle, dW, dH, opMul, true);
       }
@@ -11275,7 +11258,7 @@ void main(void)\r
       if(selection && selection.w > 0 && selection.h > 0 &&
          x >= selection.x && x <= selection.x+selection.w &&
          y >= selection.y && y <= selection.y+selection.h &&
-         layers[activeLayer] && layers[activeLayer].visible){
+         layers[activeLayer] && layers[activeLayer].visible && !layers[activeLayer].locked){
         pushHistory();
         const sel = selection;
         const lifted = document.createElement('canvas');
@@ -11304,8 +11287,9 @@ void main(void)\r
       return;
     }
 
-    if(layers[activeLayer] && !layers[activeLayer].visible){
-      return; // don't paint onto a hidden layer
+    if(layers[activeLayer] && (!layers[activeLayer].visible || layers[activeLayer].locked)){
+      if (layers[activeLayer].locked && typeof showToast === 'function') showToast('Active layer is locked');
+      return; // don't paint onto a hidden or locked layer
     }
 
     const {x,y} = canvasCoords(e);
@@ -16400,9 +16384,11 @@ void main(void)\r
           }
         }
 
+        if (l.locked) row.classList.add('is-locked');
+
         row.addEventListener('pointerdown', (ev) => {
           if (ev.button !== 0) return;
-          if (ev.target.closest('[data-role="visibility"]') || ev.target.closest('[data-role="info"]')) return;
+          if (ev.target.closest('[data-role="visibility"]') || ev.target.closest('[data-role="info"]') || ev.target.closest('[data-role="lock"]')) return;
           startX = ev.clientX;
           startY = ev.clientY;
           started = false;
@@ -16414,6 +16400,45 @@ void main(void)\r
         vis.type = 'checkbox';
         vis.checked = l.visible;
         vis.dataset.role = 'visibility';
+        vis.title = 'Toggle visibility';
+        vis.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+        vis.addEventListener('change', (ev) => {
+          ev.stopPropagation();
+          pushHistory();
+          const isVis = ev.target.checked;
+          frames.forEach(f => {
+            if (f.layers && f.layers[i]) f.layers[i].visible = isVis;
+          });
+          render();
+          updateHiddenLayerWarning();
+          if (typeof refreshMatrixTimeline === 'function') refreshMatrixTimeline();
+        });
+
+        const lockBtn = document.createElement('button');
+        lockBtn.type = 'button';
+        lockBtn.className = 'layer-lock-btn' + (l.locked ? ' active' : '');
+        lockBtn.innerHTML = l.locked ? '🔒' : '🔓';
+        lockBtn.title = l.locked ? 'Unlock layer (allow editing)' : 'Lock layer (prevent editing)';
+        lockBtn.dataset.role = 'lock';
+        lockBtn.style.background = 'none';
+        lockBtn.style.border = 'none';
+        lockBtn.style.cursor = 'pointer';
+        lockBtn.style.fontSize = '12px';
+        lockBtn.style.padding = '0 3px';
+        lockBtn.style.lineHeight = '1';
+        lockBtn.style.opacity = l.locked ? '1' : '0.4';
+        lockBtn.addEventListener('pointerdown', (ev) => ev.stopPropagation());
+        lockBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          pushHistory();
+          const isLocked = !l.locked;
+          frames.forEach(f => {
+            if (f.layers && f.layers[i]) f.layers[i].locked = isLocked;
+          });
+          refreshLayerPanel();
+          if (typeof refreshMatrixTimeline === 'function') refreshMatrixTimeline();
+          render();
+        });
 
         const thumb = document.createElement('canvas');
         thumb.width = 24; thumb.height = 24;
@@ -16432,6 +16457,7 @@ void main(void)\r
         infoBtn.dataset.role = 'info';
 
         row.appendChild(vis);
+        row.appendChild(lockBtn);
         row.appendChild(thumb);
         row.appendChild(name);
         row.appendChild(infoBtn);
@@ -16480,6 +16506,17 @@ void main(void)\r
       render();
       updateHiddenLayerWarning();
       if(typeof refreshMatrixTimeline === 'function') refreshMatrixTimeline();
+      return;
+    }
+    if((ev.target.dataset && ev.target.dataset.role === 'lock') || ev.target.closest('[data-role="lock"]')){
+      pushHistory();
+      const isLocked = !layers[idx].locked;
+      frames.forEach(f => {
+        if(f.layers && f.layers[idx]) f.layers[idx].locked = isLocked;
+      });
+      refreshLayerPanel();
+      if(typeof refreshMatrixTimeline === 'function') refreshMatrixTimeline();
+      render();
       return;
     }
     if(ev.target.dataset && ev.target.dataset.role === 'info'){
@@ -16666,8 +16703,12 @@ void main(void)\r
     if(typeof updateHistoryButtons === 'function') updateHistoryButtons();
 
     onionSkinEnabled = false;
+    onionSkinOpacity = 50;
     const onionSkinBtn = document.getElementById('onionSkinBtn');
     if(onionSkinBtn) onionSkinBtn.classList.remove('active');
+    const osCheck = document.getElementById('tlOnionSkinCheckbox'); if(osCheck) osCheck.checked = false;
+    const osSlider = document.getElementById('tlOnionSkinOpacitySlider'); if(osSlider) osSlider.value = 50;
+    const osVal = document.getElementById('tlOnionSkinOpacityVal'); if(osVal) osVal.textContent = '50%';
     onionSkinCache = null;
 
     layerIdCounter = 1;
@@ -16720,6 +16761,8 @@ void main(void)\r
     sourceKind = 'palette';
     const sourceKindRadio = document.querySelector('input[name="sourceKind"][value="palette"]');
     if(sourceKindRadio) sourceKindRadio.checked = true;
+    const sourceKindSel = document.getElementById('sourceKindSelect');
+    if(sourceKindSel) sourceKindSel.value = 'palette';
 
     const dabLock = document.getElementById('dabLockAspect');
     if(dabLock) dabLock.checked = true;
@@ -16736,6 +16779,82 @@ void main(void)\r
     const colorHighlightBtn = document.getElementById('highlightOnCanvasBtn');
     if(colorHighlightBtn) colorHighlightBtn.classList.remove('active');
     colorHighlightActive = false;
+
+    // Reset Height Painting mode & controls
+    heightPaintEnabled = false;
+    heightSourceLayerIndex = null;
+    heightMode = 'range';
+    heightMin = 0;
+    heightMax = 255;
+    heightSoftness = 0;
+    const hpe = document.getElementById('heightPaintEnabled'); if(hpe) hpe.checked = false;
+    const hpo = document.getElementById('heightPaintOptions'); if(hpo) hpo.style.display = 'none';
+
+    // Reset Taper Settings
+    paintTaperEnabled = false;
+    paintTaperStart = true;
+    paintTaperFinish = false;
+    paintTaperLength = 16;
+    paintTaperOpacityFade = false;
+    paintTaperSizePct = 100;
+    paintTaperSpreadPct = 100;
+    if(typeof updatePaintTaperUI === 'function') updatePaintTaperUI();
+
+    // Reset Path & Freehand Settings
+    pathStyle = 'default';
+    const pathStyleSel = document.getElementById('pathStyleSelect'); if(pathStyleSel) pathStyleSel.value = 'default';
+    freehandPathDetail = 30;
+    const freehandDet = document.getElementById('freehandPathDetailSlider'); if(freehandDet) freehandDet.value = 30;
+    const freehandDetVal = document.getElementById('freehandPathDetailVal'); if(freehandDetVal) freehandDetVal.textContent = '30';
+    pathPoints = [];
+    pathState = 'idle';
+    pathSegments = [];
+    pathUndoSnapshot = null;
+    vineDensity = 50;
+    vineDecorSize = 14;
+    vineRotationJitter = 30;
+    vineMaxTurnPct = 100;
+    vineOffshootDensity = 20;
+    vineOffshootLength = 40;
+    vineSizeJitter = 15;
+    vineEnableDecorations = true;
+    if(typeof updateVineFreehandUI === 'function') updateVineFreehandUI();
+
+    // Reset Soften Settings
+    softenType = 'edge';
+    softenHardness = 100;
+    if(typeof updateSoftenUI === 'function') updateSoftenUI();
+
+    // Reset Fill Tool Settings
+    fillMode = 'connected';
+    fillTolerance = 0;
+    document.querySelectorAll('input[name="fillMode"]').forEach(r => r.checked = (r.value === 'connected'));
+    const fillTolSlider = document.getElementById('fillToleranceSlider'); if(fillTolSlider) fillTolSlider.value = 0;
+    const fillTolVal = document.getElementById('fillToleranceVal'); if(fillTolVal) fillTolVal.textContent = '0';
+
+    // Reset Gradient Ordered Settings
+    gradientOrdered = false;
+    gradientCycleLength = 200;
+    gradientDabsPerColor = 1;
+    gradientSequentialStepMode = 'distance';
+    const gradOrdChk = document.getElementById('gradientOrderedCheckbox'); if(gradOrdChk) gradOrdChk.checked = false;
+    if(typeof updateGradientOrderedVisibility === 'function') updateGradientOrderedVisibility();
+
+    // Reset Jitter & Rotation Settings
+    sizeJitterAmt = 0; sizeJitterMin = 100; sizeJitterMax = 100;
+    dabWidthJitterMin = 100; dabWidthJitterMax = 100;
+    dabHeightJitterMin = 100; dabHeightJitterMax = 100;
+    opacityJitterAmt = 0; opacityJitterMin = 100; opacityJitterMax = 100;
+    rotationJitterAmt = 0; rotationMode = 'range'; rotationMinAngle = 0; rotationMaxAngle = 0;
+    sprayTargetAnchorX = null; sprayTargetAnchorY = null;
+    const rmEl = document.getElementById('rotationModeSelect'); if(rmEl) rmEl.value = 'range';
+    const rminEl = document.getElementById('rotationMinValInput'); if(rminEl) rminEl.value = 0;
+    const rmaxEl = document.getElementById('rotationMaxValInput'); if(rmaxEl) rmaxEl.value = 0;
+    if(typeof drawRotationDial === 'function') drawRotationDial();
+    if(typeof updateSprayAnchorUI === 'function') updateSprayAnchorUI();
+
+    // Reset Tool Buttons UI
+    document.querySelectorAll('[data-tool]').forEach(b => b.classList.toggle('active', b.dataset.tool === 'spray'));
 
     fitCanvasToScreen(true);
     centerCanvas();
@@ -17204,9 +17323,11 @@ void main(void)\r
       backupsEnabled: !!backupDirHandle,
       width: W,
       height: H,
+      onionSkinEnabled,
+      onionSkinOpacity,
       activeLayer,
       layers: layers.map(l=>({
-        name:l.name, visible:l.visible, opacity:l.opacity, data:l.colorCanvas.toDataURL(),
+        name:l.name, visible:l.visible, locked:!!l.locked, opacity:l.opacity, data:l.colorCanvas.toDataURL(),
         heightData: l.heightCanvas ? l.heightCanvas.toDataURL() : null,
         roughnessData: l.roughnessCanvas ? l.roughnessCanvas.toDataURL() : null
       })),
@@ -17215,7 +17336,7 @@ void main(void)\r
         name: f.name,
         activeLayer: f.activeLayer,
         layers: f.layers.map(l=>({
-          name:l.name, visible:l.visible, opacity:l.opacity, data:l.colorCanvas.toDataURL(),
+          name:l.name, visible:l.visible, locked:!!l.locked, opacity:l.opacity, data:l.colorCanvas.toDataURL(),
           heightData: l.heightCanvas ? l.heightCanvas.toDataURL() : null,
           roughnessData: l.roughnessCanvas ? l.roughnessCanvas.toDataURL() : null
         }))
@@ -17870,6 +17991,7 @@ void main(void)\r
           heightCanvas: null, heightCtx: null,
           roughnessCanvas: null, roughnessCtx: null,
           visible: ld.visible !== false,
+          locked: !!ld.locked,
           opacity: (typeof ld.opacity === 'number') ? ld.opacity : 100
         };
         const promises = [];
@@ -18203,6 +18325,13 @@ void main(void)\r
       populateStampDropdown();
       refreshGridPanel();
       drawGridOverlay();
+
+      if(proj.onionSkinEnabled !== undefined) onionSkinEnabled = !!proj.onionSkinEnabled;
+      if(proj.onionSkinOpacity !== undefined) onionSkinOpacity = +proj.onionSkinOpacity || 50;
+      const osCheck = document.getElementById('tlOnionSkinCheckbox'); if(osCheck) osCheck.checked = onionSkinEnabled;
+      const osSlider = document.getElementById('tlOnionSkinOpacitySlider'); if(osSlider) osSlider.value = onionSkinOpacity;
+      const osVal = document.getElementById('tlOnionSkinOpacityVal'); if(osVal) osVal.textContent = onionSkinOpacity + '%';
+      rebuildOnionSkinCache();
 
       setFg(allColors()[0] || fgColor);
       refreshGroups();
