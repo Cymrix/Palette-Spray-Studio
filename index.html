@@ -1630,10 +1630,13 @@
         <div id="vineOnlyOptions" style="display:none; margin-top:8px; padding:8px; background:var(--panel); border:1px solid var(--line); border-radius:6px;">
           <!-- Path Behavior & Modes -->
           <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px; border-radius: 6px; margin-bottom: 10px;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;" data-tooltip="Enforces 90° right angles (Orthogonal path routing)">
-              <input type="checkbox" id="vineRightAnglesOnlyCheckbox" style="cursor: pointer; width: auto; height: auto;">
-              <label for="vineRightAnglesOnlyCheckbox" style="font-size: 0.85rem; cursor: pointer; user-select: none; font-weight: 600; color: #ffca28;">Right angles only (Orthogonal)</label>
-            </div>
+            <label class="field" style="margin-top:0; font-weight:600; font-size:11px; color:#ffca28;" data-tooltip="Path style determines how lines and path segments are constrained">Path Style</label>
+            <select id="pathStyleSelect" style="width:100%; margin-top:4px; margin-bottom:10px; font-size:12px; padding:4px; background:#444; color:#fff; border:1px solid #555; border-radius:4px;">
+              <option value="default">Default</option>
+              <option value="90">90 degree only (Orthogonal)</option>
+              <option value="45">45 degree only</option>
+              <option value="freehand">Freehand</option>
+            </select>
             <div style="display: flex; align-items: center; gap: 8px;" data-tooltip="Toggles leaves and stamps along path segments">
               <input type="checkbox" id="vineEnableDecorationsCheckbox" checked style="cursor: pointer; width: auto; height: auto;">
               <label for="vineEnableDecorationsCheckbox" style="font-size: 0.85rem; cursor: pointer; user-select: none; font-weight: 600;">Enable leaves & stamps</label>
@@ -1667,16 +1670,10 @@
           <label class="field" style="margin-top: 10px;" data-tooltip="Size jitter: Random size variation along the main vine and offshoots">Size jitter <span class="field-value" id="vineSizeJitterVal">0%</span></label>
           <input type="range" id="vineSizeJitterSlider" min="0" max="100" value="0" data-tooltip="Size jitter: Random size variation along the main vine and offshoots">
 
-          <!-- Freehand Path Feature -->
-          <div style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px; border-radius: 6px; margin: 10px 0 5px 0;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;" data-tooltip="Draw paths continuously by dragging the mouse freehand, instead of clicking segment-by-segment">
-              <input type="checkbox" id="vineFreehandCheckbox" style="cursor: pointer; width: auto; height: auto;">
-              <label for="vineFreehandCheckbox" style="font-size: 0.85rem; cursor: pointer; user-select: none; font-weight: 600; color: #ffca28;">Freehand path drawing</label>
-            </div>
-            <div id="vineFreehandDetailGroup" style="display: none; margin-top: 6px;">
-              <label class="field" data-tooltip="Detail: Distance in pixels between placed path nodes during freehand drawing. Smaller values give more detail but denser segments.">Freehand path detail <span class="field-value" id="vineFreehandDetailVal">30px</span></label>
-              <input type="range" id="vineFreehandDetailSlider" min="5" max="250" value="30" data-tooltip="Detail: Distance in pixels between placed path nodes during freehand drawing">
-            </div>
+          <!-- Freehand Path Detail -->
+          <div id="vineFreehandDetailGroup" style="display: none; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); padding: 8px; border-radius: 6px; margin: 10px 0 5px 0;">
+            <label class="field" data-tooltip="Detail: Distance in pixels between placed path nodes during freehand drawing. Smaller values give more detail but denser segments.">Freehand path detail <span class="field-value" id="vineFreehandDetailVal">30px</span></label>
+            <input type="range" id="vineFreehandDetailSlider" min="5" max="250" value="30" data-tooltip="Detail: Distance in pixels between placed path nodes during freehand drawing">
           </div>
 
           <!-- Paint Taper Features (Moved inside Path Mode) -->
@@ -3375,7 +3372,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.305'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.306'; // bump this on every deploy — shown only in the About popup
 
   // Override window.alert to be iframe-safe and style-consistent
   window.alert = function(message) {
@@ -4185,7 +4182,7 @@ void main(void)\r
   let pathPoints = []; // [{x, y}]
   let pathState = 'idle'; // 'idle' | 'start_placed' | 'end_placed'
   let vineSizeJitter = 0;
-  let vineRightAnglesOnly = false;
+  let pathStyle = "default";
   let vineEnableDecorations = true;
   let vineDecorationType = 'shape-leaf';
   let vineOffshootSizeSliderVal = 45;
@@ -4196,7 +4193,6 @@ void main(void)\r
   let paintTaperOpacityFade = false;
   let paintTaperSizePct = 100;
   let paintTaperSpreadPct = 100;
-  let freehandPathModeEnabled = false;
   let freehandPathDetail = 30;
   let gradientDabsPerColor = 1;
   let gradientSequentialStepMode = 'distance'; // 'distance' | 'dabs'
@@ -4223,7 +4219,7 @@ void main(void)\r
         vineTaperOffshoots: true,
         vineTaperLength: 50,
         vineSizeJitter: 15,
-        vineRightAnglesOnly: false,
+        pathStyle: 'default',
         vineEnableDecorations: true
       },
       settings: {
@@ -4239,7 +4235,7 @@ void main(void)\r
         vineTaperOffshoots: true,
         vineTaperLength: 50,
         vineSizeJitter: 15,
-        vineRightAnglesOnly: false,
+        pathStyle: 'default',
         vineEnableDecorations: true
       }
     },
@@ -4260,7 +4256,7 @@ void main(void)\r
         vineTaperOffshoots: false,
         vineTaperLength: 50,
         vineSizeJitter: 10,
-        vineRightAnglesOnly: false,
+        pathStyle: 'default',
         vineEnableDecorations: true
       },
       settings: {
@@ -4276,7 +4272,7 @@ void main(void)\r
         vineTaperOffshoots: false,
         vineTaperLength: 50,
         vineSizeJitter: 10,
-        vineRightAnglesOnly: false,
+        pathStyle: 'default',
         vineEnableDecorations: true
       }
     },
@@ -4297,7 +4293,7 @@ void main(void)\r
         vineTaperOffshoots: false,
         vineTaperLength: 50,
         vineSizeJitter: 0,
-        vineRightAnglesOnly: true,
+        pathStyle: '90',
         vineEnableDecorations: false
       },
       settings: {
@@ -4313,7 +4309,7 @@ void main(void)\r
         vineTaperOffshoots: false,
         vineTaperLength: 50,
         vineSizeJitter: 0,
-        vineRightAnglesOnly: true,
+        pathStyle: '90',
         vineEnableDecorations: false
       }
     },
@@ -4334,7 +4330,7 @@ void main(void)\r
         vineTaperOffshoots: false,
         vineTaperLength: 50,
         vineSizeJitter: 0,
-        vineRightAnglesOnly: true,
+        pathStyle: '90',
         vineEnableDecorations: true
       },
       settings: {
@@ -4350,7 +4346,7 @@ void main(void)\r
         vineTaperOffshoots: false,
         vineTaperLength: 50,
         vineSizeJitter: 0,
-        vineRightAnglesOnly: true,
+        pathStyle: '90',
         vineEnableDecorations: true
       }
     },
@@ -4371,7 +4367,7 @@ void main(void)\r
         vineTaperOffshoots: false,
         vineTaperLength: 80,
         vineSizeJitter: 0,
-        vineRightAnglesOnly: false,
+        pathStyle: 'default',
         vineEnableDecorations: false
       },
       settings: {
@@ -4387,7 +4383,7 @@ void main(void)\r
         vineTaperOffshoots: false,
         vineTaperLength: 80,
         vineSizeJitter: 0,
-        vineRightAnglesOnly: false,
+        pathStyle: 'default',
         vineEnableDecorations: false
       }
     }
@@ -4460,24 +4456,24 @@ void main(void)\r
       settings: { sprayMode: 'blur', brushSize: 24, dabSize: 4, dabWidth: 4, dabHeight: 4, dabLockAspect: true, density: 25, falloff: 50, flow: 40, sizeJitterMin: 80, sizeJitterMax: 120, opacityJitterMin: 70, opacityJitterMax: 100, rotationMode: 'range', rotationMinAngle: -180, rotationMaxAngle: 180, dabShape: 'circle', pixelPerfect: false, opacity: 80, sprayCombineSameColor: false, sprayInterpolate: true, spraySnapToGrid: false }
     },
     { id: 'builtin-vine-classic', name: 'Path: Classic Green Ivy', builtin: true,
-      savedSettings: { sprayMode: 'path', brushSize: 14, vineDensity: 50, vineDecorSize: 14, vineRotationJitter: 30, vineMaxTurnPct: 100, vineOffshootDensity: 20, vineOffshootLength: 40, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: true, vineTaperLength: 50, vineSizeJitter: 15, vineRightAnglesOnly: false, vineEnableDecorations: true },
-      settings: { sprayMode: 'path', brushSize: 14, vineDensity: 50, vineDecorSize: 14, vineRotationJitter: 30, vineMaxTurnPct: 100, vineOffshootDensity: 20, vineOffshootLength: 40, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: true, vineTaperLength: 50, vineSizeJitter: 15, vineRightAnglesOnly: false, vineEnableDecorations: true }
+      savedSettings: { sprayMode: 'path', brushSize: 14, vineDensity: 50, vineDecorSize: 14, vineRotationJitter: 30, vineMaxTurnPct: 100, vineOffshootDensity: 20, vineOffshootLength: 40, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: true, vineTaperLength: 50, vineSizeJitter: 15, pathStyle: 'default', vineEnableDecorations: true },
+      settings: { sprayMode: 'path', brushSize: 14, vineDensity: 50, vineDecorSize: 14, vineRotationJitter: 30, vineMaxTurnPct: 100, vineOffshootDensity: 20, vineOffshootLength: 40, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: true, vineTaperLength: 50, vineSizeJitter: 15, pathStyle: 'default', vineEnableDecorations: true }
     },
     { id: 'builtin-vine-moss', name: 'Path: Castle Moss (Winding)', builtin: true,
-      savedSettings: { sprayMode: 'path', brushSize: 8, vineDensity: 75, vineDecorSize: 8, vineRotationJitter: 60, vineMaxTurnPct: 40, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 10, vineSizeJitter: 25, vineRightAnglesOnly: false, vineEnableDecorations: true },
-      settings: { sprayMode: 'path', brushSize: 8, vineDensity: 75, vineDecorSize: 8, vineRotationJitter: 60, vineMaxTurnPct: 40, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 10, vineSizeJitter: 25, vineRightAnglesOnly: false, vineEnableDecorations: true }
+      savedSettings: { sprayMode: 'path', brushSize: 8, vineDensity: 75, vineDecorSize: 8, vineRotationJitter: 60, vineMaxTurnPct: 40, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 10, vineSizeJitter: 25, pathStyle: 'default', vineEnableDecorations: true },
+      settings: { sprayMode: 'path', brushSize: 8, vineDensity: 75, vineDecorSize: 8, vineRotationJitter: 60, vineMaxTurnPct: 40, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 10, vineSizeJitter: 25, pathStyle: 'default', vineEnableDecorations: true }
     },
     { id: 'builtin-vine-tech-pipes', name: 'Path: Tech Circuit Pipes', builtin: true,
-      savedSettings: { sprayMode: 'path', brushSize: 10, vineDensity: 0, vineDecorSize: 10, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 0, vineSizeJitter: 0, vineRightAnglesOnly: true, vineEnableDecorations: false },
-      settings: { sprayMode: 'path', brushSize: 10, vineDensity: 0, vineDecorSize: 10, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 0, vineSizeJitter: 0, vineRightAnglesOnly: true, vineEnableDecorations: false }
+      savedSettings: { sprayMode: 'path', brushSize: 10, vineDensity: 0, vineDecorSize: 10, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 0, vineSizeJitter: 0, pathStyle: '90', vineEnableDecorations: false },
+      settings: { sprayMode: 'path', brushSize: 10, vineDensity: 0, vineDecorSize: 10, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 0, vineSizeJitter: 0, pathStyle: '90', vineEnableDecorations: false }
     },
     { id: 'builtin-vine-tech-grid', name: 'Path: Modular Tech Grid Branch', builtin: true,
-      savedSettings: { sprayMode: 'path', brushSize: 12, vineDensity: 40, vineDecorSize: 16, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 30, vineOffshootLength: 50, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 0, vineSizeJitter: 0, vineRightAnglesOnly: true, vineEnableDecorations: true },
-      settings: { sprayMode: 'path', brushSize: 12, vineDensity: 40, vineDecorSize: 16, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 30, vineOffshootLength: 50, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 0, vineSizeJitter: 0, vineRightAnglesOnly: true, vineEnableDecorations: true }
+      savedSettings: { sprayMode: 'path', brushSize: 12, vineDensity: 40, vineDecorSize: 16, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 30, vineOffshootLength: 50, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 0, vineSizeJitter: 0, pathStyle: '90', vineEnableDecorations: true },
+      settings: { sprayMode: 'path', brushSize: 12, vineDensity: 40, vineDecorSize: 16, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 30, vineOffshootLength: 50, vineTaperStart: false, vineTaperFinish: false, vineTaperOffshoots: false, vineTaperLength: 0, vineSizeJitter: 0, pathStyle: '90', vineEnableDecorations: true }
     },
     { id: 'builtin-vine-dotted', name: 'Path: Dotted Guide Line', builtin: true,
-      savedSettings: { sprayMode: 'path', brushSize: 4, vineDensity: 100, vineDecorSize: 4, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: true, vineTaperFinish: true, vineTaperOffshoots: false, vineTaperLength: 15, vineSizeJitter: 0, vineRightAnglesOnly: false, vineEnableDecorations: false },
-      settings: { sprayMode: 'path', brushSize: 4, vineDensity: 100, vineDecorSize: 4, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: true, vineTaperFinish: true, vineTaperOffshoots: false, vineTaperLength: 15, vineSizeJitter: 0, vineRightAnglesOnly: false, vineEnableDecorations: false }
+      savedSettings: { sprayMode: 'path', brushSize: 4, vineDensity: 100, vineDecorSize: 4, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: true, vineTaperFinish: true, vineTaperOffshoots: false, vineTaperLength: 15, vineSizeJitter: 0, pathStyle: 'default', vineEnableDecorations: false },
+      settings: { sprayMode: 'path', brushSize: 4, vineDensity: 100, vineDecorSize: 4, vineRotationJitter: 0, vineMaxTurnPct: 100, vineOffshootDensity: 0, vineOffshootLength: 0, vineTaperStart: true, vineTaperFinish: true, vineTaperOffshoots: false, vineTaperLength: 15, vineSizeJitter: 0, pathStyle: 'default', vineEnableDecorations: false }
     }
   ];
   let sprayPresets = JSON.parse(JSON.stringify(DEFAULT_BUILTIN_SPRAY_PRESETS));
@@ -7270,9 +7266,9 @@ void main(void)\r
     }
   }
   function updateVineFreehandUI() {
-    const isFreehand = freehandPathModeEnabled;
-    const el = document.getElementById('vineFreehandCheckbox');
-    if (el) el.checked = isFreehand;
+    const isFreehand = pathStyle === 'freehand';
+    const el = document.getElementById('pathStyleSelect');
+    if (el) el.value = pathStyle;
     const grp = document.getElementById('vineFreehandDetailGroup');
     if (grp) grp.style.display = isFreehand ? 'block' : 'none';
     const slider = document.getElementById('vineFreehandDetailSlider');
@@ -8163,7 +8159,7 @@ void main(void)\r
         y = Math.round((y - offY) / g.spacing) * g.spacing + offY;
       }
     }
-    if (isPathTool() && (vineRightAnglesOnly || brushPixelPerfect)) {
+    if (isPathTool() && (pathStyle === "90" || pathStyle === "45" || brushPixelPerfect)) {
       x = Math.round(x);
       y = Math.round(y);
     }
@@ -9762,7 +9758,7 @@ void main(void)\r
       const newX = vineTipX + vineDirX*step, newY = vineTipY + vineDirY*step;
       let drawX = (vineTipX+newX)/2;
       let drawY = (vineTipY+newY)/2;
-      if (vineRightAnglesOnly && stemWidth <= 1.5) {
+      if ((pathStyle === "90" || pathStyle === "45") && stemWidth <= 1.5) {
         drawX = newX;
         drawY = newY;
       }
@@ -10025,7 +10021,7 @@ void main(void)\r
       const toLen = Math.sqrt(toX*toX+toY*toY) || 1;
       const prevDirX = vineDirX, prevDirY = vineDirY;
       
-      if (vineRightAnglesOnly) {
+      if (pathStyle === '90' || pathStyle === '45') {
         vineDirX = toX / toLen;
         vineDirY = toY / toLen;
       } else {
@@ -10050,7 +10046,7 @@ void main(void)\r
       const newX = vineTipX + vineDirX*step, newY = vineTipY + vineDirY*step;
       let drawX = (vineTipX+newX)/2;
       let drawY = (vineTipY+newY)/2;
-      if (vineRightAnglesOnly && stemWidth <= 1.5) {
+      if ((pathStyle === "90" || pathStyle === "45") && stemWidth <= 1.5) {
         drawX = newX;
         drawY = newY;
       }
@@ -10063,7 +10059,7 @@ void main(void)\r
         if (seededRandom() < offshootChance) {
           isGrowingOffshoot = true;
           const side = seededRandom() < 0.5 ? 1 : -1;
-          const branchAngle = vineRightAnglesOnly
+          const branchAngle = (pathStyle === '90' || pathStyle === '45')
             ? Math.atan2(vineDirY, vineDirX) + side * (Math.PI / 2)
             : Math.atan2(vineDirY, vineDirX) + side * (Math.PI / 4 + seededRandom() * Math.PI / 4);
           const branchLen = vineOffshootLength * (0.4 + seededRandom() * 0.6);
@@ -10080,7 +10076,7 @@ void main(void)\r
           let offNextDecorationAt = seededDistFn() * 0.7;
           
           for (let j = 0; j < offSteps; j++) {
-            const wiggle = vineRightAnglesOnly ? 0 : (seededRandom() - 0.5) * 0.4;
+            const wiggle = (pathStyle === '90' || pathStyle === '45') ? 0 : (seededRandom() - 0.5) * 0.4;
             const cosA = Math.cos(wiggle), sinA = Math.sin(wiggle);
             let rdx = offDirX * cosA - offDirY * sinA;
             let rdy = offDirX * sinA + offDirY * cosA;
@@ -10440,7 +10436,7 @@ void main(void)\r
       const dispPtA_X = toDispX(ptA.x);
       const dispPtA_Y = toDispY(ptA.y);
       let snappedX = curDispX, snappedY = curDispY;
-      if (vineRightAnglesOnly) {
+      if (pathStyle === '90') {
         const dx = Math.abs(curDispX - dispPtA_X);
         const dy = Math.abs(curDispY - dispPtA_Y);
         if (dx > dy) {
@@ -10448,6 +10444,13 @@ void main(void)\r
         } else {
           snappedX = dispPtA_X;
         }
+      } else if (pathStyle === '45') {
+        const dx = curDispX - dispPtA_X;
+        const dy = curDispY - dispPtA_Y;
+        const angle = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4);
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        snappedX = dispPtA_X + Math.cos(angle) * dist;
+        snappedY = dispPtA_Y + Math.sin(angle) * dist;
       }
       
       pctx.strokeStyle = 'var(--accent, #4f46e5)';
@@ -11146,7 +11149,7 @@ void main(void)\r
         const isInsideMargin = (rawX >= -margin && rawX <= effW + margin && rawY >= -margin && rawY <= effH + margin);
         if (!isInsideMargin) return;
 
-        if (freehandPathModeEnabled) {
+        if (pathStyle === "freehand") {
           pathUndoSnapshot = snapshot();
           pushHistory();
 
@@ -11192,15 +11195,22 @@ void main(void)\r
           drawPathPreview(x, y, rawX, rawY);
           updatePathOverlayToolbar();
         } else if (pathState === 'start_placed') {
-          if (vineRightAnglesOnly) {
+          if (pathStyle === '90' || pathStyle === '45') {
             const ptA = pathPoints[0];
-            const dx = Math.abs(x - ptA.x);
-            const dy = Math.abs(y - ptA.y);
+            const dx = x - ptA.x;
+            const dy = y - ptA.y;
             let snappedX = x, snappedY = y;
-            if (dx > dy) {
-              snappedY = ptA.y;
-            } else {
-              snappedX = ptA.x;
+            if (pathStyle === '90') {
+              if (Math.abs(dx) > Math.abs(dy)) {
+                snappedY = ptA.y;
+              } else {
+                snappedX = ptA.x;
+              }
+            } else if (pathStyle === '45') {
+              const angle = Math.round(Math.atan2(dy, dx) / (Math.PI / 4)) * (Math.PI / 4);
+              const dist = Math.sqrt(dx*dx + dy*dy);
+              snappedX = ptA.x + Math.cos(angle) * dist;
+              snappedY = ptA.y + Math.sin(angle) * dist;
             }
             pathPoints.push({x: snappedX, y: snappedY});
             commitVineSegment(pathPoints);
@@ -11379,7 +11389,7 @@ void main(void)\r
       const isInsideMargin = (rawX >= -margin && rawX <= effW + margin && rawY >= -margin && rawY <= effH + margin);
       if(isInsideMargin){
         if(isPathTool()) {
-          if (freehandPathModeEnabled && painting) {
+          if (pathStyle === "freehand" && painting) {
             // Drag preview drawing is done in the painting block to keep it synchronized!
           } else if(pathState !== 'idle') {
             drawPathPreview(x, y, rawX, rawY);
@@ -11426,7 +11436,7 @@ void main(void)\r
     e.preventDefault();
     const {x,y} = canvasCoords(e);
     if(isPathTool()){
-      if (freehandPathModeEnabled) {
+      if (pathStyle === "freehand") {
         const lastPt = pathPoints[pathPoints.length - 1];
         if (lastPt) {
           const dx = x - lastPt.x;
@@ -11465,7 +11475,7 @@ void main(void)\r
     panning = false;
     let layerContentChanged = wasPainting;
 
-    if (wasPainting && freehandPathModeEnabled && isPathTool()) {
+    if (wasPainting && pathStyle === "freehand" && isPathTool()) {
       if (pathSegments.length > 0) {
         drawFullVineSegments(pathSegments);
         render();
@@ -11852,14 +11862,6 @@ void main(void)\r
       render();
     }
   });
-  document.getElementById('vineRightAnglesOnlyCheckbox').addEventListener('change', e=>{
-    vineRightAnglesOnly = e.target.checked;
-    syncActiveVinePresetSettings();
-    if(pathState !== 'idle' && pathSegments.length > 0) {
-      drawFullVineSegments(pathSegments);
-      render();
-    }
-  });
   document.getElementById('vineEnableDecorationsCheckbox').addEventListener('change', e=>{
     vineEnableDecorations = e.target.checked;
     syncActiveVinePresetSettings();
@@ -11868,10 +11870,14 @@ void main(void)\r
       render();
     }
   });
-  document.getElementById('vineFreehandCheckbox').addEventListener('change', e=>{
-    freehandPathModeEnabled = e.target.checked;
+  document.getElementById('pathStyleSelect').addEventListener('change', e=>{
+    pathStyle = e.target.value;
     updateVineFreehandUI();
     syncActiveVinePresetSettings();
+    if(pathState !== 'idle' && pathSegments.length > 0) {
+      drawFullVineSegments(pathSegments);
+      render();
+    }
   });
   document.getElementById('vineFreehandDetailSlider').addEventListener('input', e=>{
     freehandPathDetail = +e.target.value;
@@ -12532,7 +12538,7 @@ void main(void)\r
       vineOffshootDensity,
       vineOffshootLength,
       vineSizeJitter,
-      vineRightAnglesOnly,
+      pathStyle,
       vineEnableDecorations,
       gradientOrdered,
       gradientCycleLength,
@@ -12726,10 +12732,6 @@ void main(void)\r
       const el = document.getElementById('vineSizeJitterSlider'); if(el) el.value = vineSizeJitter;
       const vel = document.getElementById('vineSizeJitterVal'); if(vel) vel.textContent = vineSizeJitter + '%';
     }
-    if(s.vineRightAnglesOnly !== undefined){
-      vineRightAnglesOnly = s.vineRightAnglesOnly;
-      const chk = document.getElementById('vineRightAnglesOnlyCheckbox'); if(chk) chk.checked = vineRightAnglesOnly;
-    }
     if(s.vineEnableDecorations !== undefined){
       vineEnableDecorations = s.vineEnableDecorations;
       const chk = document.getElementById('vineEnableDecorationsCheckbox'); if(chk) chk.checked = vineEnableDecorations;
@@ -12805,14 +12807,13 @@ void main(void)\r
       vineTaperOffshoots,
       vineTaperLength,
       vineSizeJitter,
-      vineRightAnglesOnly,
+      pathStyle,
       vineEnableDecorations,
       vineDecorationType,
       vineOffshootSizeSliderVal,
       vineTaperSizeBehavior,
       vineTaperSpreadBehavior,
       vineTaperOpacityFade,
-      freehandPathModeEnabled,
       freehandPathDetail
     };
   }
@@ -12890,10 +12891,6 @@ void main(void)\r
       const el = document.getElementById('vineSizeJitterSlider'); if(el) el.value = vineSizeJitter;
       const vel = document.getElementById('vineSizeJitterVal'); if(vel) vel.textContent = vineSizeJitter + '%';
     }
-    if (s.vineRightAnglesOnly !== undefined) {
-      vineRightAnglesOnly = s.vineRightAnglesOnly;
-      const el = document.getElementById('vineRightAnglesOnlyCheckbox'); if(el) el.checked = vineRightAnglesOnly;
-    }
     if (s.vineEnableDecorations !== undefined) {
       vineEnableDecorations = s.vineEnableDecorations;
       const el = document.getElementById('vineEnableDecorationsCheckbox'); if(el) el.checked = vineEnableDecorations;
@@ -12919,12 +12916,17 @@ void main(void)\r
       vineTaperOpacityFade = s.vineTaperOpacityFade;
       const el = document.getElementById('vineTaperOpacityFadeCheckbox'); if(el) el.checked = vineTaperOpacityFade;
     }
-    if (s.freehandPathModeEnabled !== undefined) {
-      freehandPathModeEnabled = s.freehandPathModeEnabled;
-    }
     if (s.freehandPathDetail !== undefined) {
       freehandPathDetail = s.freehandPathDetail;
     }
+    if (s.pathStyle !== undefined) {
+      pathStyle = s.pathStyle;
+    } else {
+      if (s.vineRightAnglesOnly) pathStyle = '90';
+      else if (s.freehandPathModeEnabled) pathStyle = 'freehand';
+      else pathStyle = 'default';
+    }
+    const psEl = document.getElementById('pathStyleSelect'); if (psEl) psEl.value = pathStyle;
     updateVineFreehandUI();
     refreshVinePresetList();
     if (pathState !== 'idle' && pathSegments.length > 0) {
