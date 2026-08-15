@@ -1795,9 +1795,9 @@
 
         <!-- Flow -->
         <label class="field" style="margin-top:8px;" data-tooltip="Flow: Rate at which paint builds up while mouse is held down">
-          Flow <span class="field-value" id="flowVal">50%</span>
+          Flow <span class="field-value" id="flowVal">100%</span>
         </label>
-        <input type="range" id="flowSlider" min="1" max="200" value="50" data-tooltip="Flow: Rate at which paint builds up while mouse is held down">
+        <input type="range" id="flowSlider" min="1" max="200" value="100" data-tooltip="Flow: Rate at which paint builds up while mouse is held down">
 
         <!-- Density -->
         <label class="field" style="margin-top:8px;" data-tooltip="Density: Dab coverage density per step">
@@ -3348,14 +3348,14 @@ void main(void)\r
 <script>
 (function(){
   const displayCanvas = document.getElementById('displayCanvas');
-  const dctx = displayCanvas.getContext('2d');
+  const dctx = displayCanvas.getContext('2d', { willReadFrequently: true });
   const gridCanvas = document.getElementById('gridCanvas');
-  const gctx = gridCanvas.getContext('2d');
+  const gctx = gridCanvas.getContext('2d', { willReadFrequently: true });
   const selectionCanvas = document.getElementById('selectionCanvas');
-  const sctx = selectionCanvas.getContext('2d');
+  const sctx = selectionCanvas.getContext('2d', { willReadFrequently: true });
   const cursorPreviewCanvas = document.getElementById('cursorPreviewCanvas');
   const colorHighlightCanvas = document.getElementById('colorHighlightCanvas');
-  const pctx = cursorPreviewCanvas.getContext('2d');
+  const pctx = cursorPreviewCanvas.getContext('2d', { willReadFrequently: true });
   function clearPreviewCanvas(){
     if(!pctx) return;
     const effW = getEffectiveCanvasW();
@@ -3363,11 +3363,11 @@ void main(void)\r
     pctx.clearRect(0, 0, effW + MARGIN_PX*2, effH + MARGIN_PX*2);
   }
   const modalPreviewCanvas = document.getElementById('modalPreviewCanvas');
-  const mpctx = modalPreviewCanvas.getContext('2d'); // dedicated overlay for popup live-previews
+  const mpctx = modalPreviewCanvas.getContext('2d', { willReadFrequently: true }); // dedicated overlay for popup live-previews
   // (Reduce Colors, Sharpen, etc.) — kept separate from pctx so a tool's cursor preview (which
   // clears/redraws pctx on every pointermove) can never clobber a modal preview mid-interaction
   const marginFadeCanvas = document.getElementById('marginFadeCanvas');
-  const mfCtx = marginFadeCanvas.getContext('2d');
+  const mfCtx = marginFadeCanvas.getContext('2d', { willReadFrequently: true });
   const canvasWrap = document.getElementById('canvasWrap');
 
   let W = 512, H = 512;
@@ -3377,7 +3377,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.291'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.300'; // bump this on every deploy — shown only in the About popup
 
   // Override window.alert to be iframe-safe and style-consistent
   window.alert = function(message) {
@@ -4399,7 +4399,7 @@ void main(void)\r
   let vineSessionBackupCanvas = null;
   let vineSeed = 42;
   let pixelPerfect = false;
-  let flow = 50;
+  let flow = 100;
   let density = 30;
   let dabSize = 8;
   let dabWidth = 8;
@@ -4438,8 +4438,8 @@ void main(void)\r
       settings: { sprayMode: 'paint', brushSize: 1, dabSize: 1, dabWidth: 1, dabHeight: 1, dabLockAspect: true, density: 100, falloff: 0, flow: 100, sizeJitterMin: 100, sizeJitterMax: 100, opacityJitterMin: 100, opacityJitterMax: 100, rotationMode: 'range', rotationMinAngle: 0, rotationMaxAngle: 0, dabShape: 'square', pixelPerfect: true, opacity: 100, sprayCombineSameColor: false, sprayInterpolate: true, spraySnapToGrid: false }
     },
     { id: 'builtin-spray', name: 'Default Spray', builtin: true,
-      savedSettings: { sprayMode: 'paint', brushSize: 24, dabSize: 8, dabWidth: 8, dabHeight: 8, dabLockAspect: true, density: 30, falloff: 40, flow: 50, sizeJitterMin: 100, sizeJitterMax: 100, opacityJitterMin: 100, opacityJitterMax: 100, rotationMode: 'range', rotationMinAngle: 0, rotationMaxAngle: 0, dabShape: 'circle', pixelPerfect: false, opacity: 100, sprayCombineSameColor: false, sprayInterpolate: true, spraySnapToGrid: false },
-      settings: { sprayMode: 'paint', brushSize: 24, dabSize: 8, dabWidth: 8, dabHeight: 8, dabLockAspect: true, density: 30, falloff: 40, flow: 50, sizeJitterMin: 100, sizeJitterMax: 100, opacityJitterMin: 100, opacityJitterMax: 100, rotationMode: 'range', rotationMinAngle: 0, rotationMaxAngle: 0, dabShape: 'circle', pixelPerfect: false, opacity: 100, sprayCombineSameColor: false, sprayInterpolate: true, spraySnapToGrid: false }
+      savedSettings: { sprayMode: 'paint', brushSize: 24, dabSize: 8, dabWidth: 8, dabHeight: 8, dabLockAspect: true, density: 30, falloff: 40, flow: 100, sizeJitterMin: 100, sizeJitterMax: 100, opacityJitterMin: 100, opacityJitterMax: 100, rotationMode: 'range', rotationMinAngle: 0, rotationMaxAngle: 0, dabShape: 'circle', pixelPerfect: false, opacity: 100, sprayCombineSameColor: false, sprayInterpolate: true, spraySnapToGrid: false },
+      settings: { sprayMode: 'paint', brushSize: 24, dabSize: 8, dabWidth: 8, dabHeight: 8, dabLockAspect: true, density: 30, falloff: 40, flow: 100, sizeJitterMin: 100, sizeJitterMax: 100, opacityJitterMin: 100, opacityJitterMax: 100, rotationMode: 'range', rotationMinAngle: 0, rotationMaxAngle: 0, dabShape: 'circle', pixelPerfect: false, opacity: 100, sprayCombineSameColor: false, sprayInterpolate: true, spraySnapToGrid: false }
     },
     { id: 'builtin-brush', name: 'Solid Brush', builtin: true,
       savedSettings: { sprayMode: 'paint', brushSize: 12, dabSize: 12, dabWidth: 12, dabHeight: 12, dabLockAspect: true, density: 100, falloff: 0, flow: 100, sizeJitterMin: 100, sizeJitterMax: 100, opacityJitterMin: 100, opacityJitterMax: 100, rotationMode: 'range', rotationMinAngle: 0, rotationMaxAngle: 0, dabShape: 'square', pixelPerfect: true, opacity: 100, sprayCombineSameColor: false, sprayInterpolate: true, spraySnapToGrid: false },
@@ -4540,8 +4540,8 @@ void main(void)\r
       img.onload = ()=>{
         const c = document.createElement('canvas');
         c.width = state.W; c.height = state.H;
-        c.getContext('2d').drawImage(img,0,0);
-        const ctx = c.getContext('2d');
+        c.getContext('2d', { willReadFrequently: true }).drawImage(img,0,0);
+        const ctx = c.getContext('2d', { willReadFrequently: true });
         const layerObj = {
           name:ld.name, canvas:c, ctx,
           colorCanvas:c, colorCtx:ctx,
@@ -4556,9 +4556,9 @@ void main(void)\r
             himg.onload = ()=>{
               const hc = document.createElement('canvas');
               hc.width = state.W; hc.height = state.H;
-              hc.getContext('2d').drawImage(himg,0,0);
+              hc.getContext('2d', { willReadFrequently: true }).drawImage(himg,0,0);
               layerObj.heightCanvas = hc;
-              layerObj.heightCtx = hc.getContext('2d');
+              layerObj.heightCtx = hc.getContext('2d', { willReadFrequently: true });
               r1();
             };
             himg.src = ld.heightData;
@@ -4570,9 +4570,9 @@ void main(void)\r
             rimg.onload = ()=>{
               const rc = document.createElement('canvas');
               rc.width = state.W; rc.height = state.H;
-              rc.getContext('2d').drawImage(rimg,0,0);
+              rc.getContext('2d', { willReadFrequently: true }).drawImage(rimg,0,0);
               layerObj.roughnessCanvas = rc;
-              layerObj.roughnessCtx = rc.getContext('2d');
+              layerObj.roughnessCtx = rc.getContext('2d', { willReadFrequently: true });
               r2();
             };
             rimg.src = ld.roughnessData;
@@ -4686,7 +4686,7 @@ void main(void)\r
     const copiedLayers = src.layers.map(l=>{
       const c = document.createElement('canvas');
       c.width = W; c.height = H;
-      const ctx = c.getContext('2d');
+      const ctx = c.getContext('2d', { willReadFrequently: true });
       ctx.drawImage(l.colorCanvas, 0, 0);
       const newLayer = {
         name: l.name, canvas: c, ctx,
@@ -4698,16 +4698,16 @@ void main(void)\r
       if(l.heightCanvas){
         const hc = document.createElement('canvas');
         hc.width = W; hc.height = H;
-        hc.getContext('2d').drawImage(l.heightCanvas, 0, 0);
+        hc.getContext('2d', { willReadFrequently: true }).drawImage(l.heightCanvas, 0, 0);
         newLayer.heightCanvas = hc;
-        newLayer.heightCtx = hc.getContext('2d');
+        newLayer.heightCtx = hc.getContext('2d', { willReadFrequently: true });
       }
       if(l.roughnessCanvas){
         const rc = document.createElement('canvas');
         rc.width = W; rc.height = H;
-        rc.getContext('2d').drawImage(l.roughnessCanvas, 0, 0);
+        rc.getContext('2d', { willReadFrequently: true }).drawImage(l.roughnessCanvas, 0, 0);
         newLayer.roughnessCanvas = rc;
-        newLayer.roughnessCtx = rc.getContext('2d');
+        newLayer.roughnessCtx = rc.getContext('2d', { willReadFrequently: true });
       }
       return newLayer;
     });
@@ -4836,7 +4836,7 @@ void main(void)\r
         const thumb = document.createElement('canvas');
         thumb.width = 24; thumb.height = 24;
         thumb.className = 'layer-thumb';
-        const tctx = thumb.getContext('2d');
+        const tctx = thumb.getContext('2d', { willReadFrequently: true });
         const srcLayers = (i === currentFrameIndex) ? layers : f.layers;
         srcLayers.forEach(l=>{
           if(!l.visible) return;
@@ -4877,7 +4877,7 @@ void main(void)\r
   function compositeTintedFrame(frame, tintHex, distance){
     const c = document.createElement('canvas');
     c.width = W; c.height = H;
-    const ctx = c.getContext('2d');
+    const ctx = c.getContext('2d', { willReadFrequently: true });
     frame.layers.forEach(l=>{
       if(!l.visible) return;
       ctx.globalAlpha = l.opacity/100;
@@ -4919,7 +4919,7 @@ void main(void)\r
     if(!layer) return false;
     const c = layer.colorCanvas || layer.canvas;
     if(!c || c.width === 0 || c.height === 0) return false;
-    const ctx = layer.colorCtx || layer.ctx || c.getContext('2d');
+    const ctx = layer.colorCtx || layer.ctx || c.getContext('2d', { willReadFrequently: true });
     try {
       const data = ctx.getImageData(0, 0, c.width, c.height).data;
       for(let i = 3; i < data.length; i += 32){
@@ -5274,7 +5274,7 @@ void main(void)\r
           const miniCanvas = document.createElement('canvas');
           miniCanvas.width = 34; miniCanvas.height = 34;
           miniCanvas.className = 'timeline-cell-canvas';
-          const mctx = miniCanvas.getContext('2d');
+          const mctx = miniCanvas.getContext('2d', { willReadFrequently: true });
           mctx.imageSmoothingEnabled = false;
           mctx.globalAlpha = (cellLayer.opacity || 100) / 100;
           mctx.drawImage(cCanvas, 0, 0, 34, 34);
@@ -5459,7 +5459,7 @@ void main(void)\r
   function makeLayer(name){
     const c = document.createElement('canvas');
     c.width = W; c.height = H;
-    const ctx = c.getContext('2d');
+    const ctx = c.getContext('2d', { willReadFrequently: true });
     return {
       id: layerIdCounter++,
       name, canvas: c, ctx,
@@ -5475,7 +5475,7 @@ void main(void)\r
       const hc = document.createElement('canvas');
       hc.width = W; hc.height = H;
       layer.heightCanvas = hc;
-      layer.heightCtx = hc.getContext('2d');
+      layer.heightCtx = hc.getContext('2d', { willReadFrequently: true });
     }
     const imgData = layer.colorCtx.getImageData(0, 0, W, H);
     const data = imgData.data;
@@ -5492,7 +5492,7 @@ void main(void)\r
     const hc = document.createElement('canvas');
     hc.width = W; hc.height = H;
     layer.heightCanvas = hc;
-    layer.heightCtx = hc.getContext('2d');
+    layer.heightCtx = hc.getContext('2d', { willReadFrequently: true });
     regenerateHeightFromColor(layer);
   }
 
@@ -5501,7 +5501,7 @@ void main(void)\r
     const rc = document.createElement('canvas');
     rc.width = W; rc.height = H;
     layer.roughnessCanvas = rc;
-    layer.roughnessCtx = rc.getContext('2d');
+    layer.roughnessCtx = rc.getContext('2d', { willReadFrequently: true });
     setRoughnessAll(layer, 200); // default moderately matte
   }
 
@@ -5511,7 +5511,7 @@ void main(void)\r
       const rc = document.createElement('canvas');
       rc.width = W; rc.height = H;
       layer.roughnessCanvas = rc;
-      layer.roughnessCtx = rc.getContext('2d');
+      layer.roughnessCtx = rc.getContext('2d', { willReadFrequently: true });
     }
     const imgData = layer.colorCtx.getImageData(0, 0, W, H);
     const data = imgData.data;
@@ -5529,7 +5529,7 @@ void main(void)\r
       const rc = document.createElement('canvas');
       rc.width = W; rc.height = H;
       layer.roughnessCanvas = rc;
-      layer.roughnessCtx = rc.getContext('2d');
+      layer.roughnessCtx = rc.getContext('2d', { willReadFrequently: true });
     }
     const imgData = layer.colorCtx.getImageData(0, 0, W, H);
     const data = imgData.data;
@@ -5731,16 +5731,16 @@ void main(void)\r
           if(f.layers[srcIdx].heightCanvas){
             const hc = document.createElement('canvas');
             hc.width = W; hc.height = H;
-            hc.getContext('2d').drawImage(f.layers[srcIdx].heightCanvas, 0, 0);
+            hc.getContext('2d', { willReadFrequently: true }).drawImage(f.layers[srcIdx].heightCanvas, 0, 0);
             l.heightCanvas = hc;
-            l.heightCtx = hc.getContext('2d');
+            l.heightCtx = hc.getContext('2d', { willReadFrequently: true });
           }
           if(f.layers[srcIdx].roughnessCanvas){
             const rc = document.createElement('canvas');
             rc.width = W; rc.height = H;
-            rc.getContext('2d').drawImage(f.layers[srcIdx].roughnessCanvas, 0, 0);
+            rc.getContext('2d', { willReadFrequently: true }).drawImage(f.layers[srcIdx].roughnessCanvas, 0, 0);
             l.roughnessCanvas = rc;
-            l.roughnessCtx = rc.getContext('2d');
+            l.roughnessCtx = rc.getContext('2d', { willReadFrequently: true });
           }
         }
         f.layers.push(l);
@@ -5899,7 +5899,7 @@ void main(void)\r
   }
   let docCompositeCanvas = document.createElement('canvas');
   docCompositeCanvas.width = W; docCompositeCanvas.height = H;
-  let docCompositeCtx = docCompositeCanvas.getContext('2d');
+  let docCompositeCtx = docCompositeCanvas.getContext('2d', { willReadFrequently: true });
 
   function syncDocCompositeCanvasSize(){
     if (docCompositeCanvas.width !== W || docCompositeCanvas.height !== H) {
@@ -6081,7 +6081,7 @@ void main(void)\r
   let lightboxCanvas = document.createElement('canvas');
   lightboxCanvas.width = 256;
   lightboxCanvas.height = 256;
-  let lightboxCtx = lightboxCanvas.getContext('2d');
+  let lightboxCtx = lightboxCanvas.getContext('2d', { willReadFrequently: true });
   let lightboxImageData = null;
 
   function renderLightboxPreset(preset){
@@ -6324,7 +6324,7 @@ void main(void)\r
   }
 
   function updateColorHighlight(){
-    const hctx = colorHighlightCanvas.getContext('2d');
+    const hctx = colorHighlightCanvas.getContext('2d', { willReadFrequently: true });
     hctx.clearRect(0, 0, W, H);
     if(!colorHighlightActive || selectedColors.size===0 || !layers[activeLayer]) return;
     const src = layers[activeLayer].colorCtx.getImageData(0, 0, W, H).data;
@@ -6395,7 +6395,7 @@ void main(void)\r
     if(!litData) return;
 
     if(canvasLighting){
-      const clCtx = canvasLighting.getContext('2d');
+      const clCtx = canvasLighting.getContext('2d', { willReadFrequently: true });
       clCtx.clearRect(0, 0, effW, effH);
       const litImgData = clCtx.createImageData(W, H);
       litImgData.data.set(litData);
@@ -6405,7 +6405,7 @@ void main(void)\r
       } else {
         const tmpC = document.createElement('canvas');
         tmpC.width = W; tmpC.height = H;
-        tmpC.getContext('2d').putImageData(litImgData, 0, 0);
+        tmpC.getContext('2d', { willReadFrequently: true }).putImageData(litImgData, 0, 0);
         for(let ty=0; ty<3; ty++){
           for(let tx=0; tx<3; tx++){
             clCtx.drawImage(tmpC, tx*W, ty*H);
@@ -6424,7 +6424,7 @@ void main(void)\r
 
     // Draw Light Gizmo / Rays on Canvas
     if(canvasGizmo){
-      const gctx = canvasGizmo.getContext('2d');
+      const gctx = canvasGizmo.getContext('2d', { willReadFrequently: true });
       gctx.clearRect(0, 0, effW, effH);
       const effOffset = seamlessModeEnabled ? W : 0;
       const lx = lightPosX * W + effOffset;
@@ -6575,7 +6575,7 @@ void main(void)\r
   function offsetWrap(srcCanvas, w, h){
     const out = document.createElement('canvas');
     out.width = w; out.height = h;
-    const octx = out.getContext('2d');
+    const octx = out.getContext('2d', { willReadFrequently: true });
     const hw = Math.floor(w/2), hh = Math.floor(h/2);
     const rw = w-hw, rh = h-hh;
     octx.drawImage(srcCanvas, hw, hh, rw, rh, 0, 0, rw, rh);   // src bottom-right -> dst top-left
@@ -6608,7 +6608,7 @@ void main(void)\r
     if(!layers[activeLayer]) return null;
     const w = W, h = H;
     const offsetCanvas = offsetWrap(layers[activeLayer].canvas, w, h);
-    const octx = offsetCanvas.getContext('2d');
+    const octx = offsetCanvas.getContext('2d', { willReadFrequently: true });
     const imgData = octx.getImageData(0, 0, w, h);
     const src = new Uint8ClampedArray(imgData.data);
     const dst = imgData.data;
@@ -6687,7 +6687,7 @@ void main(void)\r
     if(!result) return;
     const preview = document.getElementById('makeSeamlessPreviewCanvas');
     preview.width = W; preview.height = H;
-    preview.getContext('2d').drawImage(result, 0, 0);
+    preview.getContext('2d', { willReadFrequently: true }).drawImage(result, 0, 0);
   }
   function openMakeSeamlessPopup(){
     const popup = document.getElementById('makeSeamlessPopup');
@@ -6929,7 +6929,7 @@ void main(void)\r
     if(!selection || selection.w < 1 || selection.h < 1) return null;
     const tmp = document.createElement('canvas');
     tmp.width = selection.w; tmp.height = selection.h;
-    const tmpCtx = tmp.getContext('2d');
+    const tmpCtx = tmp.getContext('2d', { willReadFrequently: true });
     if(floatingSelection){
       tmpCtx.drawImage(floatingSelection.canvas, 0, 0);
     } else if(layers[activeLayer]){
@@ -6981,7 +6981,7 @@ void main(void)\r
 
     const lifted = document.createElement('canvas');
     lifted.width = w; lifted.height = h;
-    lifted.getContext('2d').drawImage(pasteSourceImg, 0, 0);
+    lifted.getContext('2d', { willReadFrequently: true }).drawImage(pasteSourceImg, 0, 0);
 
     floatingSelection = { canvas: lifted, x: cx, y: cy, w: w, h: h };
     selection = { x: cx, y: cy, w: w, h: h };
@@ -7002,7 +7002,7 @@ void main(void)\r
     internalClipboardCanvas = document.createElement('canvas');
     internalClipboardCanvas.width = selCanvas.width;
     internalClipboardCanvas.height = selCanvas.height;
-    internalClipboardCanvas.getContext('2d').drawImage(selCanvas, 0, 0);
+    internalClipboardCanvas.getContext('2d', { willReadFrequently: true }).drawImage(selCanvas, 0, 0);
 
     if(typeof showToast === 'function') showToast('Selection copied');
 
@@ -7339,7 +7339,7 @@ void main(void)\r
     // you see in the stamp list and hover preview actually resembles what painting will produce.
     const c = document.createElement('canvas');
     c.width = mask.width; c.height = mask.height;
-    const cctx = c.getContext('2d');
+    const cctx = c.getContext('2d', { willReadFrequently: true });
     cctx.drawImage(mask, 0, 0);
     cctx.globalCompositeOperation = 'source-in';
     cctx.fillStyle = color;
@@ -7359,7 +7359,7 @@ void main(void)\r
     }
     const c = document.createElement('canvas');
     c.width = w; c.height = h;
-    const cctx = c.getContext('2d');
+    const cctx = c.getContext('2d', { willReadFrequently: true });
     cctx.imageSmoothingEnabled = !pixelPerfect;
     cctx.drawImage(img, 0, 0, w, h);
     const data = cctx.getImageData(0,0,w,h);
@@ -7421,7 +7421,7 @@ void main(void)\r
       const cropCanvas = document.createElement('canvas');
       cropCanvas.width = cropW;
       cropCanvas.height = cropH;
-      const cropCtx = cropCanvas.getContext('2d');
+      const cropCtx = cropCanvas.getContext('2d', { willReadFrequently: true });
       cropCtx.drawImage(c, minX, minY, cropW, cropH, 0, 0, cropW, cropH);
       return cropCanvas;
     }
@@ -7432,7 +7432,7 @@ void main(void)\r
     if(!maskCanvas || !maskCanvas.width) return null;
     const c = document.createElement('canvas');
     c.width = maskCanvas.width; c.height = maskCanvas.height;
-    const cctx = c.getContext('2d');
+    const cctx = c.getContext('2d', { willReadFrequently: true });
     cctx.drawImage(maskCanvas, 0, 0);
     const data = cctx.getImageData(0,0,c.width,c.height);
     const d = data.data;
@@ -7512,7 +7512,7 @@ void main(void)\r
     const canvas = document.createElement('canvas');
     canvas.width = w;
     canvas.height = h;
-    const ctx = canvas.getContext('2d', { willReadFrequently: isPP });
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
 
     ctx.clearRect(0, 0, w, h);
     ctx.globalCompositeOperation = 'source-over';
@@ -7523,24 +7523,22 @@ void main(void)\r
     ctx.fillRect(0, 0, w, h);
     ctx.globalCompositeOperation = 'source-over';
 
-    if (isPP) {
-      const cRgb = hexToRgb(finalColor);
-      const imgData = ctx.getImageData(0, 0, w, h);
-      const d = imgData.data;
-      for (let i = 0; i < d.length; i += 4) {
-        if (d[i + 3] >= 128) {
-          if (cRgb) {
-            d[i]     = cRgb.r;
-            d[i + 1] = cRgb.g;
-            d[i + 2] = cRgb.b;
-          }
-          d[i + 3] = 255;
-        } else {
-          d[i + 3] = 0;
+    const cRgb = hexToRgb(finalColor);
+    const imgData = ctx.getImageData(0, 0, w, h);
+    const d = imgData.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] > 0) {
+        if (cRgb) {
+          d[i]     = cRgb.r;
+          d[i + 1] = cRgb.g;
+          d[i + 2] = cRgb.b;
+        }
+        if (isPP) {
+          d[i + 3] = d[i + 3] >= 128 ? 255 : 0;
         }
       }
-      ctx.putImageData(imgData, 0, 0);
     }
+    ctx.putImageData(imgData, 0, 0);
 
     const cachedEntry = {
       canvas: canvas,
@@ -7637,7 +7635,7 @@ void main(void)\r
   }
   const stampHoverPreview = document.getElementById('stampHoverPreview');
   const stampHoverCanvas = document.getElementById('stampHoverCanvas');
-  const shpctx = stampHoverCanvas.getContext('2d');
+  const shpctx = stampHoverCanvas.getContext('2d', { willReadFrequently: true });
   function showStampHoverPreview(mask, ev){
     const maxDim = 160;
     const fit = containFit(maxDim, maxDim, mask.width, mask.height);
@@ -8408,11 +8406,9 @@ void main(void)\r
       noBlendScratchCanvas.width = reqW;
       noBlendScratchCanvas.height = reqH;
       noBlendScratchCtx = noBlendScratchCanvas.getContext('2d', { willReadFrequently: true });
-    } else if(noBlendScratchCanvas.width < bw || noBlendScratchCanvas.height < bh){
-      const nw = Math.max(noBlendScratchCanvas.width, reqW);
-      const nh = Math.max(noBlendScratchCanvas.height, reqH);
-      noBlendScratchCanvas.width = nw;
-      noBlendScratchCanvas.height = nh;
+    } else if (noBlendScratchCanvas.width < bw || noBlendScratchCanvas.height < bh || noBlendScratchCanvas.width > reqW * 2 || noBlendScratchCanvas.height > reqH * 2) {
+      noBlendScratchCanvas.width = reqW;
+      noBlendScratchCanvas.height = reqH;
       noBlendScratchCtx = noBlendScratchCanvas.getContext('2d', { willReadFrequently: true });
     }
   }
@@ -8426,51 +8422,49 @@ void main(void)\r
     ensureNoBlendScratch(bw, bh);
     noBlendScratchCtx.clearRect(0, 0, bw, bh);
 
-    // 1. Draw shape onto transparent scratch canvas
     noBlendScratchCtx.save();
     noBlendScratchCtx.translate(-bx, -by);
     drawFn(noBlendScratchCtx);
     noBlendScratchCtx.restore();
 
-    // 2. Direct pixel replacement: where scratch has alpha > 0, overwrite layer pixel
     const rx0 = Math.max(0, bx), ry0 = Math.max(0, by);
     const rx1 = Math.min(cw, bx + bw), ry1 = Math.min(ch, by + bh);
     if(rx1 <= rx0 || ry1 <= ry0) return;
     const rw = rx1 - rx0, rh = ry1 - ry0;
 
-    const realImg = realCtx.getImageData(rx0, ry0, rw, rh);
-    const realData = realImg.data;
     const sx0 = rx0 - bx, sy0 = ry0 - by;
+
+    const realImg = realCtx.getImageData(rx0, ry0, rw, rh);
     const scratchImg = noBlendScratchCtx.getImageData(sx0, sy0, rw, rh);
-    const scratchData = scratchImg.data;
+
+    const real32 = new Uint32Array(realImg.data.buffer);
+    const scratch32 = new Uint32Array(scratchImg.data.buffer);
 
     const sRgb = colorHex ? hexToRgb(colorHex) : null;
     let modified = false;
-    for(let i = 0; i < scratchData.length; i += 4){
-      const sA = scratchData[i + 3];
-      if(sA > 0){
-        if(sRgb){
-          realData[i]     = sRgb.r;
-          realData[i + 1] = sRgb.g;
-          realData[i + 2] = sRgb.b;
-          realData[i + 3] = sA;
-          modified = true;
-        } else {
-          realData[i]     = scratchData[i];
-          realData[i + 1] = scratchData[i + 1];
-          realData[i + 2] = scratchData[i + 2];
-          realData[i + 3] = sA;
-          modified = true;
-        }
-      }
+    const len = scratch32.length;
+
+    for (let i = 0; i < len; i++) {
+      const sPix = scratch32[i];
+      if (sPix === 0) continue;
+      const sA = (sPix >>> 24) & 0xFF;
+      if (sA === 0) continue;
+
+      const sR = sRgb ? sRgb.r : (sPix & 0xFF);
+      const sG = sRgb ? sRgb.g : ((sPix >>> 8) & 0xFF);
+      const sB = sRgb ? sRgb.b : ((sPix >>> 16) & 0xFF);
+
+      // Direct unconditional pixel replacement (exact v0.291 behavior)
+      real32[i] = (sA << 24) | (sB << 16) | (sG << 8) | sR;
+      modified = true;
     }
 
-    if(modified){
+    if (modified) {
       realCtx.putImageData(realImg, rx0, ry0);
     }
   }
 
-  function paintCombineSameColor(realCtx, cw, ch, bx, by, bw, bh, colorHex, opacityVal, drawFn){
+  function paintCombineSameColor(realCtx, cw, ch, bx, by, bw, bh, colorHex, drawFn){
     bx = Math.floor(bx); by = Math.floor(by);
     bw = Math.ceil(bw); bh = Math.ceil(bh);
     if(bw <= 0 || bh <= 0) return;
@@ -8489,50 +8483,52 @@ void main(void)\r
     if(rx1 <= rx0 || ry1 <= ry0) return;
     const rw = rx1 - rx0, rh = ry1 - ry0;
 
-    const realImg = realCtx.getImageData(rx0, ry0, rw, rh);
-    const realData = realImg.data;
     const sx0 = rx0 - bx, sy0 = ry0 - by;
+
+    const realImg = realCtx.getImageData(rx0, ry0, rw, rh);
     const scratchImg = noBlendScratchCtx.getImageData(sx0, sy0, rw, rh);
-    const scratchData = scratchImg.data;
+
+    const real32 = new Uint32Array(realImg.data.buffer);
+    const scratch32 = new Uint32Array(scratchImg.data.buffer);
 
     const cRgb = colorHex ? hexToRgb(colorHex) : null;
     let modified = false;
-    for(let i = 0; i < scratchData.length; i += 4){
-      const sA = scratchData[i + 3];
-      if(sA > 0){
-        const sR = cRgb ? cRgb.r : scratchData[i];
-        const sG = cRgb ? cRgb.g : scratchData[i + 1];
-        const sB = cRgb ? cRgb.b : scratchData[i + 2];
-        const tA = realData[i + 3];
+    const len = scratch32.length;
 
-        if (tA === 0) {
-          realData[i]     = sR;
-          realData[i + 1] = sG;
-          realData[i + 2] = sB;
-          realData[i + 3] = sA;
+    for(let i = 0; i < len; i++){
+      const sPix = scratch32[i];
+      if(sPix === 0) continue;
+      const sA = (sPix >>> 24) & 0xFF;
+      if(sA === 0) continue;
+
+      const sR = cRgb ? cRgb.r : (sPix & 0xFF);
+      const sG = cRgb ? cRgb.g : ((sPix >>> 8) & 0xFF);
+      const sB = cRgb ? cRgb.b : ((sPix >>> 16) & 0xFF);
+
+      const tPix = real32[i];
+      const tA = (tPix >>> 24) & 0xFF;
+
+      if (tA === 0) {
+        real32[i] = (sA << 24) | (sB << 16) | (sG << 8) | sR;
+        modified = true;
+      } else {
+        const tR = tPix & 0xFF;
+        const tG = (tPix >>> 8) & 0xFF;
+        const tB = (tPix >>> 16) & 0xFF;
+
+        const maxDev = Math.max(32, Math.ceil(382.5 / tA) + 16);
+        const isSameColor = (
+          Math.abs(tR - sR) <= maxDev &&
+          Math.abs(tG - sG) <= maxDev &&
+          Math.abs(tB - sB) <= maxDev
+        );
+
+        if (isSameColor) {
+          const finalA = Math.min(255, Math.round(sA + tA * (1 - sA / 255)));
+          real32[i] = (finalA << 24) | (sB << 16) | (sG << 8) | sR;
         } else {
-          // Determine if target pixel is effectively the same color as the incoming dab.
-          // Due to 8-bit premultiplied alpha quantization in canvas 2D, low-alpha pixels (low tA)
-          // can deviate substantially when read back via getImageData.
-          const maxDev = Math.max(32, Math.ceil(255 * 1.5 / tA) + 16);
-          const isSameColor = (
-            Math.abs(realData[i] - sR) <= maxDev &&
-            Math.abs(realData[i + 1] - sG) <= maxDev &&
-            Math.abs(realData[i + 2] - sB) <= maxDev
-          );
-          if (isSameColor) {
-            const finalA = Math.min(255, sA + tA * (1 - sA / 255));
-            realData[i]     = sR;
-            realData[i + 1] = sG;
-            realData[i + 2] = sB;
-            realData[i + 3] = Math.round(finalA);
-          } else {
-            // Replacing pixels outright when painting over a different color
-            realData[i]     = sR;
-            realData[i + 1] = sG;
-            realData[i + 2] = sB;
-            realData[i + 3] = sA;
-          }
+          // Replacing pixels outright when painting over a different color
+          real32[i] = (sA << 24) | (sB << 16) | (sG << 8) | sR;
         }
         modified = true;
       }
@@ -9230,7 +9226,7 @@ void main(void)\r
     if(!loupeOverlayCache) loupeOverlayCache = document.getElementById('loupeOverlay');
     if(!loupeCanvasCache) {
       loupeCanvasCache = document.getElementById('loupeCanvas');
-      if(loupeCanvasCache) loupeCtxCache = loupeCanvasCache.getContext('2d');
+      if(loupeCanvasCache) loupeCtxCache = loupeCanvasCache.getContext('2d', { willReadFrequently: true });
     }
   }
 
@@ -10786,7 +10782,7 @@ void main(void)\r
           } else if(sprayMode === 'colorize'){
             paintColorizeDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, drawDabFn);
           } else if(sprayCombineSameColor){
-            paintCombineSameColor(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, dabAlpha * 255 * (opacity/100), drawDabFn);
+            paintCombineSameColor(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, drawDabFn);
           } else {
             paintNoBlend(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn, dabColor);
           }
@@ -11097,7 +11093,7 @@ void main(void)\r
           }
           vineSessionBackupCanvas.width = W;
           vineSessionBackupCanvas.height = H;
-          const backupCtx = vineSessionBackupCanvas.getContext('2d');
+          const backupCtx = vineSessionBackupCanvas.getContext('2d', { willReadFrequently: true });
           backupCtx.clearRect(0, 0, W, H);
           const layer = layers[activeLayer];
           if (layer && layer.canvas) {
@@ -11120,7 +11116,7 @@ void main(void)\r
           }
           vineSessionBackupCanvas.width = W;
           vineSessionBackupCanvas.height = H;
-          const backupCtx = vineSessionBackupCanvas.getContext('2d');
+          const backupCtx = vineSessionBackupCanvas.getContext('2d', { willReadFrequently: true });
           backupCtx.clearRect(0, 0, W, H);
           const layer = layers[activeLayer];
           if (layer && layer.canvas) {
@@ -11211,7 +11207,7 @@ void main(void)\r
         const sel = selection;
         const lifted = document.createElement('canvas');
         lifted.width = sel.w; lifted.height = sel.h;
-        lifted.getContext('2d').drawImage(layers[activeLayer].canvas, sel.x, sel.y, sel.w, sel.h, 0, 0, sel.w, sel.h);
+        lifted.getContext('2d', { willReadFrequently: true }).drawImage(layers[activeLayer].canvas, sel.x, sel.y, sel.w, sel.h, 0, 0, sel.w, sel.h);
         layers[activeLayer].ctx.clearRect(sel.x, sel.y, sel.w, sel.h);
         floatingSelection = { canvas: lifted, x: sel.x, y: sel.y, w: sel.w, h: sel.h };
         movingSelection = true;
@@ -11850,7 +11846,7 @@ void main(void)\r
   function drawRotationDial(){
     const canvas = document.getElementById('rotationDialCanvas');
     if(!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const w = canvas.width, h = canvas.height;
     const cx = w/2, cy = h/2;
     const radius = 50;
@@ -12007,7 +12003,7 @@ void main(void)\r
         }
       }
 
-      const ctx = canvas.getContext('2d');
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
       const w = canvas.width, h = canvas.height;
       ctx.clearRect(0, 0, w, h);
 
@@ -13644,7 +13640,7 @@ void main(void)\r
     w = Math.max(1, Math.round(w)); h = Math.max(1, Math.round(h));
     const scratch = document.createElement('canvas');
     scratch.width = w; scratch.height = h;
-    const sctx = scratch.getContext('2d');
+    const sctx = scratch.getContext('2d', { willReadFrequently: true });
     sctx.drawImage(mask, 0, 0, w, h);
     const data = sctx.getImageData(0, 0, w, h).data;
     const alpha = new Uint8ClampedArray(w*h);
@@ -14729,7 +14725,7 @@ void main(void)\r
   function hslPickerGetHex(){ return hslToHex(hslPickerH, hslPickerS, hslPickerL); }
   function drawHslPickerHueStrip(){
     const canvas = document.getElementById('hslPickerHueCanvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const w = canvas.width, h = canvas.height;
     for(let x=0; x<w; x++){
       ctx.fillStyle = hslToHex((x/w)*360, 1, 0.5);
@@ -14828,7 +14824,7 @@ void main(void)\r
 
   function drawHueTintStrip(){
     const canvas = document.getElementById('hueTintStripCanvas');
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     const w = canvas.width, h = canvas.height;
     for(let x=0; x<w; x++){
       ctx.fillStyle = hslToHex((x/w)*360, 1, 0.5);
@@ -15095,7 +15091,7 @@ void main(void)\r
       canvas.width = W;
       canvas.height = H;
     }
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true });
     ctx.clearRect(0, 0, W, H);
     ctx.drawImage(displayCanvas, 0, 0);
 
@@ -15166,17 +15162,17 @@ void main(void)\r
 
     const tempColorCanvas = document.createElement('canvas');
     tempColorCanvas.width = W_t; tempColorCanvas.height = H_t;
-    const tcCtx = tempColorCanvas.getContext('2d');
+    const tcCtx = tempColorCanvas.getContext('2d', { willReadFrequently: true });
 
     const tempHeightCanvas = document.createElement('canvas');
     tempHeightCanvas.width = W_t; tempHeightCanvas.height = H_t;
-    const thCtx = tempHeightCanvas.getContext('2d');
+    const thCtx = tempHeightCanvas.getContext('2d', { willReadFrequently: true });
     thCtx.fillStyle = '#000000';
     thCtx.fillRect(0, 0, W_t, H_t);
 
     const tempRoughnessCanvas = document.createElement('canvas');
     tempRoughnessCanvas.width = W_t; tempRoughnessCanvas.height = H_t;
-    const trCtx = tempRoughnessCanvas.getContext('2d');
+    const trCtx = tempRoughnessCanvas.getContext('2d', { willReadFrequently: true });
     trCtx.fillStyle = '#c8c8c8';
     trCtx.fillRect(0, 0, W_t, H_t);
 
@@ -15207,7 +15203,7 @@ void main(void)\r
       }
     }
 
-    const testerCtx = canvas.getContext('2d');
+    const testerCtx = canvas.getContext('2d', { willReadFrequently: true });
     testerCtx.clearRect(0, 0, W_t, H_t);
 
     if (tilesetTesterActiveMode === 'height') {
@@ -16351,7 +16347,7 @@ void main(void)\r
         const thumb = document.createElement('canvas');
         thumb.width = 24; thumb.height = 24;
         thumb.className = 'layer-thumb';
-        const tctx = thumb.getContext('2d');
+        const tctx = thumb.getContext('2d', { willReadFrequently: true });
         tctx.drawImage(l.canvas, 0,0,24,24);
 
         const name = document.createElement('div');
@@ -16700,23 +16696,23 @@ void main(void)\r
       function cropCanvas(srcCanvas){
         const c = document.createElement('canvas');
         c.width = sw; c.height = sh;
-        c.getContext('2d').drawImage(srcCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
+        c.getContext('2d', { willReadFrequently: true }).drawImage(srcCanvas, sx, sy, sw, sh, 0, 0, sw, sh);
         return c;
       }
       frames.forEach(frame=>{
         frame.layers.forEach(layer=>{
           const newColor = cropCanvas(layer.colorCanvas);
           layer.colorCanvas = newColor;
-          layer.colorCtx = newColor.getContext('2d');
+          layer.colorCtx = newColor.getContext('2d', { willReadFrequently: true });
           if(layer.heightCanvas){
             const newHeight = cropCanvas(layer.heightCanvas);
             layer.heightCanvas = newHeight;
-            layer.heightCtx = newHeight.getContext('2d');
+            layer.heightCtx = newHeight.getContext('2d', { willReadFrequently: true });
           }
           if(layer.roughnessCanvas){
             const newRoughness = cropCanvas(layer.roughnessCanvas);
             layer.roughnessCanvas = newRoughness;
-            layer.roughnessCtx = newRoughness.getContext('2d');
+            layer.roughnessCtx = newRoughness.getContext('2d', { willReadFrequently: true });
           }
           layer.canvas = layer.colorCanvas;
           layer.ctx = layer.colorCtx;
@@ -16811,7 +16807,7 @@ void main(void)\r
       function transformCanvas(srcCanvas){
         const c = document.createElement('canvas');
         c.width = newW; c.height = newH;
-        const ctx = c.getContext('2d');
+        const ctx = c.getContext('2d', { willReadFrequently: true });
         if(scaleContent){
           ctx.drawImage(srcCanvas, 0, 0, newW, newH);
         } else {
@@ -16824,16 +16820,16 @@ void main(void)\r
         frame.layers.forEach(layer=>{
           const newColor = transformCanvas(layer.colorCanvas);
           layer.colorCanvas = newColor;
-          layer.colorCtx = newColor.getContext('2d');
+          layer.colorCtx = newColor.getContext('2d', { willReadFrequently: true });
           if(layer.heightCanvas){
             const newHeight = transformCanvas(layer.heightCanvas);
             layer.heightCanvas = newHeight;
-            layer.heightCtx = newHeight.getContext('2d');
+            layer.heightCtx = newHeight.getContext('2d', { willReadFrequently: true });
           }
           if(layer.roughnessCanvas){
             const newRoughness = transformCanvas(layer.roughnessCanvas);
             layer.roughnessCanvas = newRoughness;
-            layer.roughnessCtx = newRoughness.getContext('2d');
+            layer.roughnessCtx = newRoughness.getContext('2d', { willReadFrequently: true });
           }
           layer.canvas = layer.colorCanvas;
           layer.ctx = layer.colorCtx;
@@ -16871,7 +16867,7 @@ void main(void)\r
     const sel = selection;
     const lifted = document.createElement('canvas');
     lifted.width = sel.w; lifted.height = sel.h;
-    lifted.getContext('2d').drawImage(layers[activeLayer].canvas, sel.x, sel.y, sel.w, sel.h, 0, 0, sel.w, sel.h);
+    lifted.getContext('2d', { willReadFrequently: true }).drawImage(layers[activeLayer].canvas, sel.x, sel.y, sel.w, sel.h, 0, 0, sel.w, sel.h);
     layers[activeLayer].ctx.clearRect(sel.x, sel.y, sel.w, sel.h);
     floatingSelection = { canvas: lifted, x: sel.x, y: sel.y, w: sel.w, h: sel.h };
     return true;
@@ -16916,7 +16912,7 @@ void main(void)\r
     }
     const scaled = document.createElement('canvas');
     scaled.width = newW; scaled.height = newH;
-    const scaledCtx = scaled.getContext('2d');
+    const scaledCtx = scaled.getContext('2d', { willReadFrequently: true });
     scaledCtx.imageSmoothingEnabled = false; // pixel-perfect — hard edges, no blur
     scaledCtx.drawImage(floatingSelection.canvas, 0, 0, floatingSelection.w, floatingSelection.h, 0, 0, newW, newH);
     floatingSelection.canvas = scaled;
@@ -16967,7 +16963,7 @@ void main(void)\r
           const l = visibleLayers[i];
           const tmp = document.createElement('canvas');
           tmp.width = W; tmp.height = H;
-          const tctx = tmp.getContext('2d');
+          const tctx = tmp.getContext('2d', { willReadFrequently: true });
           tctx.globalAlpha = l.opacity / 100;
           tctx.drawImage(l.canvas, 0, 0);
           const safeName = sanitizeFilename(l.name) || ('Layer' + (i + 1));
@@ -16995,7 +16991,7 @@ void main(void)\r
       setTimeout(async ()=>{
         const tmp = document.createElement('canvas');
         tmp.width = W; tmp.height = H;
-        const tctx = tmp.getContext('2d');
+        const tctx = tmp.getContext('2d', { willReadFrequently: true });
         tctx.globalAlpha = l.opacity/100;
         tctx.drawImage(l.canvas, 0, 0);
         const safeName = sanitizeFilename(l.name) || ('Layer' + (i+1));
@@ -17037,7 +17033,7 @@ void main(void)\r
     const sheet = document.createElement('canvas');
     sheet.width = W * frames.length;
     sheet.height = H;
-    const sctx = sheet.getContext('2d');
+    const sctx = sheet.getContext('2d', { willReadFrequently: true });
     frames.forEach((f, i)=>{
       f.layers.forEach(l=>{
         if(!l.visible) return;
@@ -17087,7 +17083,7 @@ void main(void)\r
         // frame is flattened onto a white background first for predictable, artifact-free output.
         const tmp = document.createElement('canvas');
         tmp.width = W; tmp.height = H;
-        const tctx = tmp.getContext('2d');
+        const tctx = tmp.getContext('2d', { willReadFrequently: true });
         tctx.fillStyle = '#ffffff';
         tctx.fillRect(0, 0, W, H);
         f.layers.forEach(l=>{
@@ -17795,8 +17791,8 @@ void main(void)\r
       img.onload = ()=>{
         const c = document.createElement('canvas');
         c.width = w; c.height = h;
-        c.getContext('2d').drawImage(img,0,0);
-        const ctx = c.getContext('2d');
+        c.getContext('2d', { willReadFrequently: true }).drawImage(img,0,0);
+        const ctx = c.getContext('2d', { willReadFrequently: true });
         const layerObj = {
           name: ld.name || 'Layer',
           canvas: c, ctx, colorCanvas: c, colorCtx: ctx,
@@ -17812,9 +17808,9 @@ void main(void)\r
             himg.onload = ()=>{
               const hc = document.createElement('canvas');
               hc.width = w; hc.height = h;
-              hc.getContext('2d').drawImage(himg,0,0);
+              hc.getContext('2d', { willReadFrequently: true }).drawImage(himg,0,0);
               layerObj.heightCanvas = hc;
-              layerObj.heightCtx = hc.getContext('2d');
+              layerObj.heightCtx = hc.getContext('2d', { willReadFrequently: true });
               r1();
             };
             himg.src = ld.heightData;
@@ -17826,9 +17822,9 @@ void main(void)\r
             rimg.onload = ()=>{
               const rc = document.createElement('canvas');
               rc.width = w; rc.height = h;
-              rc.getContext('2d').drawImage(rimg,0,0);
+              rc.getContext('2d', { willReadFrequently: true }).drawImage(rimg,0,0);
               layerObj.roughnessCanvas = rc;
-              layerObj.roughnessCtx = rc.getContext('2d');
+              layerObj.roughnessCtx = rc.getContext('2d', { willReadFrequently: true });
               r2();
             };
             rimg.src = ld.roughnessData;
@@ -17861,7 +17857,7 @@ void main(void)\r
       img.onload = ()=>{
         const c = document.createElement('canvas');
         c.width = sd.w || img.width; c.height = sd.h || img.height;
-        c.getContext('2d').drawImage(img,0,0);
+        c.getContext('2d', { willReadFrequently: true }).drawImage(img,0,0);
         res({
           name: sd.name || 'Stamp',
           mask: c,
