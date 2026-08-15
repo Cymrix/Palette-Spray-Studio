@@ -3375,7 +3375,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.304'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.305'; // bump this on every deploy — shown only in the About popup
 
   // Override window.alert to be iframe-safe and style-consistent
   window.alert = function(message) {
@@ -8846,6 +8846,8 @@ void main(void)\r
     if(!layers[activeLayer]) return;
     const ctx = layers[activeLayer].ctx;
 
+    const effectiveMode = tool === 'brush' ? brushMode : sprayMode;
+
     const rawGx = seamlessModeEnabled ? (cell.gx + W) : cell.gx;
     const rawGy = seamlessModeEnabled ? (cell.gy + H) : cell.gy;
     const effW = getEffectiveCanvasW();
@@ -8869,9 +8871,21 @@ void main(void)\r
         const box = brushBox(gx, gy);
         if (box.x >= W || box.y >= H || box.x + box.n <= 0 || box.y + box.n <= 0) continue;
 
-        if(sprayMode === 'eraser'){
+        if(effectiveMode === 'eraser'){
           paintEraserDab(ctx, W, H, box.x, box.y, box.n, box.n, (sctx)=>{
             sctx.fillStyle = '#ffffff';
+            sctx.fillRect(box.x, box.y, box.n, box.n);
+          });
+        } else if(effectiveMode === 'colorize'){
+          paintColorizeDab(ctx, W, H, box.x, box.y, box.n, box.n, fgColor, (sctx)=>{
+            sctx.globalAlpha = opacity/100;
+            sctx.fillStyle = fgColor;
+            sctx.fillRect(box.x, box.y, box.n, box.n);
+          });
+        } else if(sprayCombineSameColor){
+          paintCombineSameColor(ctx, W, H, box.x, box.y, box.n, box.n, fgColor, (sctx)=>{
+            sctx.globalAlpha = opacity/100;
+            sctx.fillStyle = fgColor;
             sctx.fillRect(box.x, box.y, box.n, box.n);
           });
         } else {
@@ -8891,9 +8905,21 @@ void main(void)\r
         const mfBoxY = box.y + MARGIN_PX;
         const mfW = effW + MARGIN_PX*2;
         const mfH = effH + MARGIN_PX*2;
-        if(sprayMode === 'eraser'){
+        if(effectiveMode === 'eraser'){
           paintEraserDab(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, (sctx)=>{
             sctx.fillStyle = '#ffffff';
+            sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
+          });
+        } else if(effectiveMode === 'colorize'){
+          paintColorizeDab(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, fgColor, (sctx)=>{
+            sctx.globalAlpha = opacity/100;
+            sctx.fillStyle = fgColor;
+            sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
+          });
+        } else if(sprayCombineSameColor){
+          paintCombineSameColor(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, fgColor, (sctx)=>{
+            sctx.globalAlpha = opacity/100;
+            sctx.fillStyle = fgColor;
             sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
           });
         } else {
@@ -8911,9 +8937,21 @@ void main(void)\r
       const mfBoxY = box.y + MARGIN_PX;
       const mfW = effW + MARGIN_PX*2;
       const mfH = effH + MARGIN_PX*2;
-      if(sprayMode === 'eraser'){
+      if(effectiveMode === 'eraser'){
         paintEraserDab(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, (sctx)=>{
           sctx.fillStyle = '#ffffff';
+          sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
+        });
+      } else if(effectiveMode === 'colorize'){
+        paintColorizeDab(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, fgColor, (sctx)=>{
+          sctx.globalAlpha = opacity/100;
+          sctx.fillStyle = fgColor;
+          sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
+        });
+      } else if(sprayCombineSameColor){
+        paintCombineSameColor(mfCtx, mfW, mfH, mfBoxX, mfBoxY, box.n, box.n, fgColor, (sctx)=>{
+          sctx.globalAlpha = opacity/100;
+          sctx.fillStyle = fgColor;
           sctx.fillRect(mfBoxX, mfBoxY, box.n, box.n);
         });
       } else {
@@ -10751,6 +10789,10 @@ void main(void)\r
         };
         if(sprayMode === 'eraser'){
           paintEraserDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn);
+        } else if(sprayMode === 'colorize'){
+          paintColorizeDab(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, drawDabFn);
+        } else if(sprayCombineSameColor){
+          paintCombineSameColor(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, dabColor, drawDabFn);
         } else {
           paintNoBlend(targetCtx, cw, ch, bounds.x, bounds.y, bounds.w, bounds.h, drawDabFn, dabColor);
         }
