@@ -1763,14 +1763,12 @@
 
         <div id="spraySourceHint" style="display:none;"></div>
 
-        <!-- Checkboxes -->
-
-        <label style="font-size:12px;display:flex;align-items:center;gap:6px;margin-top:8px;" data-tooltip="When checked, painting over the exact same RGB color builds opacity without creating new blend colors. Painting over a different color replaces it directly.">
-          <input type="checkbox" id="sprayCombineSameColorCheckbox"> Combine opacity if same color
-        </label>
-
-        <label style="font-size:12px;display:flex;align-items:center;gap:6px;margin-top:8px;" data-tooltip="When checked, dabs & stamps use nearest-neighbor scaling (crisp pixel art edges). Uncheck for anti-aliased smoothing.">
-          <input type="checkbox" id="pixelPerfectCheckbox"> Pixel-perfect dabs
+        <label class="field" style="margin-top:8px;" data-tooltip="Choose how overlapping dabs blend with each other and the layer beneath.">Dab Blend Mode
+          <select id="paintBlendModeSelect" style="width:100%; margin-top:4px; font-size:12px; padding:4px; background:#444; color:#fff; border:1px solid #555; border-radius:4px;">
+            <option value="default">Default (replace pixels directly)</option>
+            <option value="pixel-perfect">Pixel-Perfect (fully opaque pixels, hard edges)</option>
+            <option value="combine-same">Combine opacity if same color</option>
+          </select>
         </label>
 
         <label style="font-size:12px;display:flex;align-items:center;gap:6px;margin-top:8px;" data-tooltip="When checked, spray interpolates along mouse drag distance. Hold Shift to spray in straight lines.">
@@ -3377,7 +3375,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.300'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.304'; // bump this on every deploy — shown only in the About popup
 
   // Override window.alert to be iframe-safe and style-consistent
   window.alert = function(message) {
@@ -8414,8 +8412,11 @@ void main(void)\r
   }
 
   function paintNoBlend(realCtx, cw, ch, bx, by, bw, bh, drawFn, colorHex){
-    bx = Math.floor(bx); by = Math.floor(by);
-    bw = Math.ceil(bw); bh = Math.ceil(bh);
+    const rx_ = Math.floor(bx);
+    const ry_ = Math.floor(by);
+    const rw_ = Math.ceil(bx + bw) - rx_;
+    const rh_ = Math.ceil(by + bh) - ry_;
+    bx = rx_; by = ry_; bw = rw_; bh = rh_;
     if(bw <= 0 || bh <= 0) return;
     if(bx >= cw || by >= ch || bx + bw <= 0 || by + bh <= 0) return;
 
@@ -8447,8 +8448,12 @@ void main(void)\r
     for (let i = 0; i < len; i++) {
       const sPix = scratch32[i];
       if (sPix === 0) continue;
-      const sA = (sPix >>> 24) & 0xFF;
+      let sA = (sPix >>> 24) & 0xFF;
       if (sA === 0) continue;
+
+      if (pixelPerfect) {
+        sA = 255;
+      }
 
       const sR = sRgb ? sRgb.r : (sPix & 0xFF);
       const sG = sRgb ? sRgb.g : ((sPix >>> 8) & 0xFF);
@@ -8465,8 +8470,11 @@ void main(void)\r
   }
 
   function paintCombineSameColor(realCtx, cw, ch, bx, by, bw, bh, colorHex, drawFn){
-    bx = Math.floor(bx); by = Math.floor(by);
-    bw = Math.ceil(bw); bh = Math.ceil(bh);
+    const rx_ = Math.floor(bx);
+    const ry_ = Math.floor(by);
+    const rw_ = Math.ceil(bx + bw) - rx_;
+    const rh_ = Math.ceil(by + bh) - ry_;
+    bx = rx_; by = ry_; bw = rw_; bh = rh_;
     if(bw <= 0 || bh <= 0) return;
     if(bx >= cw || by >= ch || bx + bw <= 0 || by + bh <= 0) return;
 
@@ -8498,8 +8506,12 @@ void main(void)\r
     for(let i = 0; i < len; i++){
       const sPix = scratch32[i];
       if(sPix === 0) continue;
-      const sA = (sPix >>> 24) & 0xFF;
+      let sA = (sPix >>> 24) & 0xFF;
       if(sA === 0) continue;
+
+      if (pixelPerfect) {
+        sA = 255;
+      }
 
       const sR = cRgb ? cRgb.r : (sPix & 0xFF);
       const sG = cRgb ? cRgb.g : ((sPix >>> 8) & 0xFF);
@@ -8540,8 +8552,11 @@ void main(void)\r
   }
 
   function paintEraserDab(realCtx, cw, ch, bx, by, bw, bh, drawFn){
-    bx = Math.floor(bx); by = Math.floor(by);
-    bw = Math.ceil(bw); bh = Math.ceil(bh);
+    const rx_ = Math.floor(bx);
+    const ry_ = Math.floor(by);
+    const rw_ = Math.ceil(bx + bw) - rx_;
+    const rh_ = Math.ceil(by + bh) - ry_;
+    bx = rx_; by = ry_; bw = rw_; bh = rh_;
     if(bw <= 0 || bh <= 0) return;
     if(bx >= cw || by >= ch || bx + bw <= 0 || by + bh <= 0) return;
 
@@ -8566,8 +8581,11 @@ void main(void)\r
 
     let modified = false;
     for(let i = 0; i < scratchData.length; i += 4){
-      const sA = scratchData[i + 3];
+      let sA = scratchData[i + 3];
       if(sA > 0 && realData[i + 3] > 0){
+        if (pixelPerfect) {
+          sA = 255;
+        }
         const factor = 1 - (sA / 255);
         realData[i + 3] = Math.round(realData[i + 3] * factor);
         modified = true;
@@ -8580,8 +8598,11 @@ void main(void)\r
   }
 
   function paintColorizeDab(realCtx, cw, ch, bx, by, bw, bh, colorHex, drawFn){
-    bx = Math.floor(bx); by = Math.floor(by);
-    bw = Math.ceil(bw); bh = Math.ceil(bh);
+    const rx_ = Math.floor(bx);
+    const ry_ = Math.floor(by);
+    const rw_ = Math.ceil(bx + bw) - rx_;
+    const rh_ = Math.ceil(by + bh) - ry_;
+    bx = rx_; by = ry_; bw = rw_; bh = rh_;
     if(bw <= 0 || bh <= 0) return;
     if(bx >= cw || by >= ch || bx + bw <= 0 || by + bh <= 0) return;
 
@@ -10609,9 +10630,9 @@ void main(void)\r
         if(rotAngle !== 0){
           ctx.translate(finalPx, finalPy);
           ctx.rotate(rotAngle);
-          ctx.drawImage(built.canvas, built.srcX, built.srcY, built.srcW, built.srcH, Math.round(-sw/2), Math.round(-sh/2), sw, sh);
+          ctx.drawImage(built.canvas, 0, 0, built.srcW, built.srcH, Math.round(-sw/2), Math.round(-sh/2), sw, sh);
         } else {
-          ctx.drawImage(built.canvas, built.srcX, built.srcY, built.srcW, built.srcH, Math.round(finalPx - sw/2), Math.round(finalPy - sh/2), sw, sh);
+          ctx.drawImage(built.canvas, 0, 0, built.srcW, built.srcH, Math.round(finalPx - sw/2), Math.round(finalPy - sh/2), sw, sh);
         }
         ctx.restore();
       } else {
@@ -11822,10 +11843,20 @@ void main(void)\r
       syncActivePresetSettings();
     });
   });
-  const chkCombine = document.getElementById('sprayCombineSameColorCheckbox');
-  if(chkCombine){
-    chkCombine.addEventListener('change', e=>{
-      sprayCombineSameColor = e.target.checked;
+  const pbms = document.getElementById('paintBlendModeSelect');
+  if (pbms) {
+    pbms.addEventListener('change', e => {
+      const v = e.target.value;
+      if (v === 'pixel-perfect') {
+        pixelPerfect = true;
+        sprayCombineSameColor = false;
+      } else if (v === 'combine-same') {
+        pixelPerfect = false;
+        sprayCombineSameColor = true;
+      } else {
+        pixelPerfect = false;
+        sprayCombineSameColor = false;
+      }
       syncActivePresetSettings();
     });
   }
@@ -12595,19 +12626,22 @@ void main(void)\r
       const sss = document.getElementById('stampSourceSelect'); if(sss) sss.style.display = (dabShape==='stamp') ? 'block' : 'none';
       drawStampPivotCanvas();
     }
-    if(s.pixelPerfect !== undefined){
-      pixelPerfect = s.pixelPerfect;
-      const ppc = document.getElementById('pixelPerfectCheckbox'); if(ppc) ppc.checked = pixelPerfect;
-    }
     if(s.opacity !== undefined){
       opacity = s.opacity;
       const el = document.getElementById('opacitySlider'); if(el) el.value = opacity;
       const vel = document.getElementById('opacityVal'); if(vel) vel.textContent = opacity + '%';
     }
+    if(s.pixelPerfect !== undefined){
+      pixelPerfect = s.pixelPerfect;
+    }
     if(s.sprayCombineSameColor !== undefined){
       sprayCombineSameColor = s.sprayCombineSameColor;
-      const chk = document.getElementById('sprayCombineSameColorCheckbox');
-      if(chk) chk.checked = sprayCombineSameColor;
+    }
+    const pbms = document.getElementById('paintBlendModeSelect');
+    if (pbms) {
+      if (pixelPerfect) pbms.value = 'pixel-perfect';
+      else if (sprayCombineSameColor) pbms.value = 'combine-same';
+      else pbms.value = 'default';
     }
     if(s.sprayInterpolate !== undefined){
       sprayInterpolate = s.sprayInterpolate;
@@ -13063,13 +13097,6 @@ void main(void)\r
     if(typeof showToast === 'function') showToast('Saved new preset "' + newPreset.name + '"');
   });
   refreshSprayPresetList();
-  const ppc = document.getElementById('pixelPerfectCheckbox');
-  if(ppc){
-    ppc.addEventListener('change', e=>{
-      pixelPerfect = e.target.checked;
-      syncActivePresetSettings();
-    });
-  }
   const spic = document.getElementById('sprayInterpolateCheckbox');
   if(spic){
     spic.addEventListener('change', e=>{
@@ -18092,10 +18119,16 @@ void main(void)\r
       const fovEl = document.getElementById('falloffVal'); if(fovEl) fovEl.textContent = falloff + '%';
       const flEl = document.getElementById('flowSlider'); if(flEl) flEl.value = flow;
       const flvEl = document.getElementById('flowVal'); if(flvEl) flvEl.textContent = flow + '%';
-      const ppc = document.getElementById('pixelPerfectCheckbox'); if(ppc) ppc.checked = pixelPerfect;
       const bppc = document.getElementById('brushPixelPerfectCheckbox'); if(bppc) bppc.checked = brushPixelPerfect;
-      const scsc = document.getElementById('sprayCombineSameColorCheckbox'); if(scsc) scsc.checked = sprayCombineSameColor;
       const spic = document.getElementById('sprayInterpolateCheckbox'); if(spic) spic.checked = sprayInterpolate;
+
+      const pbms = document.getElementById('paintBlendModeSelect');
+      if (pbms) {
+        if (pixelPerfect) pbms.value = 'pixel-perfect';
+        else if (sprayCombineSameColor) pbms.value = 'combine-same';
+        else pbms.value = 'default';
+      }
+
       updateBrushPixelPerfectAvailability();
       document.querySelectorAll('.shape-btn[data-shape]').forEach(b=>b.classList.toggle('active', b.dataset.shape===dabShape));
       document.querySelectorAll('.shape-btn[data-brush-shape]').forEach(b=>b.classList.toggle('active', b.dataset.brushShape===brushShape));
