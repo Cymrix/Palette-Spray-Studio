@@ -169,9 +169,25 @@
   .menu-item{
     background:transparent;border:none;color:var(--text);text-align:left;
     padding:8px 10px;border-radius:6px;font-size:13px;cursor:pointer;
-    display:flex;align-items:center;gap:6px;width:100%;
+    display:flex;align-items:center;justify-content:space-between;gap:8px;width:100%;
+    white-space:nowrap;
   }
   .menu-item:hover{background:var(--panel-2);}
+  .menu-item-submenu{position:relative;}
+  .submenu-arrow{font-size:10px;color:var(--text-dim);margin-left:auto;}
+  .submenu{
+    position:absolute;top:-6px;left:100%;margin-left:4px;
+    background:var(--panel);border:1px solid var(--line);border-radius:8px;
+    padding:6px;min-width:200px;box-shadow:0 12px 30px rgba(0,0,0,.6);
+    display:none;flex-direction:column;gap:2px;z-index:2210;
+  }
+  .submenu::before{
+    content:'';position:absolute;top:-8px;bottom:-8px;left:-8px;width:8px;
+  }
+  .menu-item-submenu:hover > .submenu,
+  .menu-item-submenu.open > .submenu{
+    display:flex;
+  }
   .menu-row{
     padding:8px 10px;font-size:13px;color:var(--text);
     display:flex;align-items:center;width:100%;
@@ -1550,19 +1566,31 @@
       <div class="dropdown-menu" id="fileMenu" style="display:none;">
         <label class="menu-item file-btn">Load Image<input type="file" id="loadImage" accept="image/*"></label>
         <button class="menu-item" id="newCanvasBtn">New Project</button>
-        <button class="menu-item" id="cropToSelectionBtn" title="Crop the whole project — every layer, every frame — to the current selection">Crop to Selection</button>
-        <button class="menu-item" id="scaleProjectBtn">Scale Project…</button>
         <div class="menu-divider"></div>
-        <button class="menu-item" id="flipLayerHBtn" title="Flip active layer horizontally in current frame">Flip Layer Horizontal</button>
-        <button class="menu-item" id="flipLayerVBtn" title="Flip active layer vertically in current frame">Flip Layer Vertical</button>
-        <button class="menu-item" id="rotateLayer90CWBtn" title="Rotate active layer 90° clockwise in current frame">Rotate Layer 90° CW</button>
-        <button class="menu-item" id="rotateLayer90CCWBtn" title="Rotate active layer 90° counter-clockwise in current frame">Rotate Layer 90° CCW</button>
+
+        <div class="menu-item-submenu">
+          <button class="menu-item submenu-toggle" type="button">
+            <span>Edit</span>
+            <span class="submenu-arrow">▶</span>
+          </button>
+          <div class="submenu">
+            <button class="menu-item" id="cropToSelectionBtn" title="Crop the whole project — every layer, every frame — to the current selection">Crop to Selection</button>
+            <button class="menu-item" id="scaleProjectBtn">Scale Project…</button>
+            <div class="menu-divider"></div>
+            <button class="menu-item" id="flipLayerHBtn" title="Flip active layer horizontally in current frame">Flip Layer Horizontal</button>
+            <button class="menu-item" id="flipLayerVBtn" title="Flip active layer vertically in current frame">Flip Layer Vertical</button>
+            <button class="menu-item" id="rotateLayer90CWBtn" title="Rotate active layer 90° clockwise in current frame">Rotate Layer 90° CW</button>
+            <button class="menu-item" id="rotateLayer90CCWBtn" title="Rotate active layer 90° counter-clockwise in current frame">Rotate Layer 90° CCW</button>
+            <div class="menu-divider"></div>
+            <button class="menu-item" id="flipProjectHBtn" title="Flip every layer in every frame horizontally">Flip Project Horizontal</button>
+            <button class="menu-item" id="flipProjectVBtn" title="Flip every layer in every frame vertically">Flip Project Vertical</button>
+            <button class="menu-item" id="rotateProject90CWBtn" title="Rotate every layer in every frame 90° clockwise and swap canvas dimensions">Rotate Project 90° CW</button>
+            <button class="menu-item" id="rotateProject90CCWBtn" title="Rotate every layer in every frame 90° counter-clockwise and swap canvas dimensions">Rotate Project 90° CCW</button>
+          </div>
+        </div>
+
         <div class="menu-divider"></div>
-        <button class="menu-item" id="flipProjectHBtn" title="Flip every layer in every frame horizontally">Flip Project Horizontal</button>
-        <button class="menu-item" id="flipProjectVBtn" title="Flip every layer in every frame vertically">Flip Project Vertical</button>
-        <button class="menu-item" id="rotateProject90CWBtn" title="Rotate every layer in every frame 90° clockwise and swap canvas dimensions">Rotate Project 90° CW</button>
-        <button class="menu-item" id="rotateProject90CCWBtn" title="Rotate every layer in every frame 90° counter-clockwise and swap canvas dimensions">Rotate Project 90° CCW</button>
-        <div class="menu-divider"></div>
+
         <button class="menu-item" id="loadProjectBtn">Load Project</button>
         <input type="file" id="loadProjectInput" accept=".json,.pssproj" style="display:none;">
         <button class="menu-item" id="saveProjectBtn">Save Project</button>
@@ -1572,14 +1600,22 @@
           Cloud Drives
         </button>
         <div class="menu-divider"></div>
-        <button class="menu-item" id="exportBtn">Export PNG & Maps…</button>
-        <button class="menu-item" id="exportHeightBtn">Export Heightmap PNG</button>
-        <button class="menu-item" id="exportRoughnessBtn">Export Roughness Map PNG</button>
-        <button class="menu-item" id="exportSpriteSheetBtn">Export Sprite Sheet</button>
-        <button class="menu-item" id="exportGifBtn">Export Animated GIF</button>
-        <div class="menu-divider"></div>
-        <button class="menu-item" id="tilesetTesterBtn">Tileset Tester…</button>
-        <div class="menu-divider"></div>
+
+        <div class="menu-item-submenu">
+          <button class="menu-item submenu-toggle" type="button">
+            <span>Export</span>
+            <span class="submenu-arrow">▶</span>
+          </button>
+          <div class="submenu">
+            <button class="menu-item" id="exportBtn">Export PNG & Maps…</button>
+            <button class="menu-item" id="exportHeightBtn">Export Heightmap PNG</button>
+            <button class="menu-item" id="exportRoughnessBtn">Export Roughness Map PNG</button>
+            <button class="menu-item" id="exportSpriteSheetBtn">Export Sprite Sheet</button>
+            <button class="menu-item" id="exportGifBtn">Export Animated GIF</button>
+            <div class="menu-divider"></div>
+            <button class="menu-item" id="tilesetTesterBtn">Tileset Tester…</button>
+          </div>
+        </div>
 
         <div class="menu-divider" id="pwaDivider" style="display:none;"></div>
         <button class="menu-item" id="pwaInstallBtn" style="display:none;">Install App (PWA)</button>
@@ -3485,7 +3521,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.323'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.324'; // bump this on every deploy — shown only in the About popup
 
   // Override window.alert to be iframe-safe and style-consistent
   window.alert = function(message) {
@@ -19310,8 +19346,17 @@ void main(void)\r
   // ---------- File menu (hamburger) ----------
   const fileMenu = document.getElementById('fileMenu');
   const fileMenuBtn = document.getElementById('fileMenuBtn');
-  function closeFileMenu(){ fileMenu.style.display = 'none'; }
-  function toggleFileMenu(){ fileMenu.style.display = (fileMenu.style.display === 'block') ? 'none' : 'block'; }
+  function closeFileMenu(){
+    fileMenu.style.display = 'none';
+    fileMenu.querySelectorAll('.menu-item-submenu.open').forEach(el => el.classList.remove('open'));
+  }
+  function toggleFileMenu(){
+    if(fileMenu.style.display === 'block'){
+      closeFileMenu();
+    } else {
+      fileMenu.style.display = 'block';
+    }
+  }
   fileMenuBtn.addEventListener('click', (ev)=>{ ev.stopPropagation(); toggleFileMenu(); });
   document.addEventListener('click', (ev)=>{
     if(fileMenu.style.display === 'block' && !fileMenu.contains(ev.target) && ev.target !== fileMenuBtn){
@@ -19319,7 +19364,19 @@ void main(void)\r
     }
   });
   fileMenu.querySelectorAll('.menu-item').forEach(item=>{
-    item.addEventListener('click', ()=>{ closeFileMenu(); });
+    if (item.classList.contains('submenu-toggle')) {
+      item.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const parent = item.closest('.menu-item-submenu');
+        if (parent) {
+          const wasOpen = parent.classList.contains('open');
+          fileMenu.querySelectorAll('.menu-item-submenu.open').forEach(el => el.classList.remove('open'));
+          if (!wasOpen) parent.classList.add('open');
+        }
+      });
+    } else {
+      item.addEventListener('click', ()=>{ closeFileMenu(); });
+    }
   });
 
   document.getElementById('autoFullscreenCheckbox').addEventListener('change', e=>{
