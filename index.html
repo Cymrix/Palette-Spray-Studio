@@ -3475,7 +3475,7 @@ void main(void)\r
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.320'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.321'; // bump this on every deploy — shown only in the About popup
 
   // Override window.alert to be iframe-safe and style-consistent
   window.alert = function(message) {
@@ -17504,7 +17504,13 @@ void main(void)\r
     const osCheck = document.getElementById('tlOnionSkinCheckbox'); if(osCheck) osCheck.checked = false;
     const osSlider = document.getElementById('tlOnionSkinOpacitySlider'); if(osSlider) osSlider.value = 50;
     const osVal = document.getElementById('tlOnionSkinOpacityVal'); if(osVal) osVal.textContent = '50%';
-    onionSkinCache = null;
+    onionSkinCache = { prev: [], next: [] };
+
+    // Reset Animation FPS & Timeline Opacity
+    fps = 8;
+    const fpsIn = document.getElementById('tlFpsInput'); if(fpsIn) fpsIn.value = 8;
+    const tlOpIn = document.getElementById('tlLayerOpacitySlider'); if(tlOpIn) tlOpIn.value = 100;
+    const tlOpVal = document.getElementById('tlLayerOpacityVal'); if(tlOpVal) tlOpVal.textContent = '100%';
 
     layerIdCounter = 1;
     frameIdCounter = 1;
@@ -17514,8 +17520,15 @@ void main(void)\r
     currentFrameIndex = 0;
     refreshFramesPanel();
     if(typeof refreshMatrixTimeline === 'function') refreshMatrixTimeline();
+    if(typeof refreshLayerPanel === 'function') refreshLayerPanel();
 
     loadDefaultPalette(false);
+    fgColor = '#ffffff';
+    selectedColors = new Set(['#ffffff']);
+    const defaultWhiteIdx = (typeof allColors === 'function') ? allColors().indexOf('#ffffff') : -1;
+    if(typeof selectPaletteIndex === 'function') selectPaletteIndex(defaultWhiteIdx !== -1 ? defaultWhiteIdx : 0);
+    refreshGroups();
+    updateSpraySourceHint();
 
     gradients = [];
     selectedGradientIndex = 0;
@@ -17530,6 +17543,9 @@ void main(void)\r
     if(typeof initDefaultSvgStamps === 'function') await initDefaultSvgStamps();
     if(typeof refreshStampList === 'function') refreshStampList();
     if(typeof populateStampDropdown === 'function') populateStampDropdown();
+    const stampInv = document.getElementById('stampInvertCheckbox'); if(stampInv) stampInv.checked = false;
+    const svgLw = document.getElementById('svgLineWidthSlider'); if(svgLw) svgLw.value = 2;
+    const svgNf = document.getElementById('svgNoFillCheckbox'); if(svgNf) svgNf.checked = false;
 
     grids = [];
     gridMasterOn = false;
@@ -17537,6 +17553,8 @@ void main(void)\r
     gridIdCounter = 1;
     const gridMasterToggle = document.getElementById('gridMasterToggle');
     if(gridMasterToggle) gridMasterToggle.checked = false;
+    const snapToGridToggle = document.getElementById('snapToGridToggle');
+    if(snapToGridToggle) snapToGridToggle.checked = false;
     if(typeof refreshGridPanel === 'function') refreshGridPanel();
     if(typeof drawGridOverlay === 'function') drawGridOverlay();
 
@@ -17550,7 +17568,45 @@ void main(void)\r
     vinePresetIdCounter = 1;
     if(typeof refreshVinePresetList === 'function') refreshVinePresetList();
 
-    if(typeof applySprayPreset === 'function') applySprayPreset('builtin-spray');
+    // Default Spray Brush Settings
+    brushSize = 24;
+    dabSize = 8;
+    dabWidth = 8;
+    dabHeight = 8;
+    dabLockAspect = true;
+    density = 30;
+    falloff = 40;
+    flow = 100;
+    opacity = 100;
+    dabShape = 'circle';
+    sprayInterpolate = true;
+    sprayCombineSameColor = false;
+    pixelPerfect = false;
+
+    const sSlider = document.getElementById('sizeSlider'); if(sSlider) sSlider.value = 24;
+    const sVal = document.getElementById('sizeVal'); if(sVal) sVal.textContent = '24';
+    const opSlider = document.getElementById('opacitySlider'); if(opSlider) opSlider.value = 100;
+    const opVal = document.getElementById('opacityVal'); if(opVal) opVal.textContent = '100%';
+    const flSlider = document.getElementById('flowSlider'); if(flSlider) flSlider.value = 100;
+    const flVal = document.getElementById('flowVal'); if(flVal) flVal.textContent = '100%';
+    const denSlider = document.getElementById('densitySlider'); if(denSlider) denSlider.value = 30;
+    const denVal = document.getElementById('densityVal'); if(denVal) denVal.textContent = '30%';
+    const foSlider = document.getElementById('falloffSlider'); if(foSlider) foSlider.value = 40;
+    const foVal = document.getElementById('falloffVal'); if(foVal) foVal.textContent = '40%';
+    const dwSlider = document.getElementById('dabWidthSlider'); if(dwSlider) dwSlider.value = 8;
+    const dwVal = document.getElementById('dabWidthVal'); if(dwVal) dwVal.textContent = '8';
+    const dhSlider = document.getElementById('dabHeightSlider'); if(dhSlider) dhSlider.value = 8;
+    const dhVal = document.getElementById('dabHeightVal'); if(dhVal) dhVal.textContent = '8';
+    const dlaCheck = document.getElementById('dabLockAspectCheckbox'); if(dlaCheck) dlaCheck.checked = true;
+    const siCheck = document.getElementById('sprayInterpolateCheckbox'); if(siCheck) siCheck.checked = true;
+
+    const pbms = document.getElementById('paintBlendModeSelect'); if(pbms) pbms.value = 'normal';
+    const sps = document.getElementById('sprayPresetSelect'); if(sps) sps.value = 'builtin-spray';
+
+    document.querySelectorAll('.dab-shape-btn').forEach(b => b.classList.toggle('active', b.dataset.shape === 'circle'));
+
+    const defaultSprayPreset = sprayPresets.find(p => p.id === 'builtin-spray');
+    if(defaultSprayPreset && typeof applySprayPreset === 'function') applySprayPreset(defaultSprayPreset);
     if(typeof setTool === 'function') setTool('spray');
 
     sourceKind = 'palette';
@@ -17558,22 +17614,35 @@ void main(void)\r
     if(sourceKindRadio) sourceKindRadio.checked = true;
     const sourceKindSel = document.getElementById('sourceKindSelect');
     if(sourceKindSel) sourceKindSel.value = 'palette';
+    const gss = document.getElementById('gradientSourceSelect');
+    if(gss) gss.style.display = 'none';
 
-    const dabLock = document.getElementById('dabLockAspect');
-    if(dabLock) dabLock.checked = true;
-    dabLockAspect = true;
-
-    const pixelPerf = document.getElementById('pixelPerfect');
-    if(pixelPerf) pixelPerf.checked = false;
-    pixelPerfect = false;
-
-    const seamlessToggle = document.getElementById('seamlessModeToggle');
-    if(seamlessToggle) seamlessToggle.checked = false;
+    // Reset Modes (Seamless, Height/Roughness, Lighting)
     seamlessModeEnabled = false;
+    const seamlessToggle = document.getElementById('seamlessModeToggle'); if(seamlessToggle) seamlessToggle.checked = false;
+    const sfSlider = document.getElementById('seamlessFadeSlider'); if(sfSlider) sfSlider.value = 16;
+    const szSlider = document.getElementById('seamlessZoomSlider'); if(szSlider) szSlider.value = 1.0;
+    const spCheck = document.getElementById('seamlessPalettizeCheckbox'); if(spCheck) spCheck.checked = false;
+
+    editingHeightMode = false;
+    editingRoughnessMode = false;
+    const eht = document.getElementById('editingHeightToggle'); if(eht) eht.checked = false;
+    const ert = document.getElementById('editingRoughnessToggle'); if(ert) ert.checked = false;
+    if(typeof syncHeightEditSwap === 'function') syncHeightEditSwap();
+
+    lightingPreviewEnabled = false;
+    const lpe = document.getElementById('lightingPreviewEnabled'); if(lpe) lpe.checked = false;
+    const clc = document.getElementById('canvasLightingCanvas'); if(clc) clc.style.display = 'none';
+    const clg = document.getElementById('canvasLightingGizmoCanvas'); if(clg) clg.style.display = 'none';
 
     const colorHighlightBtn = document.getElementById('highlightOnCanvasBtn');
     if(colorHighlightBtn) colorHighlightBtn.classList.remove('active');
     colorHighlightActive = false;
+    const colorHighlightCanvas = document.getElementById('colorHighlightCanvas');
+    if(colorHighlightCanvas){
+      const hctx = colorHighlightCanvas.getContext('2d');
+      if(hctx) hctx.clearRect(0, 0, colorHighlightCanvas.width, colorHighlightCanvas.height);
+    }
 
     // Reset Height Painting mode & controls
     heightPaintEnabled = false;
@@ -17646,7 +17715,31 @@ void main(void)\r
     sprayTargetAnchorX = null; sprayTargetAnchorY = null;
     spraySnapToGrid = false;
     spraySnapClearCell = false;
+
+    const sjMin = document.getElementById('sizeJitterMinSlider'); if(sjMin) sjMin.value = 100;
+    const sjMax = document.getElementById('sizeJitterMaxSlider'); if(sjMax) sjMax.value = 100;
+    const sjVal = document.getElementById('sizeJitterVal'); if(sjVal) sjVal.textContent = '100% - 100%';
+    updateDualRangeFill(sjMin, sjMax, document.getElementById('sizeJitterFill'));
+
+    const dwjMin = document.getElementById('dabWidthJitterMinSlider'); if(dwjMin) dwjMin.value = 100;
+    const dwjMax = document.getElementById('dabWidthJitterMaxSlider'); if(dwjMax) dwjMax.value = 100;
+    const dwjVal = document.getElementById('dabWidthJitterVal'); if(dwjVal) dwjVal.textContent = '100% - 100%';
+    updateDualRangeFill(dwjMin, dwjMax, document.getElementById('dabWidthJitterFill'));
+
+    const dhjMin = document.getElementById('dabHeightJitterMinSlider'); if(dhjMin) dhjMin.value = 100;
+    const dhjMax = document.getElementById('dabHeightJitterMaxSlider'); if(dhjMax) dhjMax.value = 100;
+    const dhjVal = document.getElementById('dabHeightJitterVal'); if(dhjVal) dhjVal.textContent = '100% - 100%';
+    updateDualRangeFill(dhjMin, dhjMax, document.getElementById('dabHeightJitterFill'));
+
+    const ojMin = document.getElementById('opacityJitterMinSlider'); if(ojMin) ojMin.value = 100;
+    const ojMax = document.getElementById('opacityJitterMaxSlider'); if(ojMax) ojMax.value = 100;
+    const ojVal = document.getElementById('opacityJitterVal'); if(ojVal) ojVal.textContent = '100% - 100%';
+    updateDualRangeFill(ojMin, ojMax, document.getElementById('opacityJitterFill'));
+
+    const snapChk = document.getElementById('spraySnapGridCheckbox'); if(snapChk) snapChk.checked = false;
+    const snapClearChk = document.getElementById('spraySnapClearCellCheckbox'); if(snapClearChk) snapClearChk.checked = false;
     if(typeof updateSpraySnapGridUI === 'function') updateSpraySnapGridUI();
+
     const rmEl = document.getElementById('rotationModeSelect'); if(rmEl) rmEl.value = 'range';
     const raEl = document.getElementById('rotationAlgorithmSelect'); if(raEl) raEl.value = 'rotsprite';
     const rminEl = document.getElementById('rotationMinValInput'); if(rminEl) rminEl.value = 0;
@@ -19034,19 +19127,37 @@ void main(void)\r
           if (!res.ok) throw new Error('Upload failed');
           showToast(`Saved "${currentCloudFileName}" to Google Drive`);
         } else {
-          if (!onedriveToken) { alert('Please sign in to OneDrive first.'); return; }
-          const res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${currentCloudFileId}/content`, {
+          if (!onedriveToken) {
+            const refreshed = (typeof silentRefreshOneDrive === 'function') ? await silentRefreshOneDrive() : false;
+            if (!refreshed || !onedriveToken) {
+              loginOneDrive(async () => {
+                await saveProject(false);
+              });
+              return;
+            }
+          }
+          let res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${currentCloudFileId}/content`, {
             method: 'PUT',
             headers: { 'Authorization': `Bearer ${onedriveToken}`, 'Content-Type': 'application/json' },
             body: projectDataStr
           });
+          if (res.status === 401) {
+            const refreshed = (typeof silentRefreshOneDrive === 'function') ? await silentRefreshOneDrive() : false;
+            if (refreshed && onedriveToken) {
+              res = await fetch(`https://graph.microsoft.com/v1.0/me/drive/items/${currentCloudFileId}/content`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${onedriveToken}`, 'Content-Type': 'application/json' },
+                body: projectDataStr
+              });
+            }
+          }
           if (!res.ok) throw new Error('Upload failed');
           showToast(`Saved "${currentCloudFileName}" to OneDrive`);
         }
         await writeBackupCopy();
       } catch (err) {
         console.error('Cloud save failed:', err);
-        alert(`Could not save to ${provName}.`);
+        alert(`Could not save to ${provName}. Your project is kept safely in memory.`);
       }
       return;
     }
@@ -19876,6 +19987,50 @@ void main(void)\r
     });
   }
 
+  let isCheckingOneDriveExpiry = false;
+  let isSilentRefreshingOneDrive = false;
+  let onedriveLoginCallback = null;
+
+  async function silentRefreshOneDrive() {
+    if (isSilentRefreshingOneDrive) return false;
+    const defaultMsClientId = '59ecbd95-c151-4cc4-a50b-3eb0887cca38';
+    const clientId = localStorage.getItem('ms_client_id') || defaultMsClientId;
+    const redirectUri = window.location.href.split('#')[0].split('?')[0];
+    const authUrl = `https://login.microsoftonline.com/consumers/oauth2/v2.0/authorize?client_id=${encodeURIComponent(clientId)}&response_type=token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=Files.ReadWrite%20User.Read&response_mode=fragment&prompt=none`;
+
+    isSilentRefreshingOneDrive = true;
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = authUrl;
+    document.body.appendChild(iframe);
+
+    return new Promise((resolve) => {
+      let resolved = false;
+      const onMsg = (e) => {
+        if (e.data && e.data.type === 'ONEDRIVE_AUTH_SUCCESS' && e.data.token) {
+          if (!resolved) {
+            resolved = true;
+            window.removeEventListener('message', onMsg);
+            try { iframe.remove(); } catch(e){}
+            isSilentRefreshingOneDrive = false;
+            resolve(true);
+          }
+        }
+      };
+      window.addEventListener('message', onMsg);
+
+      setTimeout(() => {
+        if (!resolved) {
+          resolved = true;
+          window.removeEventListener('message', onMsg);
+          try { iframe.remove(); } catch(e){}
+          isSilentRefreshingOneDrive = false;
+          resolve(false);
+        }
+      }, 7500);
+    });
+  }
+
   async function checkCloudAuthStatus() {
     if (currentCloudProvider === 'gdrive') {
       if (gdriveToken) {
@@ -19893,6 +20048,13 @@ void main(void)\r
       }
     } else {
       if (onedriveToken) {
+        const savedAt = parseInt(localStorage.getItem('onedrive_token_saved_at') || '0');
+        const expiresIn = parseInt(localStorage.getItem('onedrive_token_expires_in') || '3600');
+        const ageSec = (Date.now() - savedAt) / 1000;
+        if (savedAt > 0 && ageSec > (expiresIn - 600) && !isCheckingOneDriveExpiry) {
+          isCheckingOneDriveExpiry = true;
+          silentRefreshOneDrive().finally(() => { isCheckingOneDriveExpiry = false; });
+        }
         cloudAuthStatus.textContent = 'Connected to OneDrive';
         cloudAuthStatus.style.color = 'var(--text)';
         cloudAuthBtn.textContent = 'Sign Out';
@@ -19907,6 +20069,12 @@ void main(void)\r
       }
     }
   }
+
+  setInterval(() => {
+    if (onedriveToken) {
+      checkCloudAuthStatus();
+    }
+  }, 5 * 60 * 1000);
 
   if (cloudAuthBtn) {
     cloudAuthBtn.addEventListener('click', () => {
@@ -19923,6 +20091,8 @@ void main(void)\r
         if (onedriveToken) {
           onedriveToken = null;
           localStorage.removeItem('onedrive_token');
+          localStorage.removeItem('onedrive_token_saved_at');
+          localStorage.removeItem('onedrive_token_expires_in');
           checkCloudAuthStatus();
           showToast('Signed out of OneDrive');
         } else {
@@ -19959,7 +20129,8 @@ void main(void)\r
     client.requestAccessToken();
   }
 
-  function loginOneDrive() {
+  function loginOneDrive(callback) {
+    if (typeof callback === 'function') onedriveLoginCallback = callback;
     const defaultMsClientId = '59ecbd95-c151-4cc4-a50b-3eb0887cca38';
     const clientId = localStorage.getItem('ms_client_id') || defaultMsClientId;
     const redirectUri = window.location.href.split('#')[0].split('?')[0];
@@ -19980,6 +20151,11 @@ void main(void)\r
             onedriveToken = savedToken;
             checkCloudAuthStatus();
             showToast('Signed in to OneDrive');
+            if (onedriveLoginCallback) {
+              const cb = onedriveLoginCallback;
+              onedriveLoginCallback = null;
+              cb();
+            }
           }
           return;
         }
@@ -19987,13 +20163,21 @@ void main(void)\r
           const hash = authWindow.location.hash || authWindow.location.search;
           const params = new URLSearchParams(hash.substring(1));
           const token = params.get('access_token');
+          const exp = params.get('expires_in');
           if (token) {
             onedriveToken = token;
             localStorage.setItem('onedrive_token', onedriveToken);
+            localStorage.setItem('onedrive_token_saved_at', Date.now().toString());
+            if (exp) localStorage.setItem('onedrive_token_expires_in', exp);
             try { authWindow.close(); } catch(e){}
             clearInterval(timer);
             checkCloudAuthStatus();
             showToast('Signed in to OneDrive');
+            if (onedriveLoginCallback) {
+              const cb = onedriveLoginCallback;
+              onedriveLoginCallback = null;
+              cb();
+            }
           }
         }
       } catch (err) {
@@ -20002,13 +20186,22 @@ void main(void)\r
     }, 400);
   }
 
-  // Handle postMessage token communication between popup and main app
+  // Handle postMessage token communication between popup / iframe and main app
   window.addEventListener('message', (event) => {
     if (event.data && event.data.type === 'ONEDRIVE_AUTH_SUCCESS' && event.data.token) {
       onedriveToken = event.data.token;
       localStorage.setItem('onedrive_token', onedriveToken);
+      localStorage.setItem('onedrive_token_saved_at', Date.now().toString());
+      if (event.data.expiresIn) {
+        localStorage.setItem('onedrive_token_expires_in', event.data.expiresIn.toString());
+      }
       checkCloudAuthStatus();
-      showToast('Signed in to OneDrive');
+      showToast('OneDrive connected');
+      if (onedriveLoginCallback) {
+        const cb = onedriveLoginCallback;
+        onedriveLoginCallback = null;
+        cb();
+      }
     }
   });
 
@@ -20018,13 +20211,20 @@ void main(void)\r
     if (currentHash && currentHash.includes('access_token=')) {
       const params = new URLSearchParams(currentHash.substring(1));
       const token = params.get('access_token');
+      const exp = params.get('expires_in');
       if (token) {
         onedriveToken = token;
         localStorage.setItem('onedrive_token', onedriveToken);
+        localStorage.setItem('onedrive_token_saved_at', Date.now().toString());
+        if (exp) localStorage.setItem('onedrive_token_expires_in', exp);
         if (window.opener) {
           try {
-            window.opener.postMessage({ type: 'ONEDRIVE_AUTH_SUCCESS', token: token }, '*');
+            window.opener.postMessage({ type: 'ONEDRIVE_AUTH_SUCCESS', token: token, expiresIn: exp }, '*');
             window.close();
+          } catch(e) {}
+        } else if (window.parent && window.parent !== window) {
+          try {
+            window.parent.postMessage({ type: 'ONEDRIVE_AUTH_SUCCESS', token: token, expiresIn: exp }, '*');
           } catch(e) {}
         } else {
           window.history.replaceState({}, document.title, window.location.pathname + window.location.search);
