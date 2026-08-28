@@ -1,7 +1,10 @@
-const CACHE_NAME = "palette-spray-studio-v5";
+const CACHE_NAME = "palette-spray-studio-v6";
 const ASSETS_TO_CACHE = [
   "./",
   "./index.html",
+  "./license.html",
+  "./terms.html",
+  "./privacy.html",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png",
