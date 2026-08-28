@@ -30,7 +30,7 @@
     const urlH = parseInt(urlParams.get('h'));
     if(urlW > 0 && urlH > 0){ W = urlW; H = urlH; }
   }
-  const APP_VERSION = 'v0.328'; // bump this on every deploy — shown only in the About popup
+  const APP_VERSION = 'v0.330'; // bump this on every deploy — shown only in the About popup
 
   // Override window.alert to be iframe-safe and style-consistent
   window.alert = function(message) {
@@ -845,6 +845,13 @@
   let vineEnableDecorations = true;
   let vineDecorationType = 'shape-leaf';
   let vineOffshootSizeSliderVal = 45;
+  let vineTaperStart = false;
+  let vineTaperFinish = false;
+  let vineTaperOffshoots = true;
+  let vineTaperLength = 50;
+  let vineTaperSizeBehavior = 'taper';
+  let vineTaperSpreadBehavior = 'constant';
+  let vineTaperOpacityFade = false;
   let paintTaperEnabled = false;
   let paintTaperStart = true;
   let paintTaperFinish = false;
